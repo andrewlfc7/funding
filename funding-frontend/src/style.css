@@ -1,0 +1,309 @@
+/* Global Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #0f0f0f;
+  color: #e0e0e0;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Page Header */
+.page-header {
+  text-align: center;
+  padding: 40px 20px 32px;
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #f0f0f0;
+  margin-bottom: 8px;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: #888;
+  font-weight: 400;
+}
+
+/* Dashboard Container - Full width with padding */
+.dashboard {
+  width: 100%;
+  max-width: 2400px;  /* Much wider */
+  margin: 0 auto;
+  padding: 0 24px 40px;
+}
+
+.dashboard-card {
+  background: #1a1a1a;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  padding: 0;  /* Remove padding - table will handle it */
+  border: 1px solid #000000;
+  overflow: hidden;
+}
+
+/* Table Styles */
+.funding-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.funding-table thead {
+  background-color: #000000;
+}
+
+.funding-table th {
+  padding: 18px 24px;  /* More spacious */
+  text-align: left;
+  font-weight: 600;
+  color: #999;
+  border-bottom: 1px solid #333;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+}
+
+.funding-table th.center {
+  text-align: center;
+}
+
+.funding-table tbody tr {
+  transition: background-color 0.15s;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.funding-table tbody tr:hover {
+  background-color: #222;
+}
+
+.funding-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.funding-table td {
+  padding: 18px 24px;  /* More spacious */
+  color: #d0d0d0;
+}
+
+.funding-table td.center {
+  text-align: center;
+}
+
+/* Token cell styling */
+.token-cell {
+  font-weight: 600;
+  color: #f0f0f0;
+  font-size: 14px;
+}
+
+/* Funding rate colors */
+.rate-positive {
+  color: #0d6f0d;
+  font-weight: 600;
+}
+
+.rate-negative {
+  color: #b51515;
+  font-weight: 600;
+}
+
+.rate-neutral {
+  color: #646464;
+}
+
+.rate-missing {
+  color: #555;
+  font-size: 13px;
+}
+
+/* Open Interest styling */
+.open-interest {
+  color: #999;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+}
+
+/* Footer */
+.last-updated {
+  padding: 16px 24px;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  background-color: #161616;
+  border-top: 1px solid #2a2a2a;
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 0 12px 20px;
+  }
+  
+  .funding-table th,
+  .funding-table td {
+    padding: 14px 16px;
+  }
+  
+  .page-title {
+    font-size: 24px;
+  }
+}
+
+/* Arb Spread styling */
+.arb-spread {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.arb-high {
+  color: #161517;  /* Bright yellow/gold for high opportunity */
+  background-color: rgba(95, 72, 42, 0.425);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.arb-medium {
+  color: #60a5fa;  /* Blue for medium opportunity */
+}
+
+.arb-low {
+  color: #666;  /* Gray for low opportunity */
+}
+
+/* Table Container - Scrollable */
+.table-container {
+  max-height: 600px;  /* Fixed height for scrolling */
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+/* Custom scrollbar for dark theme */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Sticky header */
+.funding-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #252525;
+}
+
+/* Sortable headers */
+.funding-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s;
+}
+
+.funding-table th.sortable:hover {
+  background-color: #2a2a2a;
+}
+
+/* Sort indicators */
+.sort-indicator {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 11px;
+  color: #666;
+  transition: color 0.15s;
+}
+
+.funding-table th.sortable:hover .sort-indicator {
+  color: #999;
+}
+
+/* Active sort column */
+.funding-table th.sortable:has(.sort-indicator:not(:contains('↕'))) {
+  background-color: #2a2a2a;
+}
+
+.funding-table th.sortable:has(.sort-indicator:not(:contains('↕'))) .sort-indicator {
+  color: #4ade80;
+}
+
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #888;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #333;
+  border-top-color: #4ade80;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error State */
+.error-container {
+  text-align: center;
+  padding: 60px 20px;
+  background: #1a1a1a;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+}
+
+.error-message {
+  color: #f87171;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.retry-button {
+  background: #4ade80;
+  color: #000;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retry-button:hover {
+  background: #22c55e;
+}
+
+/* Updating indicator */
+.updating-indicator {
+  color: #4ade80;
+  font-size: 11px;
+  margin-left: 12px;
+}
