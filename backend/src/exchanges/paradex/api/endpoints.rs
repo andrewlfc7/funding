@@ -2,6 +2,8 @@
 
 use std::borrow::Cow;
 
+
+
 pub const PARADEX_API_ENDPOINTS: ParadexAPIEndpoints = ParadexAPIEndpoints {
     base_url: "https://api.prod.paradex.trade/v1",
     testnet_base_url: "https://api.testnet.paradex.trade/v1",
