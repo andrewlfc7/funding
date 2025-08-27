@@ -75,6 +75,11 @@ body {
   text-align: center;
 }
 
+/* Exchange column headers need more width */
+.exchange-header {
+  min-width: 140px;
+}
+
 .funding-table tbody tr {
   transition: background-color 0.15s;
   border-bottom: 1px solid #2a2a2a;
@@ -104,19 +109,39 @@ body {
   font-size: 14px;
 }
 
+/* Exchange cell container */
+.exchange-cell {
+  vertical-align: middle;
+  padding: 12px 24px;  /* Slightly less vertical padding for stacked content */
+}
+
+/* Exchange data container */
+.exchange-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Funding rate styling */
+.funding-rate {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+}
+
 /* Funding rate colors */
 .rate-positive {
-  color: #0d6f0d;
-  font-weight: 600;
+  color: #4ade80;  /* Using your green accent */
 }
 
 .rate-negative {
-  color: #b51515;
-  font-weight: 600;
+  color: #ef4444;  /* Slightly brighter red */
 }
 
 .rate-neutral {
-  color: #646464;
+  color: #888;
 }
 
 .rate-missing {
@@ -124,36 +149,20 @@ body {
   font-size: 13px;
 }
 
-/* Open Interest styling */
+/* Open Interest per exchange */
+.open-interest-per-exchange {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+
+/* Total Open Interest styling */
 .open-interest {
   color: #999;
   font-variant-numeric: tabular-nums;
   font-size: 14px;
-}
-
-/* Footer */
-.last-updated {
-  padding: 16px 24px;
-  font-size: 12px;
-  color: #666;
-  text-align: center;
-  background-color: #161616;
-  border-top: 1px solid #2a2a2a;
-}
-
-@media (max-width: 768px) {
-  .dashboard {
-    padding: 0 12px 20px;
-  }
-  
-  .funding-table th,
-  .funding-table td {
-    padding: 14px 16px;
-  }
-  
-  .page-title {
-    font-size: 24px;
-  }
 }
 
 /* Arb Spread styling */
@@ -164,8 +173,8 @@ body {
 }
 
 .arb-high {
-  color: #161517;  /* Bright yellow/gold for high opportunity */
-  background-color: rgba(95, 72, 42, 0.425);
+  color: #fbbf24;  /* Bright yellow/gold for high opportunity */
+  background-color: rgba(251, 191, 36, 0.1);
   padding: 4px 8px;
   border-radius: 4px;
 }
@@ -246,6 +255,15 @@ body {
   color: #4ade80;
 }
 
+/* Footer */
+.last-updated {
+  padding: 16px 24px;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  background-color: #161616;
+  border-top: 1px solid #2a2a2a;
+}
 
 /* Loading State */
 .loading-container {
@@ -306,4 +324,64 @@ body {
   color: #4ade80;
   font-size: 11px;
   margin-left: 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .exchange-header {
+    min-width: 120px;
+  }
+  
+  .exchange-data {
+    gap: 4px;
+  }
+  
+  .funding-rate {
+    font-size: 13px;
+  }
+  
+  .open-interest-per-exchange {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 0 12px 20px;
+  }
+  
+  .funding-table th,
+  .funding-table td {
+    padding: 14px 16px;
+  }
+  
+  .exchange-cell {
+    padding: 10px 16px;
+  }
+  
+  .page-title {
+    font-size: 24px;
+  }
+  
+  .exchange-header {
+    min-width: 100px;
+  }
+  
+  .funding-rate {
+    font-size: 12px;
+  }
+  
+  .open-interest-per-exchange {
+    font-size: 10px;
+  }
+}
+
+/* Hover effect for exchange data */
+.exchange-data:hover .open-interest-per-exchange {
+  color: #888;
+}
+
+/* Row hover enhances exchange data visibility */
+.funding-table tbody tr:hover .open-interest-per-exchange {
+  color: #888;
 }

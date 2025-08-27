@@ -1,10 +1,27 @@
 [package]
-name = "funding"
+name = "backend"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 anyhow = "1.0.99"
 bytes = "1.10.1"
+chrono = { version = "0.4.38", features = ["serde"] }
 reqwest = "0.12.23"
+rust_decimal = { version = "1", features = ["serde"] }
+serde = "1.0.219"
+serde_json = "1.0.143"
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "macros", "bigdecimal", "time", "json"] }
 tokio = { version = "1", features = ["full"] }
+tracing = "0.1.41"
+time = "0.3"
+tracing-subscriber = "0.3.19"
+axum = "0.8.4"
+dotenv = "0.15.0"
+tokio-cron-scheduler = "0.14.0"
+clap = { version = "4.5.46", features = ["derive"] }
+stream = "0.1.0"
+futures = "0.3.31"
+log = "0.4.27"
+serde_with = "3"
+tower-http = { version = "0.6.6", features = ["cors"] }

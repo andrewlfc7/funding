@@ -38,15 +38,20 @@ impl ParadexClient {
         market: &str,
         start_time: Option<u64>,
         end_time: Option<u64>,
+        cursor: Option<&str>, 
     ) -> Result<Bytes, reqwest::Error> {
         let url = get_public_url(PublicEndpoint::FundingData, self.environment);
 
         let mut query_params = vec![("market".to_string(), market.to_string())];
+        
         if let Some(st) = start_time {
-            query_params.push(("startTime".to_string(), st.to_string()));
+            query_params.push(("start_at".to_string(), st.to_string()));
         }
         if let Some(et) = end_time {
-            query_params.push(("endTime".to_string(), et.to_string()));
+            query_params.push(("end_at".to_string(), et.to_string()));
+        }
+        if let Some(c) = cursor {
+            query_params.push(("cursor".to_string(), c.to_string()));
         }
 
         let res = self
@@ -58,4 +63,5 @@ impl ParadexClient {
 
         res.error_for_status()?.bytes().await
     }
+
 }

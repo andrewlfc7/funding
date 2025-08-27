@@ -1,67 +1,181 @@
+mod db;
+mod utils;
 mod exchanges;
+mod data;
 
-use exchanges::paradex::api::{client::ParadexClient, endpoints as paradex_api};
-use exchanges::extended::api::{client::ExtendedClient, endpoints as extended_api};
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
+use axum::{extract::State, response::Json, routing::get, Router};
+use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
+use sqlx::PgPool;
+use std::{collections::HashMap, net::SocketAddr};
+use tokio::net::TcpListener;
+use tower_http::cors::{Any, CorsLayer};
+use tracing::{error, info};
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+
+use crate::utils::scheduler;
+
+// ---------- API Shapes ----------
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct ExchangeData {
+    funding_rate: f64,
+    open_interest: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct TokenRow {
+    token: String,
+    exchanges: HashMap<String, ExchangeData>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ApiResponse {
+    last_updated: String,
+    tokens: Vec<TokenRow>,
+}
+
+#[derive(Serialize, Debug)]
+struct HealthResponse {
+    ok: bool,
+    tokens: usize,
+    last_updated: Option<String>,
+}
+
+// ---------- Helpers ----------
+
+fn fmt_ts(ts: OffsetDateTime) -> String {
+    ts.format(&Rfc3339).unwrap_or_else(|_| ts.to_string())
+}
+
+// ---------- Routes ----------
+
+async fn get_funding_matrix(State(pool): State<PgPool>) -> Json<ApiResponse> {
+    let rows = match sqlx::query!(
+        r#"
+        SELECT symbol, rates, last_update
+        FROM funding_matrix_view
+        "#
+    )
+    .fetch_all(&pool)
+    .await
+    {
+        Ok(rs) => rs,
+        Err(e) => {
+            error!("query funding_matrix_view failed: {e:?}");
+            return Json(ApiResponse {
+                last_updated: fmt_ts(OffsetDateTime::now_utc()),
+                tokens: vec![],
+            });
+        }
+    };
+
+    let mut tokens: Vec<TokenRow> = Vec::with_capacity(rows.len());
+    let mut max_ts: Option<OffsetDateTime> = None;
+
+    for r in rows {
+        
+        let symbol = r.symbol.unwrap_or_default();
+
+        let mut exchanges = HashMap::<String, ExchangeData>::new();
+        if let Some(JsonValue::Object(obj)) = r.rates {
+            for (ex, v) in obj {
+                let fr = v.get("funding_rate").and_then(|x| x.as_f64()).unwrap_or(0.0);
+                let oi = v.get("open_interest").and_then(|x| x.as_f64()).unwrap_or(0.0);
+
+                if !v.get("open_interest").is_some() {
+                    tracing::warn!("missing open_interest for {}/{}", symbol, ex);
+                }
+
+                exchanges.insert(ex, ExchangeData { funding_rate: fr, open_interest: oi });
+            }
+        }
+
+        let lu = r.last_update.unwrap_or_else(OffsetDateTime::now_utc);
+        if max_ts.map(|m| lu > m).unwrap_or(true) {
+            max_ts = Some(lu);
+        }
+
+        tokens.push(TokenRow { token: symbol, exchanges });
+    }
+
+    let last_updated = fmt_ts(max_ts.unwrap_or_else(OffsetDateTime::now_utc));
+    info!("funding-matrix: {} tokens, last_updated={}", tokens.len(), last_updated);
+
+    Json(ApiResponse { last_updated, tokens })
+}
+
+/// GET /api/health
+/// Quick connectivity & freshness check.
+async fn health(State(pool): State<PgPool>) -> Json<HealthResponse> {
+    let res = sqlx::query!(
+        r#"
+        SELECT COUNT(*)::BIGINT as cnt, MAX(last_update) as last_update
+        FROM funding_matrix_view
+        "#
+    )
+    .fetch_one(&pool)
+    .await;
+
+    match res {
+        Ok(r) => {
+            let last = r.last_update.map(fmt_ts);
+            Json(HealthResponse {
+                ok: true,
+                tokens: r.cnt.unwrap_or(0) as usize,
+                last_updated: last,
+            })
+        }
+        Err(e) => {
+            error!("health query failed: {e:?}");
+            Json(HealthResponse {
+                ok: false,
+                tokens: 0,
+                last_updated: None,
+            })
+        }
+    }
+}
+
+// ---------- Server Bootstrap ----------
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let btc_market = "BTC-USD-PERP";
+    dotenv::dotenv().ok();
 
-    // Paradex
-    println!("--- Paradex ---");
-    let paradex_client = ParadexClient::new(paradex_api::ApiEnvironment::Mainnet);
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .compact()
+        .init();
 
-    // Markets
-    let markets = paradex_client.get_markets().await?;
-    println!("Paradex Markets:\n{}\n", String::from_utf8_lossy(&markets));
+    let pool = db::migrations::create_pool().await;
 
-    // Market Summary
-    let summary = paradex_client.get_markets_summary(btc_market).await?;
-    println!("Paradex Market Summary for {}:\n{}\n", btc_market, String::from_utf8_lossy(&summary));
+    {
+        let pool_clone = pool.clone();
+        tokio::spawn(async move {
+            if let Err(e) = scheduler::start_scheduler(pool_clone).await {
+                eprintln!("scheduler failed: {:?}", e);
+            }
+        });
+    }
 
-    // Funding Data (8 hour interval)
-    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-    let eight_hours_ago = now - Duration::from_secs(2000 * 60 * 60).as_secs();
-    let funding = paradex_client
-        .get_funding_data(btc_market, Some(eight_hours_ago), Some(now))
-        .await?;
-    println!(
-        "Paradex Funding Data for {} (last 8 hours):\n{}\n",
-        btc_market, String::from_utf8_lossy(&funding)
-    );
+    // CORS for local dev & browser apps
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_headers(Any)
+        .allow_methods(Any);
 
-    // Extended
-    println!("--- Extended ---");
-    let extended_client = ExtendedClient::new(extended_api::ApiEnvironment::Mainnet);
+    let app = Router::new()
+        .route("/api/funding-matrix", get(get_funding_matrix))
+        .route("/api/health", get(health))
+        .with_state(pool)
+        .layer(cors);
 
-    // Markets
-    let ext_markets = extended_client.get_markets(None).await?;
-    println!("Extended Markets:\n{}\n", String::from_utf8_lossy(&ext_markets));
+    let addr: SocketAddr = "0.0.0.0:8080".parse().unwrap();
+    info!("Server running at http://{}", addr);
 
-    let btc_market_ex = "BTC-USD";
-
-
-    // Market Stats
-    let ext_stats = extended_client.get_market_stats(btc_market_ex).await?;
-    println!("Extended Market Stats for {}:\n{}\n", btc_market_ex, String::from_utf8_lossy(&ext_stats));
-
-
-    let ext_open_interest = extended_client
-        .get_open_interest(btc_market_ex, Some("P1D"), Some(eight_hours_ago), Some(now))
-        .await?;
-    println!("Extended Open Interest for {}:\n{}\n", btc_market_ex, String::from_utf8_lossy(&ext_open_interest));
-
-
-
-    // Funding (8 hour interval)
-    let ext_funding = extended_client
-        .get_funding(btc_market_ex, Some(eight_hours_ago), Some(now))
-        .await?;
-    println!(
-        "Extended Funding Data for {} (last 8 hours):\n{}\n",
-        btc_market_ex, String::from_utf8_lossy(&ext_funding)
-    );
+    let listener = TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }
