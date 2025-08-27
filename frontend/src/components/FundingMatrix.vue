@@ -109,9 +109,19 @@ interface ApiResponse {
   tokens: TokenRow[]
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-const API_ENDPOINT = '/api/funding-matrix'
-const REFRESH_INTERVAL = 30000 
+const API_BASE_URL = import.meta.env.VITE_API_URL
+const API_ENDPOINT = import.meta.env.VITE_API_ENDPOINT
+const REFRESH_INTERVAL = parseInt(import.meta.env.VITE_REFRESH_INTERVAL)
+
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_URL environment variable is required')
+}
+if (!API_ENDPOINT) {
+  throw new Error('VITE_API_ENDPOINT environment variable is required')
+}
+if (!REFRESH_INTERVAL || isNaN(REFRESH_INTERVAL)) {
+  throw new Error('VITE_REFRESH_INTERVAL environment variable is required and must be a number')
+}
 
 const tokens = ref<TokenRow[]>([])
 const lastUpdated = ref<string>('')
