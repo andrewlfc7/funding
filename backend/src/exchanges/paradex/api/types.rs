@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 use rust_decimal::Decimal;
 
-/* Flexible decimal parsing: can be number, string, or null */
+
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum NumOrStrDec {
@@ -45,7 +45,7 @@ where
     })
 }
 
-/* Timestamp can also be number or string */
+
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum I64OrStr {
@@ -85,16 +85,30 @@ pub struct ParadexSummaryResponse {
     pub results: Vec<ParadexMarketSummary>,
 }
 
+
+
+
 #[derive(Debug, Deserialize)]
 pub struct ParadexMarketSummary {
     pub symbol: String,
 
-    #[serde(deserialize_with = "de_decimal")]
-    pub open_interest: Decimal,
+    #[serde(default, deserialize_with = "de_opt_decimal")]
+    pub open_interest: Option<Decimal>,
 
-    #[serde(deserialize_with = "de_decimal")]
-    pub volume_24h: Decimal,
+    #[serde(default, deserialize_with = "de_opt_decimal")]
+    pub volume_24h: Option<Decimal>,
+
+    // Price fallbacks to convert OI → USD
+    #[serde(default, deserialize_with = "de_opt_decimal")]
+    pub mark_price: Option<Decimal>,
+
+    #[serde(default, deserialize_with = "de_opt_decimal")]
+    pub underlying_price: Option<Decimal>,
+
+    #[serde(default, deserialize_with = "de_opt_decimal")]
+    pub last_traded_price: Option<Decimal>,
 }
+
 
 /* /funding */
 #[derive(Debug, Deserialize)]

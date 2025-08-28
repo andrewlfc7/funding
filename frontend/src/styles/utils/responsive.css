@@ -1,0 +1,190 @@
+/* Responsive Breakpoints */
+@media (max-width: 1024px) {
+  .exchange-header {
+    min-width: 120px;
+  }
+  
+  .funding-table th,
+  .funding-table td {
+    padding: 14px 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .funding-table th,
+  .funding-table td {
+    padding: 14px var(--space-lg);
+  }
+  
+  .exchange-cell {
+    padding: 10px var(--space-lg);
+  }
+}
+
+/* Mobile-specific utilities */
+@media (max-width: 480px) {
+  /* Hide less important columns on mobile */
+  .arb-oi {
+    display: none;
+  }
+  
+  /* Reduce font sizes */
+  .funding-table {
+    font-size: 12px;
+  }
+  
+  .funding-table th {
+    font-size: 10px;
+    padding: 12px 10px;
+  }
+  
+  .funding-table td {
+    padding: 12px 10px;
+  }
+  
+  .token-cell {
+    font-size: 13px;
+  }
+  
+  .funding-rate {
+    font-size: 12px;
+    padding: 2px 6px;
+  }
+  
+  .open-interest-per-exchange {
+    font-size: 10px;
+  }
+  
+  /* Adjust minimum table width */
+  .funding-table {
+    min-width: 800px;
+  }
+  
+  /* Stack controls vertically */
+  .control-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+  
+  .toggle-buttons {
+    justify-content: center;
+  }
+}
+
+/* Landscape mobile */
+@media (max-width: 812px) and (orientation: landscape) {
+  .page-header {
+    padding: var(--space-lg) var(--space-lg) var(--space-lg);
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .dashboard {
+    padding: 0 var(--space-md) var(--space-lg);
+  }
+  
+  .table-container {
+    max-height: 400px;
+  }
+}
+
+/* Utility classes for responsive display */
+.hide-mobile {
+  @media (max-width: 768px) {
+    display: none !important;
+  }
+}
+
+.hide-desktop {
+  @media (min-width: 769px) {
+    display: none !important;
+  }
+}
+
+.show-mobile {
+  display: none !important;
+  
+  @media (max-width: 768px) {
+    display: block !important;
+  }
+}
+
+.show-desktop {
+  display: none !important;
+  
+  @media (min-width: 769px) {
+    display: block !important;
+  }
+}
+
+/* Responsive text alignment */
+.text-center-mobile {
+  @media (max-width: 768px) {
+    text-align: center !important;
+  }
+}
+
+.text-left-mobile {
+  @media (max-width: 768px) {
+    text-align: left !important;
+  }
+}
+
+/* Responsive spacing utilities */
+.p-0-mobile {
+  @media (max-width: 768px) {
+    padding: 0 !important;
+  }
+}
+
+.m-0-mobile {
+  @media (max-width: 768px) {
+    margin: 0 !important;
+  }
+}
+
+/* Container queries for better component responsiveness */
+@container (max-width: 600px) {
+  .funding-table {
+    font-size: 12px;
+  }
+  
+  .exchange-header {
+    min-width: 100px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .top-nav,
+  .dashboard-controls,
+  .last-updated {
+    display: none;
+  }
+  
+  .dashboard {
+    padding: 0;
+  }
+  
+  .dashboard-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .funding-table {
+    border: 1px solid #ddd;
+  }
+  
+  .funding-table th,
+  .funding-table td {
+    border: 1px solid #ddd;
+  }
+}

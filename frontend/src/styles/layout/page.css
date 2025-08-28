@@ -1,0 +1,11 @@
+/* Page Layout */
+.page-header {
+  text-align: center;
+  padding: var(--space-3xl) var(--space-lg) var(--space-2xl);
+  background: var(--bg-primary);
+}
+
+/* Adjust page header when nav is present */
+.page-header {
+  padding-top: var(--space-2xl);
+}

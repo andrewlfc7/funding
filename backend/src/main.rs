@@ -1,3 +1,7 @@
+// src/main.rs
+
+#![allow(clippy::let_unit_value)]
+
 mod db;
 mod utils;
 mod exchanges;
@@ -13,20 +17,28 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing::{error, info};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 use crate::utils::scheduler;
 
-// ---------- API Shapes ----------
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct ExchangeData {
+    market_symbol: String,
     funding_rate: f64,
     open_interest: f64,
+    volume_24h: f64,
+    funding_ts: Option<String>, // latest 8h bucket start (or legacy funding_ts)
+    stats_ts:   Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct TokenRow {
     token: String,
-    exchanges: HashMap<String, ExchangeData>,
+    exchanges: HashMap<String, ExchangeData>, 
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -42,10 +54,17 @@ struct HealthResponse {
     last_updated: Option<String>,
 }
 
-// ---------- Helpers ----------
 
 fn fmt_ts(ts: OffsetDateTime) -> String {
     ts.format(&Rfc3339).unwrap_or_else(|_| ts.to_string())
+}
+
+fn f64_field(v: &JsonValue, k: &str) -> f64 {
+    v.get(k).and_then(|x| x.as_f64()).unwrap_or(0.0)
+}
+
+fn str_field(v: &JsonValue, k: &str) -> Option<String> {
+    v.get(k).and_then(|x| x.as_str()).map(|s| s.to_string())
 }
 
 // ---------- Routes ----------
@@ -53,7 +72,7 @@ fn fmt_ts(ts: OffsetDateTime) -> String {
 async fn get_funding_matrix(State(pool): State<PgPool>) -> Json<ApiResponse> {
     let rows = match sqlx::query!(
         r#"
-        SELECT symbol, rates, last_update
+        SELECT symbol, per_exchange, last_update
         FROM funding_matrix_view
         "#
     )
@@ -74,20 +93,35 @@ async fn get_funding_matrix(State(pool): State<PgPool>) -> Json<ApiResponse> {
     let mut max_ts: Option<OffsetDateTime> = None;
 
     for r in rows {
-        
         let symbol = r.symbol.unwrap_or_default();
+        let mut exchanges: HashMap<String, ExchangeData> = HashMap::new();
 
-        let mut exchanges = HashMap::<String, ExchangeData>::new();
-        if let Some(JsonValue::Object(obj)) = r.rates {
-            for (ex, v) in obj {
-                let fr = v.get("funding_rate").and_then(|x| x.as_f64()).unwrap_or(0.0);
-                let oi = v.get("open_interest").and_then(|x| x.as_f64()).unwrap_or(0.0);
+        if let Some(JsonValue::Object(obj)) = r.per_exchange {
+            for (ex_name, v) in obj {
 
-                if !v.get("open_interest").is_some() {
-                    tracing::warn!("missing open_interest for {}/{}", symbol, ex);
-                }
+                let market_symbol = str_field(&v, "market_symbol").unwrap_or_default();
+                let funding_rate = v.get("funding_rate_8h")
+                    .and_then(|x| x.as_f64())
+                    .unwrap_or_else(|| f64_field(&v, "funding_rate")); // fallback
 
-                exchanges.insert(ex, ExchangeData { funding_rate: fr, open_interest: oi });
+                let open_interest = f64_field(&v, "open_interest");
+                let volume_24h    = f64_field(&v, "volume_24h");
+
+                let funding_ts = str_field(&v, "funding_bucket")
+                    .or_else(|| str_field(&v, "funding_ts")); // fallback
+                let stats_ts   = str_field(&v, "stats_ts");
+
+                exchanges.insert(
+                    ex_name,
+                    ExchangeData {
+                        market_symbol,
+                        funding_rate,
+                        open_interest,
+                        volume_24h,
+                        funding_ts,
+                        stats_ts,
+                    },
+                );
             }
         }
 
@@ -105,8 +139,6 @@ async fn get_funding_matrix(State(pool): State<PgPool>) -> Json<ApiResponse> {
     Json(ApiResponse { last_updated, tokens })
 }
 
-/// GET /api/health
-/// Quick connectivity & freshness check.
 async fn health(State(pool): State<PgPool>) -> Json<HealthResponse> {
     let res = sqlx::query!(
         r#"
@@ -137,7 +169,6 @@ async fn health(State(pool): State<PgPool>) -> Json<HealthResponse> {
     }
 }
 
-// ---------- Server Bootstrap ----------
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -159,7 +190,6 @@ async fn main() -> anyhow::Result<()> {
         });
     }
 
-    // CORS for local dev & browser apps
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_headers(Any)

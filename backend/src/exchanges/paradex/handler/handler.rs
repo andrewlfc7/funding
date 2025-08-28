@@ -44,48 +44,61 @@ pub fn parse_paradex_markets(raw: &Bytes) -> Result<Vec<NormalizedMarket>> {
         .collect())
 }
 
-/* -------- funding -------- */
 
-pub fn parse_paradex_funding(raw: &Bytes) -> Result<Vec<NormalizedFundingRate>> {
-    let (rows, _next) = parse_paradex_funding_page(raw)?;
-    Ok(rows)
-}
-pub fn parse_paradex_funding_page(
-    raw: &Bytes,
-) -> Result<(Vec<NormalizedFundingRate>, Option<String>)> {
-    let text = std::str::from_utf8(raw)
-        .with_context(|| "Failed to decode Paradex response as UTF-8")?;
-
-    let resp: ParadexFundingResponse = serde_json::from_str(text)
-        .with_context(|| format!("Failed to parse ParadexFundingResponse JSON. Input text: '{}'", text))?;
-
-    let rows = resp
-        .results
-        .into_iter()
-        .filter_map(|f| {
-            f.funding_rate.map(|rate| NormalizedFundingRate {
-                market_symbol: f.market,
-                rate,
-                timestamp: ts_utc(f.created_at),
-            })
-        })
-        .collect();
-
-    Ok((rows, resp.next))
-}
-/* -------- market stats -------- */
 
 pub fn parse_paradex_market_stats(raw: &Bytes) -> Result<Vec<NormalizedMarketStats>> {
     let resp: ParadexSummaryResponse = serde_json::from_slice(raw)?;
-    Ok(resp
+    let now = Utc::now();
+
+    let out = resp
         .results
         .into_iter()
         .filter(|s| perp_symbol(&s.symbol))
-        .map(|s| NormalizedMarketStats {
-            market_symbol: s.symbol,
-            open_interest: Some(s.open_interest),
-            volume_24h: Some(s.volume_24h),
-            timestamp: Utc::now(),
+        .map(|s| {
+            // choose a USD price: mark → underlying → last_traded
+            let px = s
+                .mark_price
+                .or(s.underlying_price)
+                .or(s.last_traded_price);
+
+            // OI is in base units; convert to USD if we have a price
+            let oi_usd = match (s.open_interest, px) {
+                (Some(oi_base), Some(price)) => Some(oi_base * price),
+                // If no price, leave OI unset so the UI doesn't mix units.
+                _ => None,
+            };
+
+            NormalizedMarketStats {
+                market_symbol: s.symbol,
+                open_interest: oi_usd,
+                // volume_24h is already USD per API; keep as-is if present
+                volume_24h: s.volume_24h,
+                timestamp: now, // summary doesn’t carry a per-row ts
+            }
+        })
+        .collect();
+
+    Ok(out)
+}
+
+
+
+pub fn parse_paradex_funding(raw: &bytes::Bytes) -> anyhow::Result<Vec<crate::exchanges::shared::types::NormalizedFundingRate>> {
+    use anyhow::Context;
+    use crate::exchanges::paradex::api::types::ParadexFundingResponse;
+
+    let text = std::str::from_utf8(raw).context("decode Paradex funding UTF-8")?;
+    let resp: ParadexFundingResponse = serde_json::from_str(text).context("parse ParadexFundingResponse")?;
+
+    Ok(resp
+        .results
+        .into_iter()
+        .filter_map(|f| {
+            f.funding_rate.map(|rate| crate::exchanges::shared::types::NormalizedFundingRate {
+                market_symbol: f.market,
+                rate,                              // already a Decimal fraction (raw per-interval)
+                timestamp: ts_utc(f.created_at), // ms -> DateTime<Utc>
+            })
         })
         .collect())
 }

@@ -1,0 +1,40 @@
+/* Dashboard Container */
+.dashboard {
+  width: 100%;
+  max-width: 2400px;
+  margin: 0 auto;
+  padding: 0 var(--space-xl) var(--space-3xl);
+}
+
+.dashboard-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 0;
+  border: 1px solid var(--border-primary);
+  overflow: hidden;
+}
+
+/* Dashboard Controls */
+.dashboard-controls {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2xl);
+  padding: 0 var(--space-xl) var(--space-xl);
+  margin: 0 auto;
+  max-width: 2400px;
+}
+
+/* Responsive Dashboard */
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 0 var(--space-md) var(--space-lg);
+  }
+  
+  .dashboard-controls {
+    flex-direction: column;
+    gap: var(--space-lg);
+    padding-bottom: var(--space-lg);
+  }
+}
+

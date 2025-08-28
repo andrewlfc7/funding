@@ -1,0 +1,97 @@
+/* Funding Rate Styles */
+.funding-rate {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+/* Rate Color Classes */
+.rate-positive {
+  color: var(--color-positive);
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.rate-negative {
+  color: var(--color-negative);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.rate-neutral {
+  color: var(--color-neutral);
+}
+
+.rate-missing {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* Arbitrage Opportunity Colors */
+.rate-long-candidate {
+  background-color: var(--color-positive);
+  color: white;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.rate-short-candidate {
+  background-color: var(--color-negative);
+  color: white;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.rate-long-opportunity {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: var(--color-positive);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.rate-short-opportunity {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: var(--color-negative);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+/* Open Interest Styles */
+.open-interest {
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+}
+
+.open-interest-per-exchange {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+
+/* Hover Effects */
+.exchange-data:hover .open-interest-per-exchange {
+  color: var(--color-neutral);
+}
+
+.funding-table tbody tr:hover .open-interest-per-exchange {
+  color: var(--color-neutral);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .funding-rate {
+    font-size: 13px;
+  }
+  
+  .open-interest-per-exchange {
+    font-size: 11px;
+  }
+}

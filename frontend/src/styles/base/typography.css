@@ -1,0 +1,20 @@
+/* Typography Scale */
+.page-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: var(--space-sm);
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: var(--text-neutral);
+  font-weight: 400;
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 24px;
+  }
+}

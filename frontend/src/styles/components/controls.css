@@ -1,0 +1,52 @@
+/* Control Groups */
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.control-group label {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* Toggle Buttons */
+.toggle-buttons {
+  display: flex;
+  gap: var(--space-xs);
+  background: var(--bg-primary);
+  padding: var(--space-xs);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+}
+
+.toggle-btn {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-neutral);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.toggle-btn:hover {
+  color: #aaa;
+  background: var(--bg-tertiary);
+}
+
+.toggle-btn.active {
+  color: var(--text-white);
+  background: var(--bg-hover);
+}
+
+/* Responsive Controls */
+@media (max-width: 768px) {
+  .control-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

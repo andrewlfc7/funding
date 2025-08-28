@@ -1,0 +1,170 @@
+/* Arbitrage Spread Styles */
+.arb-spread {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.arb-high {
+  color: var(--color-arb-high);
+  background-color: rgba(251, 191, 36, 0.1);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.arb-medium {
+  color: var(--color-arb-medium);
+}
+
+.arb-low {
+  color: var(--text-muted);
+}
+
+/* Arbitrage Combination Styles */
+.arb-combo-header {
+  min-width: 140px;
+}
+
+.arb-combo-display {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+/* Arb Quality Classes */
+.arb-combo-excellent {
+  color: var(--color-positive);
+  background: rgba(16, 185, 129, 0.15);
+  padding: var(--space-md) var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+.arb-combo-good {
+  color: var(--color-info);
+  background: rgba(59, 130, 246, 0.15);
+  padding: var(--space-md) var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+.arb-combo-decent {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.15);
+  padding: var(--space-md) var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+.arb-combo-minimal {
+  color: var(--color-neutral);
+  padding: var(--space-md) var(--space-md);
+}
+
+/* Pair OI Styling */
+.arb-oi {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  min-width: 100px;
+}
+
+/* Enhanced Hover Effects */
+.arb-combo-excellent:hover,
+.arb-combo-good:hover,
+.arb-combo-decent:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+  transition: all var(--transition-fast);
+}
+
+
+/* Extreme Arbitrage Highlighting */
+.arb-extreme {
+  color: #fff;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  animation: pulse-extreme 2s ease-in-out infinite;
+}
+
+.arb-very-high {
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+
+/* Extreme capture opportunity (both rates same sign) */
+.arb-combo-extreme-capture {
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  padding: var(--space-md) var(--space-md);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+}
+
+/* Extreme rate highlighting */
+.rate-extreme-short {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+  position: relative;
+}
+
+.rate-extreme-short::after {
+  content: 'SHORT';
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  font-size: 9px;
+  background: #dc2626;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+.rate-extreme-long {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+  position: relative;
+}
+
+.rate-extreme-long::after {
+  content: 'LONG';
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  font-size: 9px;
+  background: #059669;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+/* Subtle pulse animation for extreme opportunities */
+@keyframes pulse-extreme {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+/* Row highlighting for extreme opportunities */
+tr:has(.arb-extreme),
+tr:has(.arb-very-high),
+tr:has(.rate-extreme-short),
+tr:has(.rate-extreme-long) {
+  background: rgba(251, 191, 36, 0.05);
+  border-left: 3px solid #f59e0b;
+}

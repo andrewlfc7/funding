@@ -1,0 +1,321 @@
+/* Table Container */
+.table-container {
+  max-height: 700px;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+/* Base Table Styles */
+.funding-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 1400px;
+}
+
+/* Table Header */
+.funding-table thead {
+  background-color: var(--bg-primary);
+  border-bottom: 2px solid var(--border-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.funding-table th {
+  padding: 18px var(--space-xl);
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+}
+
+.funding-table th.center {
+  text-align: center;
+}
+
+/* Sortable Headers */
+.funding-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--transition-fast);
+}
+
+.funding-table th.sortable:hover {
+  background-color: var(--bg-hover);
+}
+
+/* Sort Indicators */
+.sort-indicator {
+  display: inline-block;
+  margin-left: var(--space-xs);
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.funding-table th.sortable:hover .sort-indicator {
+  color: var(--text-tertiary);
+}
+
+/* Active sort column styling */
+.funding-table th.sortable.sort-active {
+  background-color: var(--bg-hover);
+}
+
+.funding-table th.sortable.sort-active .sort-indicator {
+  color: var(--color-positive);
+}
+
+/* Table Body */
+.funding-table tbody tr {
+  transition: background-color var(--transition-fast);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.funding-table tbody tr:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.funding-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* Table Cells */
+.funding-table td {
+  padding: 18px var(--space-xl);
+  color: var(--text-secondary);
+}
+
+.funding-table td.center {
+  text-align: center;
+}
+
+/* Column Specific Styles */
+.token-cell {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-white);
+}
+
+.exchange-header {
+  min-width: 140px;
+}
+
+.exchange-cell {
+  vertical-align: middle;
+  padding: var(--space-md) var(--space-xl);
+}
+
+.exchange-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Custom Scrollbar */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: var(--radius-sm);
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Firefox Scrollbar */
+.table-container {
+  scrollbar-width: thin;
+  scrollbar-color: #333 var(--bg-secondary);
+}
+
+/* Table Loading State */
+.table-loading {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.table-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-primary);
+  opacity: 0.7;
+}
+
+/* Empty State */
+.table-empty {
+  text-align: center;
+  padding: var(--space-3xl) var(--space-xl);
+  color: var(--text-muted);
+}
+
+/* Responsive Table */
+@media (max-width: 1024px) {
+  .funding-table th,
+  .funding-table td {
+    padding: 14px 18px;
+  }
+  
+  .funding-table {
+    min-width: 1200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .funding-table th,
+  .funding-table td {
+    padding: 14px var(--space-lg);
+  }
+  
+  .exchange-cell {
+    padding: 10px var(--space-lg);
+  }
+  
+  .funding-table {
+    min-width: 1000px;
+  }
+  
+  .table-container {
+    max-height: 500px;
+  }
+}
+
+@media (max-width: 480px) {
+  .funding-table {
+    font-size: 12px;
+    min-width: 800px;
+  }
+  
+  .funding-table th {
+    font-size: 10px;
+    padding: 12px 10px;
+  }
+  
+  .funding-table td {
+    padding: 12px 10px;
+  }
+  
+  .token-cell {
+    font-size: 13px;
+  }
+  
+  .table-container {
+    max-height: 400px;
+  }
+}
+
+/* Table Utilities */
+.table-striped tbody tr:nth-child(odd) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.table-hover tbody tr:hover {
+  background-color: var(--bg-hover);
+}
+
+.table-bordered {
+  border: 1px solid var(--border-primary);
+}
+
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid var(--border-primary);
+}
+
+/* Sticky First Column (optional) */
+.table-sticky-column .token-cell {
+  position: sticky;
+  left: 0;
+  background-color: var(--bg-secondary);
+  z-index: 5;
+}
+
+.table-sticky-column tbody tr:hover .token-cell {
+  background-color: var(--bg-tertiary);
+}
+
+/* Table Cell Alignment Utilities */
+.text-left {
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.align-top {
+  vertical-align: top;
+}
+
+.align-middle {
+  vertical-align: middle;
+}
+
+.align-bottom {
+  vertical-align: bottom;
+}
+
+/* Table Size Variants */
+.table-sm th,
+.table-sm td {
+  padding: var(--space-sm) var(--space-md);
+}
+
+.table-lg th,
+.table-lg td {
+  padding: var(--space-xl) var(--space-2xl);
+}
+
+/* Dark Theme Support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .funding-table {
+    color: var(--text-primary);
+  }
+}
+
+/* Print Styles for Tables */
+@media print {
+  .table-container {
+    max-height: none;
+    overflow: visible;
+  }
+  
+  .funding-table {
+    page-break-inside: auto;
+  }
+  
+  .funding-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  .funding-table thead {
+    display: table-header-group;
+  }
+  
+  .funding-table tfoot {
+    display: table-footer-group;
+  }
+}
