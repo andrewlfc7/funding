@@ -17,7 +17,12 @@
 2. Create a `.env` file in the project root with your database URL:
 
 ```env
+
+# .env file
 DATABASE_URL=postgresql://user:password@localhost:5432/your_database
+SYNC_CONC_MARKETS=30
+SYNC_DB_CHUNK=60000
+
 ```
 
 Run the following commands to set up the database:
@@ -71,12 +76,26 @@ cargo run --bin backend
 ```
 
 # 4. Running the Frontend
+
+## Set up environment variables:
+```env
+
+# .env file
+VITE_API_URL=http://localhost:8080
+VITE_API_ENDPOINT=/api/funding-matrix
+VITE_REFRESH_INTERVAL=30000
+
+```
+
+
 In a separate terminal, navigate to the `frontend` directory and run:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
+
 
 
 
