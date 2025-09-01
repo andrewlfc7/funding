@@ -26,3 +26,39 @@ pub struct NormalizedMarketStats {
     pub volume_24h: Option<Decimal>,
     pub timestamp: DateTime<Utc>,
 }
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NormalizedKline {
+    pub market_symbol: String,
+    pub open_time: DateTime<Utc>,
+    pub open: Decimal,
+    pub high: Decimal,
+    pub low: Decimal,
+    pub close: Decimal,
+    pub volume: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NormalizedTrade {
+    pub market_symbol: String,
+    pub trade_id: String,
+    pub trade_time: DateTime<Utc>,
+    pub side: String, // "Buy" or "Sell"
+    pub price: Decimal,
+    pub qty: Decimal,
+    pub quote_qty: Decimal,
+}
+
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CexMarket {
+    pub exchange: String,
+    pub symbol: String,
+    pub market_symbol: String, 
+    pub base_currency: String,
+    pub quote_currency: String,
+    pub market_type: String, 
+    pub is_active: bool,
+}

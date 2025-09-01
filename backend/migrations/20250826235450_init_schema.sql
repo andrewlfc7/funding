@@ -44,8 +44,9 @@ CREATE TABLE funding_rates (
 CREATE TABLE market_stats (
     id BIGSERIAL PRIMARY KEY,
     market_id INTEGER NOT NULL REFERENCES markets(id) ON DELETE CASCADE,
-    open_interest NUMERIC(30,10),
-    volume_24h NUMERIC(30,10),
+    open_interest NUMERIC(60,30),
+    volume_24h NUMERIC(60,30),   
+
     timestamp TIMESTAMPTZ NOT NULL,
     UNIQUE(market_id, timestamp)
 );
@@ -139,10 +140,10 @@ SELECT
     e.name,
     jsonb_build_object(
       'market_symbol',     m.market_symbol,
-      'funding_rate_8h',   (lfr.rate_8h)::float8,
+      'funding_rate_8h',   (lfr.rate_8h)::float8, -- This is fine for rates
       'funding_bucket',    lfr.timestamp,
-      'open_interest',     (lms.open_interest)::float8,
-      'volume_24h',        (lms.volume_24h)::float8,
+      'open_interest',     lms.open_interest,   -- REMOVED ::float8
+      'volume_24h',        lms.volume_24h,      -- REMOVED ::float8
       'stats_ts',          lms.timestamp
     )
     ORDER BY e.name

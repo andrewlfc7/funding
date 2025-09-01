@@ -79,7 +79,7 @@
             Updating...
           </span>
           <span class="rate-info">
-            {{ displayMode === 'annualized' ? 'APR (3x daily payments)' : '8-hour funding rate' }}
+            {{ displayMode === 'annualized' ? '(3x daily payments)' : '8-hour funding rate' }}
           </span>
         </div>
       </div>
@@ -90,11 +90,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import FundingTable from './FundingTable.vue'
-import { fetchFundingRates, handleApiError } from '../utils/api'
-import { formatTimestamp } from '../utils/formatters'
-import { sumOpenInterest, calculateArbSpread, findBestArbOpportunity } from '../utils/calculations'
-import { REFRESH_INTERVAL } from '../utils/constants'
-import type { TokenRow, DisplayMode, SpreadUnit, SortDirection } from '../utils/types'
+import { fetchFundingRates } from '@/api/funding'
+import { handleApiError } from '@/api/error'         
+import { formatTimestamp } from '../../utils/formatters'
+import { sumOpenInterest, calculateArbSpread, findBestArbOpportunity } from '../../utils/calculations'
+import { REFRESH_INTERVAL } from '../../utils/constants'
+import type { TokenRow, DisplayMode, SpreadUnit, SortDirection } from '../../utils/types'
 
 // State
 const tokens = ref<TokenRow[]>([])

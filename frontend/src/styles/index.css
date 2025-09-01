@@ -1,13 +1,32 @@
+/* Base styles */
 @import './base/reset.css';
 @import './base/variables.css';
 @import './base/typography.css';
+
+/* Layout */
 @import './layout/page.css';
-@import './layout/dashboard.css';
 @import './layout/navigation.css';
+@import './layout/dashboard.css';
+
+/* Components */
+@import './components/states.css';
+@import './components/controls.css';
 @import './components/table.css';
 @import './components/funding-rates.css';
 @import './components/arbitrage.css';
-@import './components/controls.css';
-@import './components/states.css';
+@import './components/trend.css';
+@import './components/returns-volatility.css';
+
+/* Z-Score Components */
+@import './components/zscore.css';
+@import './components/zscore/overview.css';
+@import './components/zscore/volatility.css';
+@import './components/zscore/cross-asset.css';
+@import './components/zscore/liquidity.css';
+@import './components/zscore/inter-asset.css';
+@import './components/zscore/leaders.css';
+@import './components/zscore/microstructure.css';
+
+/* Utils */
 @import './utils/animations.css';
 @import './utils/responsive.css';

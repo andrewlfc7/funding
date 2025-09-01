@@ -50,3 +50,33 @@
   /* Shadows */
   --shadow-lg: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
+
+:root {
+  /* Z-Score specific spacing */
+  --zscore-card-padding: 12px;
+  --zscore-grid-gap: 12px;
+  --zscore-compact-height: 280px;
+  --zscore-expanded-height: 450px;
+  
+  /* Chart heights */
+  --chart-height-sm: 240px;
+  --chart-height-md: 320px;
+  --chart-height-lg: 400px;
+}
+
+
+:root {
+  /* Layout dimensions */
+  --nav-height: 60px;
+  --sidebar-width: 180px;
+  --sidebar-width-sm: 160px;
+  
+  /* Z-Score specific */
+  --zscore-card-min-height: 320px;
+  --zscore-card-max-height: 400px;
+  --zscore-header-height: 48px;
+  
+  /* Consistent spacing */
+  --dashboard-padding: var(--space-lg);
+  --dashboard-gap: var(--space-md);
+}

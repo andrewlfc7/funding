@@ -35,7 +35,6 @@ pub fn parse_extended_funding(raw: &Bytes) -> Result<Vec<NormalizedFundingRate>>
     }).collect())
 }
 
-/// Parse /markets/{symbol}/stats
 pub fn parse_extended_market_stats(raw: &Bytes, market: &str) -> Result<NormalizedMarketStats> {
     let resp: ExtendedMarketStatsResponse = serde_json::from_slice(raw)?;
     Ok(NormalizedMarketStats {

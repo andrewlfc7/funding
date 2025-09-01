@@ -66,7 +66,7 @@
                 class="funding-rate"
                 :class="getRateClass(row.exchanges[ex].funding_rate, row.exchanges, ex)"
               >
-                {{ formatRate(row.exchanges[ex].funding_rate, displayMode) }}
+                {{ formatRate(row.exchanges[ex].funding_rate, displayMode, spreadUnit) }}
               </span>
               <span class="open-interest-per-exchange">
                 ${{ formatNumber(row.exchanges[ex].open_interest) }}
@@ -82,10 +82,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatNumber, formatRate, formatSpread, formatArbOpportunity } from '../utils/formatters'
-import { sumOpenInterest, calculateArbSpread, findBestArbOpportunity } from '../utils/calculations'
-import { getArbClass, getArbOpportunityClass, getRateClass } from '../utils/styles'
-import type { TokenRow, DisplayMode, SpreadUnit, SortDirection, ArbOpportunity } from '../utils/types'
+import { formatNumber, formatRate, formatSpread, formatArbOpportunity } from '../../utils/formatters'
+import { sumOpenInterest, calculateArbSpread, findBestArbOpportunity } from '../../utils/calculations'
+import { getArbClass, getArbOpportunityClass, getRateClass } from '../../utils/styles'
+import type { TokenRow, DisplayMode, SpreadUnit, SortDirection, ArbOpportunity } from '../../utils/types'
 
 interface Props {
   tokens: TokenRow[]
@@ -144,15 +144,20 @@ function showCaptureInfo(arb: ArbOpportunity | null): boolean {
   return (bothPositive || bothNegative) && arb.spread >= 25  // 25+ bps threshold
 }
 
-// Get capture info text
+
 function getCaptureInfo(arb: ArbOpportunity | null): string {
   if (!arb) return ''
   const bothPositive = arb.longRate > 0 && arb.shortRate > 0
   
+  const spreadText = props.spreadUnit === 'percentage' 
+    ? `${(arb.spread / 100).toFixed(2)}%` 
+    : `${arb.spread.toFixed(0)}bps`
+  
   if (bothPositive) {
-    return `Both positive, ${arb.spread.toFixed(0)}bps spread`
+    return `Both positive, ${spreadText} spread`
   } else {
-    return `Both negative, ${arb.spread.toFixed(0)}bps spread`
+    return `Both negative, ${spreadText} spread`
   }
 }
+
 </script>

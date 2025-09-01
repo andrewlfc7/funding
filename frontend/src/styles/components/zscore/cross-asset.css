@@ -1,0 +1,38 @@
+/* Cross-Asset Matrix Dashboard Specific Styles */
+.cross-asset-matrix .dashboard-grid {
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: clamp(16px, 2vw, 24px);
+}
+
+/* Full width correlation table */
+.cross-asset-matrix .full-width {
+  grid-column: 1 / -1;
+}
+
+/* Matrix styling - Fixed height */
+.cross-asset-matrix .matrix-container {
+  min-height: 350px;
+  max-height: 450px; /* Add max height */
+  height: 400px; /* Fixed height */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure the heatmap fills its container properly */
+.cross-asset-matrix .matrix-container .heatmap-chart-container {
+  flex: 1;
+  min-height: 0; /* Important for flexbox */
+}
+
+/* Correlation table specific */
+.cross-asset-matrix .correlations-table {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Stats panels */
+.cross-asset-matrix .stats-panel {
+  border-top: 1px solid var(--border-primary);
+  margin-top: auto;
+  flex-shrink: 0; /* Prevent shrinking */
+}

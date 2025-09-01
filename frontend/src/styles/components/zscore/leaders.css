@@ -1,0 +1,17 @@
+/* Leaders & Laggards Dashboard Specific Styles */
+
+.leaders-laggards .dashboard-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+/* Lead-lag matrix */
+.leaders-laggards .lead-lag-matrix {
+  min-height: 400px;
+}
+
+/* Leaders list styling */
+.leaders-laggards .leaders-list {
+  max-height: 350px;
+  overflow-y: auto;
+}

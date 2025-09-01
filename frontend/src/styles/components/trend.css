@@ -1,0 +1,403 @@
+.trend-page {
+  padding: 20px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 1400px; /* Add max width constraint */
+  margin: 0 auto; /* Center the content */
+}
+
+.trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.trend-header h1 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.controls {
+  display: flex;
+  gap: 20px;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-group label {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.control-group select {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-group select:hover {
+  border-color: var(--color-accent);
+}
+
+.control-group select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* Charts Layout */
+.charts-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Main Chart Section */
+.main-chart-section {
+  flex: 0 0 auto; /* Change from percentage to auto */
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  min-height: 280px; /* Reduced from 350px */
+  max-height: 350px; /* Reduced from 500px */
+}
+
+.main-chart-wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.main-chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Generic Subplot Section */
+.subplot-section {
+  height: 180px; /* Reduced from 200px */
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 15px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.subplot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.subplot-header h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.subplot-chart-wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.subplot-chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Signal Toggles */
+.signal-toggles {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.signal-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.signal-toggle input[type="checkbox"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+.signal-toggle span {
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.signal-toggle:hover span {
+  opacity: 0.8;
+}
+
+/* Metric Toggles for Returns/Volatility */
+.metric-toggles {
+  display: flex;
+  gap: 15px;
+}
+
+.metric-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.metric-toggle input[type="radio"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+.metric-toggle span {
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.metric-toggle:hover span {
+  color: var(--text-primary);
+}
+
+.metric-toggle input[type="radio"]:checked + span {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .trend-page {
+    max-width: 100%;
+  }
+  
+  .signal-toggles {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .trend-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .controls {
+    flex-wrap: wrap;
+  }
+  
+  .charts-layout {
+    gap: 12px;
+  }
+  
+  .main-chart-section {
+    min-height: 250px;
+    max-height: 300px;
+  }
+  
+  .subplot-section {
+    height: 160px;
+  }
+  
+  .subplot-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .signal-toggles,
+  .metric-toggles {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .trend-page {
+    padding: 10px;
+  }
+  
+  .control-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .main-chart-section {
+    min-height: 200px;
+    max-height: 250px;
+    padding: 15px;
+  }
+  
+  .subplot-section {
+    height: 140px;
+    padding: 12px 15px;
+  }
+  
+  .signal-toggles,
+  .metric-toggles {
+    gap: 10px;
+  }
+  
+  .signal-toggle,
+  .metric-toggle {
+    font-size: 11px;
+  }
+  
+  .subplot-header h4 {
+    font-size: 13px;
+  }
+}
+
+/* Scrollbar styling for charts layout */
+.charts-layout::-webkit-scrollbar {
+  width: 8px;
+}
+
+.charts-layout::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  border-radius: 4px;
+}
+
+.charts-layout::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.charts-layout::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Compact main chart */
+.main-chart-section.compact {
+  flex: 0 0 250px; /* Reduced from 300px */
+  max-height: 250px; /* Reduced from 300px */
+  min-height: 200px; /* Reduced from 250px */
+}
+
+/* Toggle buttons */
+.toggle-buttons {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.toggle-btn {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.toggle-btn.active {
+  background: var(--color-accent);
+  color: white;
+}
+
+/* Lookback toggles */
+.lookback-toggles {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lookback-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.lookback-toggle input[type="checkbox"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+.lookback-toggle span {
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.lookback-toggle:hover span {
+  color: var(--text-primary);
+}
+
+.lookback-toggle input[type="checkbox"]:checked + span {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Individual signal charts spacing */
+.charts-layout .subplot-section + .subplot-section {
+  margin-top: 12px;
+}
+
+/* Responsive adjustments for compact view */
+@media (max-width: 768px) {
+  .main-chart-section.compact {
+    flex: 0 0 200px;
+    min-height: 180px;
+    max-height: 220px;
+  }
+  
+  .toggle-buttons {
+    gap: 2px;
+    padding: 1px;
+  }
+  
+  .toggle-btn {
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+  
+  .lookback-toggles {
+    gap: 8px;
+  }
+  
+  .lookback-toggle {
+    font-size: 11px;
+  }
+}

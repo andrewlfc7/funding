@@ -1,8 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import FundingMatrix from './components/FundingMatrix.vue';
-
-// Lazy load the Trends component
-const Trends = () => import('./components/Trend.vue');
+import FundingMatrix from './components/funding/FundingMatrix.vue';
+import Trend from './components/Trend.vue'
+import ZScore from './components/ZScore.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -18,10 +17,16 @@ const router = createRouter({
       meta: { title: 'Funding' } 
     },
     { 
-      path: '/trends', 
-      name: 'Trends', 
-      component: Trends, 
-      meta: { title: 'Trends' } 
+      path: '/trend', 
+      name: 'Trend', 
+      component: Trend, 
+      meta: { title: 'Trend' } 
+    },
+    { 
+      path: '/zscore', 
+      name: 'ZScore', 
+      component: ZScore, 
+      meta: { title: 'Z-Score Analysis' } 
     },
   ],
   scrollBehavior() {

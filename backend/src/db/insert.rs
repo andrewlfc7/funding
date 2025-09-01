@@ -1,19 +1,19 @@
 
+use time::{Date, OffsetDateTime};
 
 use anyhow::Result;
 use sqlx::{PgPool, QueryBuilder};
 use sqlx::types::BigDecimal;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
-use time::OffsetDateTime;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-
+use chrono::Datelike;
 use crate::exchanges::shared::types::{
-    NormalizedFundingRate, NormalizedMarket, NormalizedMarketStats,
+    NormalizedFundingRate, NormalizedMarket, NormalizedMarketStats,NormalizedKline, NormalizedTrade,CexMarket
 };
 
-/// Upsert the exchange row and return its id.
+
 pub async fn upsert_exchange(pool: &PgPool, name: &str) -> Result<i32> {
     let rec = sqlx::query!(
         r#"
@@ -224,6 +224,211 @@ pub async fn insert_market_stats_by_symbol(
     .bind(&vol)      
     .bind(&ts)        
     .bind(exchange_id) 
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+
+pub async fn insert_cex_klines(
+    pool: &PgPool,
+    klines: Vec<(i32, NormalizedKline)>,
+    interval: &str,
+) -> Result<()> {
+    if klines.is_empty() { return Ok(()); }
+
+    // Table, PK column, and PG type for the 2nd UNNEST arg
+    let (table_name, pk_col, pg_type_str) = match interval {
+        "1d" => ("klines_daily", "date", "date"),
+        "1h" => ("klines_hourly", "time", "timestamptz"),
+        _ => anyhow::bail!("Unsupported kline interval: {}", interval),
+    };
+
+    let mut market_ids: Vec<i32>                  = Vec::with_capacity(klines.len());
+    let mut date_vals:   Vec<time::Date>          = Vec::with_capacity(klines.len());         // for 1d
+    let mut time_vals:   Vec<OffsetDateTime>      = Vec::with_capacity(klines.len());         // for 1h
+    let mut opens:       Vec<BigDecimal>          = Vec::with_capacity(klines.len());
+    let mut highs:       Vec<BigDecimal>          = Vec::with_capacity(klines.len());
+    let mut lows:        Vec<BigDecimal>          = Vec::with_capacity(klines.len());
+    let mut closes:      Vec<BigDecimal>          = Vec::with_capacity(klines.len());
+    let mut volumes:     Vec<BigDecimal>          = Vec::with_capacity(klines.len());
+
+    for (market_id, k) in klines {
+        market_ids.push(market_id);
+        opens.push(BigDecimal::from_str(&k.open.to_string())?);
+        highs.push(BigDecimal::from_str(&k.high.to_string())?);
+        lows.push(BigDecimal::from_str(&k.low.to_string())?);
+        closes.push(BigDecimal::from_str(&k.close.to_string())?);
+        volumes.push(BigDecimal::from_str(&k.volume.to_string())?);
+
+        match interval {
+            "1d" => {
+                // Convert chrono -> time::Date (Month expects u8; day expects u8)
+                let month = time::Month::try_from(k.open_time.month() as u8)?;
+                let day: u8 = k.open_time.day() as u8;
+                let date = time::Date::from_calendar_date(k.open_time.year(), month, day)?;
+                date_vals.push(date);
+            }
+            "1h" => {
+                let ts = OffsetDateTime::from_unix_timestamp(k.open_time.timestamp())?;
+                time_vals.push(ts);
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    // Build query that inserts with the correct PK column and PG array type
+    let query_str = format!(
+        r#"
+        INSERT INTO {table} (market_id, {pk}, "open", high, low, "close", volume)
+        SELECT u.market_id, u.{pk}, u.open, u.high, u.low, u.close, u.volume
+        FROM UNNEST($1::int[], $2::{pg}[], $3::numeric[], $4::numeric[], $5::numeric[], $6::numeric[], $7::numeric[])
+             AS u(market_id, {pk}, "open", high, low, "close", volume)
+        ON CONFLICT (market_id, {pk}) DO NOTHING
+        "#,
+        table = table_name,
+        pk    = pk_col,
+        pg    = pg_type_str,
+    );
+
+    let mut q = sqlx::query(&query_str).bind(&market_ids);
+
+    // Bind the correct temporal array based on interval
+    q = match interval {
+        "1d" => q.bind(&date_vals),
+        "1h" => q.bind(&time_vals),
+        _ => unreachable!(),
+    };
+
+    q.bind(&opens)
+        .bind(&highs)
+        .bind(&lows)
+        .bind(&closes)
+        .bind(&volumes)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
+
+pub async fn insert_cex_trades(pool: &PgPool, trades: Vec<(i32, NormalizedTrade)>) -> Result<()> {
+    if trades.is_empty() { return Ok(()); }
+
+    let mut market_ids = Vec::with_capacity(trades.len());
+    let mut trade_ids = Vec::with_capacity(trades.len());
+    let mut trade_times_for_sqlx = Vec::with_capacity(trades.len());
+    let mut sides = Vec::with_capacity(trades.len());
+    let mut prices = Vec::with_capacity(trades.len());
+    let mut qtys = Vec::with_capacity(trades.len());
+    let mut quote_qtys = Vec::with_capacity(trades.len());
+
+    for (market_id, t) in trades {
+        market_ids.push(market_id);
+        trade_ids.push(t.trade_id);
+        trade_times_for_sqlx.push(OffsetDateTime::from_unix_timestamp(t.trade_time.timestamp())?);
+        sides.push(t.side.to_lowercase());
+        prices.push(BigDecimal::from_str(&t.price.to_string())?);
+        qtys.push(BigDecimal::from_str(&t.qty.to_string())?);
+        quote_qtys.push(BigDecimal::from_str(&t.quote_qty.to_string())?);
+    }
+    
+    sqlx::query!(r#"
+        INSERT INTO trades (market_id, trade_id, trade_time, side, price, qty, quote_qty)
+        SELECT u.market_id, u.trade_id, u.trade_time, u.side, u.price, u.qty, u.quote_qty
+        FROM UNNEST($1::int[], $2::text[], $3::timestamptz[], $4::text[], $5::numeric[], $6::numeric[], $7::numeric[])
+        AS u(market_id, trade_id, trade_time, side, price, qty, quote_qty)
+        ON CONFLICT (market_id, trade_id) DO NOTHING
+        "#,
+        &market_ids,
+        &trade_ids,
+        &trade_times_for_sqlx as &[OffsetDateTime],
+        &sides,
+        &prices as &[BigDecimal],
+        &qtys as &[BigDecimal],
+        &quote_qtys as &[BigDecimal]
+    ).execute(pool).await?;
+
+    Ok(())
+}
+
+
+
+
+
+
+
+pub async fn upsert_cex_exchange(pool: &PgPool, name: &str) -> Result<i32> {
+    let rec = sqlx::query!(
+        r#"
+        INSERT INTO cex_exchanges (name, is_active)
+        VALUES ($1, TRUE)
+        ON CONFLICT (name)
+            DO UPDATE SET updated_at = NOW(), is_active = TRUE
+        RETURNING id
+        "#,
+        name
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(rec.id)
+}
+
+
+pub async fn upsert_cex_markets(pool: &PgPool, exchange_id: i32, markets: &[CexMarket]) -> Result<()> {
+    if markets.is_empty() {
+        return Ok(());
+    }
+
+    let mut symbols        = Vec::with_capacity(markets.len());
+    let mut market_symbols = Vec::with_capacity(markets.len());
+    let mut base_assets    = Vec::with_capacity(markets.len());
+    let mut quote_assets   = Vec::with_capacity(markets.len());
+    let mut market_types   = Vec::with_capacity(markets.len());
+    let mut actives        = Vec::with_capacity(markets.len());
+
+    for m in markets {
+        symbols.push(m.symbol.clone());            // base only, keep case
+        market_symbols.push(m.market_symbol.clone());
+        base_assets.push(m.base_currency.clone());
+        quote_assets.push(m.quote_currency.clone());
+        market_types.push(m.market_type.clone());  // "spot" or "perps"
+        actives.push(m.is_active);
+    }
+
+    sqlx::query!(
+        r#"
+        INSERT INTO cex_markets (
+            exchange_id, symbol, market_symbol, base_asset, quote_asset, market_type, is_active
+        )
+        SELECT
+            $1,
+            u.symbol,
+            u.market_symbol,
+            u.base_asset,
+            u.quote_asset,
+            u.market_type,
+            u.is_active
+        FROM UNNEST(
+            $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::bool[]
+        ) AS u(symbol, market_symbol, base_asset, quote_asset, market_type, is_active)
+        ON CONFLICT (exchange_id, market_symbol, market_type) DO UPDATE
+        SET
+            symbol      = EXCLUDED.symbol,
+            base_asset  = EXCLUDED.base_asset,
+            quote_asset = EXCLUDED.quote_asset,
+            is_active   = EXCLUDED.is_active,
+            updated_at  = NOW()
+        "#,
+        exchange_id,
+        &symbols,
+        &market_symbols,
+        &base_assets,
+        &quote_assets,
+        &market_types,
+        &actives
+    )
     .execute(pool)
     .await?;
 

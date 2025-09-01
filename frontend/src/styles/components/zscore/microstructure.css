@@ -1,0 +1,16 @@
+/* Market Microstructure Dashboard Specific Styles */
+
+.market-microstructure .dashboard-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+/* Flow visualization */
+.market-microstructure .flow-chart {
+  min-height: 350px;
+}
+
+/* Rotation matrix */
+.market-microstructure .rotation-matrix {
+  min-height: 400px;
+}

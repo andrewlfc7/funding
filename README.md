@@ -75,6 +75,9 @@ Start the backend after backfilling the database:
 cargo run --bin backend
 ```
 
+
+
+
 # 4. Running the Frontend
 
 ## Set up environment variables:

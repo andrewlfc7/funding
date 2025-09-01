@@ -3,43 +3,45 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-xl);
-  padding: var(--space-md) var(--space-xl);
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);
   backdrop-filter: blur(10px);
+  height: 60px;
+}
+
+.nav-content {
+  height: 100%;
+  padding: 0 var(--space-xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .brand {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-bright);
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .tabs {
   display: flex;
   gap: var(--space-sm);
-  margin-left: auto;
-}
-
-.tabs-alone {
-  margin-left: 0;
 }
 
 .tab {
   display: inline-flex;
   align-items: center;
   gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-lg);
+  padding: 8px 20px;
   font-weight: 600;
   font-size: 14px;
-  color: #aaa;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   text-decoration: none;
   transition: all var(--transition-fast);
@@ -47,46 +49,45 @@
 }
 
 .tab:hover {
-  color: #e5e5e5;
-  background: var(--bg-tertiary);
-  border-color: var(--border-secondary);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--border-primary);
 }
 
 .tab.router-link-exact-active,
 .tab.router-link-active {
   color: var(--text-white);
-  background: #151515;
-  border-color: var(--border-tertiary);
-}
-
-.tab.router-link-exact-active::after {
-  content: '';
-  position: absolute;
-  bottom: -13px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40%;
-  height: 2px;
-  background: var(--color-positive);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 /* Responsive Navigation */
 @media (max-width: 768px) {
-  .top-nav {
-    padding: 10px var(--space-md);
-    gap: var(--space-lg);
+  .nav-content {
+    padding: 0 var(--space-md);
   }
   
+  .brand {
+    font-size: 16px;
+  }
+  
+  .tabs {
+    gap: var(--space-xs);
+  }
+  
+  .tab {
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
   .brand {
     font-size: 14px;
   }
   
   .tab {
-    padding: var(--space-sm) var(--space-md);
-    font-size: 13px;
-  }
-  
-  .tab.router-link-exact-active::after {
-    display: none;
+    padding: 6px 10px;
+    font-size: 12px;
   }
 }

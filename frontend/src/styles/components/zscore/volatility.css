@@ -1,0 +1,165 @@
+/* Volatility Analysis Dashboard Specific Styles */
+
+/* Grid Layout for Volatility Dashboard */
+.volatility-analysis .dashboard-grid {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, minmax(280px, 350px)) minmax(350px, 450px);
+}
+
+/* Scatter plots - first 4 cards */
+.volatility-analysis .dashboard-grid > .metric-card:nth-child(-n+4) {
+  max-height: 350px;
+}
+
+/* Rankings section - full width */
+.volatility-analysis .dashboard-grid > .metric-card:nth-child(5) {
+  grid-column: span 2;
+}
+
+/* 3-column layout for larger screens */
+@media (min-width: 1400px) {
+  .volatility-analysis .dashboard-grid {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: minmax(280px, 350px) minmax(280px, 350px) minmax(350px, 450px);
+  }
+  
+   .volatility-analysis .dashboard-grid > .metric-card:nth-child(1),
+  .volatility-analysis .dashboard-grid > .metric-card:nth-child(2),
+  .volatility-analysis .dashboard-grid > .metric-card:nth-child(3) {
+    grid-column: span 1;
+  }
+  
+  .volatility-analysis .dashboard-grid > .metric-card:nth-child(4) {
+    grid-column: span 3;
+  }
+  
+  .volatility-analysis .dashboard-grid > .metric-card:nth-child(5) {
+    grid-column: span 3;
+  }
+}
+
+/* Volatility Rankings Grid */
+.volatility-analysis .vol-rankings {
+  padding: var(--space-sm);
+  background: var(--bg-primary);
+  border-radius: 6px;
+  max-height: 380px;
+}
+
+.volatility-analysis .ranking-section {
+  padding: var(--space-sm);
+}
+
+.volatility-analysis .ranking-section h4 {
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  padding: var(--space-xs) 0;
+  z-index: 1;
+}
+
+/* Volatility Cards Grid */
+.volatility-analysis .coin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-sm);
+}
+
+/* Compact Volatility Cards */
+.volatility-analysis .vol-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 10px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.volatility-analysis .vol-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Z-Score badges */
+.volatility-analysis .vol-zscore {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+
+.volatility-analysis .vol-zscore.high {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.volatility-analysis .vol-zscore.low {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+/* Stats Grid */
+.volatility-analysis .coin-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.volatility-analysis .stat {
+  padding: 4px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+}
+
+.volatility-analysis .stat .label {
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.volatility-analysis .stat .value {
+  font-size: 11px;
+  line-height: 1.2;
+  font-family: var(--font-mono);
+}
+
+/* Custom scrollbar */
+.volatility-analysis .vol-rankings::-webkit-scrollbar {
+  width: 6px;
+}
+
+.volatility-analysis .vol-rankings::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  border-radius: 3px;
+}
+
+.volatility-analysis .vol-rankings::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+.volatility-analysis .vol-rankings::-webkit-scrollbar-thumb:hover {
+  background: var(--border-secondary);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .volatility-analysis .coin-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .volatility-analysis .coin-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .volatility-analysis .vol-rankings {
+    grid-template-columns: 1fr;
+  }
+}
+

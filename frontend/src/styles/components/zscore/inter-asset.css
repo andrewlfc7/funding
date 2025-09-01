@@ -1,0 +1,11 @@
+/* Inter-Asset Z-Score Dashboard Specific Styles */
+
+.inter-asset-zscore .dashboard-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+/* Divergence charts */
+.inter-asset-zscore .divergence-chart {
+  min-height: 350px;
+}

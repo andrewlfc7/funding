@@ -98,7 +98,6 @@ pub struct ParadexMarketSummary {
     #[serde(default, deserialize_with = "de_opt_decimal")]
     pub volume_24h: Option<Decimal>,
 
-    // Price fallbacks to convert OI → USD
     #[serde(default, deserialize_with = "de_opt_decimal")]
     pub mark_price: Option<Decimal>,
 

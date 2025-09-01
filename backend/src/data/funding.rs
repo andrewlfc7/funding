@@ -1,46 +1,38 @@
-// src/data/funding.rs
-use anyhow::Result;
 use chrono::Utc;
+use anyhow::Result;
 use sqlx::PgPool;
-use tracing::{info, warn};
-
-use futures::{stream, StreamExt, TryStreamExt};
-
+use tracing::info;
+use futures::stream::iter;
 use crate::db::insert::insert_funding_rates;
 use crate::exchanges::shared::types::NormalizedFundingRate;
+use futures::TryStreamExt;
+use futures::StreamExt;
 
-use crate::exchanges::extended::api::{client::ExtendedClient, endpoints::ApiEnvironment as ExtendedEnv};
-use crate::exchanges::extended::handler::handler::parse_extended_funding;
 use crate::exchanges::paradex::api::{client::ParadexClient, endpoints::ApiEnvironment as ParadexEnv};
+use crate::exchanges::extended::api::{client::ExtendedClient, endpoints::ApiEnvironment as ExtendedEnv};
 use crate::exchanges::paradex::handler::handler::parse_paradex_funding;
+use crate::exchanges::extended::handler::handler::parse_extended_funding;
+use crate::exchanges::hyperliquid::handler::handler::parse_hyperliquid_funding;
+use crate::exchanges::hyperliquid::api::{client::HyperliquidClient, endpoints::ApiEnvironment as HyperliquidEnv};
+
+use crate::exchanges::hibachi::api::{client::HibachiClient, endpoints::ApiEnvironment as HibachiEnv};
+use crate::exchanges::hibachi::handler::handler::parse_hibachi_latest_funding;
+
+
+use log::warn;
+
+use crate::exchanges::bluefin::api::{client::BluefinClient, endpoints::ApiEnvironment as BluefinEnv}; // Added
+use crate::exchanges::bluefin::handler::handler::parse_bluefin_funding; // Added
+
+
+use crate::exchanges::drift::api::{client::DriftClient, endpoints::ApiEnvironment as DriftEnv}; 
+use crate::exchanges::drift::handler::handler::parse_drift_funding; 
+
+use crate::exchanges::shared::time::TimeSpec;
 
 #[inline]
 fn lower(s: &str) -> String { s.trim().to_ascii_lowercase() }
 
-
-#[derive(Clone, Debug)]
-pub enum TimeSpec {
-    Between { start_ms: u64, end_ms: u64 },
-    LookbackHours(u64),
-    SinceLastOrLookbackHours(u64),
-}
-
-impl TimeSpec {
-    fn resolve(&self, last_ts_ms: Option<i64>) -> (u64, u64) {
-        let now_ms = Utc::now().timestamp_millis() as u64;
-        match *self {
-            TimeSpec::Between { start_ms, end_ms } => (start_ms, end_ms),
-            TimeSpec::LookbackHours(h) => (now_ms.saturating_sub(h.saturating_mul(3_600_000)), now_ms),
-            TimeSpec::SinceLastOrLookbackHours(h) => {
-                if let Some(last_ms) = last_ts_ms {
-                    ((last_ms as u64).saturating_add(1), now_ms)
-                } else {
-                    (now_ms.saturating_sub(h.saturating_mul(3_600_000)), now_ms)
-                }
-            }
-        }
-    }
-}
 
 
 async fn fetch_funding_for_market(
@@ -55,15 +47,66 @@ async fn fetch_funding_for_market(
             let raw = client
                 .get_funding_data(market_symbol, Some(start_ms), Some(end_ms))
                 .await?;
-            Ok(parse_paradex_funding(&raw)?)
+            parse_paradex_funding(&raw)
         }
         "extended" => {
             let client = ExtendedClient::new(ExtendedEnv::Mainnet);
             let raw = client
                 .get_funding(market_symbol, Some(start_ms), Some(end_ms))
                 .await?;
-            Ok(parse_extended_funding(&raw)?)
+            parse_extended_funding(&raw)
         }
+        "hyperliquid" => {
+            let client = HyperliquidClient::new(HyperliquidEnv::Mainnet);
+            let raw = client
+                .get_funding_history(market_symbol, start_ms, Some(end_ms))
+                .await?;
+            parse_hyperliquid_funding(&raw)
+        }
+        "hibachi" => {
+            let client = HibachiClient::new(HibachiEnv::Mainnet);
+            let raw_prices = client.get_prices(market_symbol).await?;
+            let latest_rate = parse_hibachi_latest_funding(&raw_prices)?;
+
+            let rate_ts_ms = latest_rate.timestamp.timestamp_millis() as u64;
+            if rate_ts_ms >= start_ms && rate_ts_ms <= end_ms {
+                Ok(vec![latest_rate]) 
+            } else {
+                Ok(Vec::new()) 
+            }
+        }
+        "bluefin" => {
+            let client = BluefinClient::new(BluefinEnv::Mainnet);
+            let raw = client.get_funding_rate_history(market_symbol, None, None).await?;
+            let all_rates = parse_bluefin_funding(&raw)?;
+            
+            let filtered_rates = all_rates
+                .into_iter()
+                .filter(|rate| {
+                    let ts_ms = rate.timestamp.timestamp_millis() as u64;
+                    ts_ms >= start_ms && ts_ms <= end_ms
+                })
+                .collect();
+            
+            Ok(filtered_rates)
+        }
+
+        "drift" => {
+            let client = DriftClient::new(DriftEnv::Mainnet);
+            let raw = client.get_funding_rates(market_symbol, None, None).await?;
+            let all_rates = parse_drift_funding(&raw, market_symbol)?;
+
+            let filtered_rates = all_rates
+                .into_iter()
+                .filter(|rate| {
+                    let ts_ms = rate.timestamp.timestamp_millis() as u64;
+                    ts_ms >= start_ms && ts_ms <= end_ms
+                })
+                .collect();
+            
+            Ok(filtered_rates)
+        }
+
         other => {
             warn!("fetch_funding_for_market: unsupported exchange '{}'", other);
             Ok(Vec::new())
@@ -71,14 +114,12 @@ async fn fetch_funding_for_market(
     }
 }
 
-
 pub async fn collect_funding_for_exchange_with_spec(
     pool: &PgPool,
     exchange_id: i32,
     exchange_name: &str,
     time_spec: TimeSpec,
 ) -> Result<()> {
-    // NEW: force interval to 8h (480 minutes), idempotent
     let res = sqlx::query!(
         r#"
         UPDATE exchanges
@@ -93,7 +134,6 @@ pub async fn collect_funding_for_exchange_with_spec(
         info!("funding interval for {} (id={}) set to 480m", exchange_name, exchange_id);
     }
 
-    // 1) markets
     let markets = sqlx::query!(
         r#"
         SELECT id, market_symbol
@@ -111,14 +151,13 @@ pub async fn collect_funding_for_exchange_with_spec(
         return Ok(());
     }
 
-    
     let conc: usize = std::env::var("SYNC_CONC_MARKETS")
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(16);
 
     let per_market_batches: Vec<Vec<(i32, NormalizedFundingRate)>> =
-        stream::iter(markets.into_iter())
+        iter(markets.into_iter())
             .map(|m| {
                 let pool = pool.clone();
                 let exchange_name = exchange_name.to_string();
@@ -169,7 +208,6 @@ pub async fn collect_funding_for_exchange_with_spec(
     Ok(())
 }
 
-
 pub async fn collect_funding_for_exchange(
     pool: &PgPool,
     exchange_id: i32,
@@ -183,3 +221,6 @@ pub async fn collect_funding_for_exchange(
     )
     .await
 }
+
+
+

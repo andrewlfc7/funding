@@ -12,15 +12,23 @@ export function formatTimestamp(ts: string): string {
   return new Date(ts).toLocaleString()
 }
 
-export function formatRate(rate: number, displayMode: DisplayMode): string {
+
+export function formatRate(rate: number, displayMode: DisplayMode, unit: SpreadUnit = 'percentage'): string {
+  let value: number;
+  
   if (displayMode === 'annualized') {
-    // Convert 8-hour rate to annualized rate
-    const annualizedRate = rate * FUNDING_PERIODS_PER_DAY * DAYS_PER_YEAR * 100
-    return annualizedRate.toFixed(2) + '%'
+    value = rate * FUNDING_PERIODS_PER_DAY * DAYS_PER_YEAR
+  } else {
+    value = rate
   }
-  // Regular 8-hour rate
-  return (rate * 100).toFixed(3) + '%'
+  
+  if (unit === 'percentage') {
+    return (value * 100).toFixed(3) + '%'
+  } else {
+    return (value * 10000).toFixed(0) + ' bps'
+  }
 }
+
 
 export function formatSpread(spreadValue: number, spreadUnit: SpreadUnit): string {
   if (spreadUnit === 'percentage') {
@@ -44,16 +52,14 @@ export function formatArbOpportunity(arb: {
   const bothPositive = arb.longRate > 0 && arb.shortRate > 0
   const bothNegative = arb.longRate < 0 && arb.shortRate < 0
   
-  // Extreme capture opportunity (same sign, large spread)
-  if ((bothPositive || bothNegative) && arb.spread >= 50) {  // 50+ bps
-    return `🔥 L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
+  if ((bothPositive || bothNegative) && arb.spread >= 50) {  
+    return `L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
   }
   
   if ((bothPositive || bothNegative) && arb.spread >= 25) {  // 25+ bps
-    return `🎯 L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
+    return `L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
   }
   
-  // Regular high spread (opposite signs)
   if (arb.spread >= 25) {
     return `⚡ L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
   }

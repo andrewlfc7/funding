@@ -6,6 +6,8 @@ mod db;
 mod utils;
 mod exchanges;
 mod data;
+mod api;
+mod math;
 
 use axum::{extract::State, response::Json, routing::get, Router};
 use serde::{Deserialize, Serialize};
@@ -181,6 +183,12 @@ async fn main() -> anyhow::Result<()> {
 
     let pool = db::migrations::create_pool().await;
 
+    let meta_router  = api::meta::router();  
+    let signals_router = api::signals::router(); 
+    let market_router = api::market::router(); 
+    let stats_router = api::stats::router(); 
+
+
     {
         let pool_clone = pool.clone();
         tokio::spawn(async move {
@@ -195,11 +203,19 @@ async fn main() -> anyhow::Result<()> {
         .allow_headers(Any)
         .allow_methods(Any);
 
+
+
     let app = Router::new()
-        .route("/api/funding-matrix", get(get_funding_matrix))
+        .route("/api/funding/matrix", get(get_funding_matrix))
         .route("/api/health", get(health))
-        .with_state(pool)
+        .merge(market_router) 
+        .merge(meta_router)
+        .merge(signals_router)                         
+        .merge(stats_router)                         
+        .with_state(pool)             
         .layer(cors);
+
+
 
     let addr: SocketAddr = "0.0.0.0:8080".parse().unwrap();
     info!("Server running at http://{}", addr);

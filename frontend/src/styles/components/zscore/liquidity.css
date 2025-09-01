@@ -1,0 +1,68 @@
+/* Volatility & Liquidity Dashboard Specific Styles */
+.volatility-liquidity .dashboard-grid {
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: clamp(16px, 2vw, 24px);
+}
+
+/* Full width items */
+.volatility-liquidity .full-width {
+  grid-column: 1 / -1;
+}
+
+/* Volatility specific charts */
+.volatility-liquidity .vol-zscore-container {
+  min-height: 350px;
+}
+
+/* Range and volume analysis */
+.volatility-liquidity .range-analysis,
+.volatility-liquidity .volume-analysis {
+  min-height: 320px;
+}
+
+/* Liquidity depth chart */
+.volatility-liquidity .liquidity-depth {
+  min-height: 400px;
+}
+
+/* Current stats styling */
+.volatility-liquidity .current-stats {
+  margin-top: auto;
+}
+
+/* Percentile indicator animation */
+.volatility-liquidity .percentile-fill {
+  animation: fillAnimation 1s ease-out;
+}
+
+@keyframes fillAnimation {
+  from {
+    width: 0;
+  }
+}
+
+/* Volume indicators hover effect */
+.volatility-liquidity .indicator {
+  cursor: pointer;
+}
+
+.volatility-liquidity .indicator:hover {
+  transform: scale(1.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .volatility-liquidity .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .volatility-liquidity .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .volatility-liquidity .full-width {
+    grid-column: 1;
+  }
+}

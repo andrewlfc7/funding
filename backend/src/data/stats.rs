@@ -5,12 +5,22 @@ use tracing::{info, warn};
 
 use crate::db::insert::insert_market_stats;
 use crate::exchanges::shared::types::NormalizedMarketStats;
-
-// APIs & handlers
+use crate::exchanges::hyperliquid::api::{client::HyperliquidClient, endpoints::ApiEnvironment as HyperliquidEnv};
 use crate::exchanges::paradex::api::{client::ParadexClient, endpoints::ApiEnvironment as ParadexEnv};
 use crate::exchanges::extended::api::{client::ExtendedClient, endpoints::ApiEnvironment as ExtendedEnv};
 use crate::exchanges::paradex::handler::handler::parse_paradex_market_stats;
 use crate::exchanges::extended::handler::handler::parse_extended_market_stats;
+use crate::exchanges::hyperliquid::handler::handler::parse_hyperliquid_market_stats;
+
+use crate::exchanges::hibachi::api::{client::HibachiClient, endpoints::ApiEnvironment as HibachiEnv};
+use crate::exchanges::hibachi::handler::handler::parse_hibachi_market_stats;
+
+use crate::exchanges::bluefin::api::{client::BluefinClient, endpoints::ApiEnvironment as BluefinEnv};
+use crate::exchanges::bluefin::handler::handler::parse_bluefin_market_stats; 
+
+use crate::exchanges::drift::api::{client::DriftClient, endpoints::ApiEnvironment as DriftEnv}; 
+use crate::exchanges::drift::handler::handler::parse_drift_market_stats; 
+
 
 #[inline]
 fn lower(s: &str) -> String {
@@ -22,6 +32,12 @@ fn lower(s: &str) -> String {
 enum StatsAdapter {
     Paradex(ParadexClient),
     Extended(ExtendedClient),
+    Hyperliquid(HyperliquidClient), 
+    Hibachi(HibachiClient), // Added
+    Bluefin(BluefinClient),
+    Drift(DriftClient),
+
+
 }
 
 impl StatsAdapter {
@@ -39,6 +55,37 @@ impl StatsAdapter {
                 let stat = parse_extended_market_stats(&raw, market_symbol)?;
                 Ok(Some(stat))
             }
+            StatsAdapter::Hyperliquid(c) => {
+                let raw = c.get_meta_and_asset_ctxs(None).await?;
+                let all_stats = parse_hyperliquid_market_stats(&raw)?;
+                Ok(all_stats
+                    .into_iter()
+                    .find(|s| s.market_symbol == market_symbol))
+            }
+
+            StatsAdapter::Hibachi(c) => {
+                let raw_oi = c.get_open_interest(market_symbol).await?;
+                let raw_stats = c.get_stats(market_symbol).await?;
+                let raw_prices = c.get_prices(market_symbol).await?;
+                
+                let stat = parse_hibachi_market_stats(&raw_oi, &raw_stats, &raw_prices, market_symbol)?;
+                Ok(Some(stat))
+            }
+            StatsAdapter::Bluefin(c) => {
+                let raw = c.get_tickers().await?;
+                let all_stats = parse_bluefin_market_stats(&raw)?;
+                Ok(all_stats
+                    .into_iter()
+                    .find(|s| s.market_symbol == market_symbol))
+            }
+            StatsAdapter::Drift(c) => {
+                let raw = c.get_contracts().await?;
+                let all_stats = parse_drift_market_stats(&raw)?;
+                Ok(all_stats
+                    .into_iter()
+                    .find(|s| s.market_symbol == market_symbol))
+            }
+
         }
     }
 
@@ -46,6 +93,11 @@ impl StatsAdapter {
         match self {
             StatsAdapter::Paradex(_) => "Paradex",
             StatsAdapter::Extended(_) => "Extended",
+            StatsAdapter::Hyperliquid(_) => "Hyperliquid",
+            StatsAdapter::Hibachi(_) => "Hibachi", 
+            StatsAdapter::Bluefin(_) => "Bluefin",
+            StatsAdapter::Drift(_) => "Drift",
+
         }
     }
 }
@@ -54,10 +106,14 @@ fn make_stats_adapter(name: &str) -> Option<StatsAdapter> {
     match lower(name).as_str() {
         "paradex" => Some(StatsAdapter::Paradex(ParadexClient::new(ParadexEnv::Mainnet))),
         "extended" => Some(StatsAdapter::Extended(ExtendedClient::new(ExtendedEnv::Mainnet))),
+        "hyperliquid" => Some(StatsAdapter::Hyperliquid(HyperliquidClient::new(HyperliquidEnv::Mainnet))),
+        "hibachi" => Some(StatsAdapter::Hibachi(HibachiClient::new(HibachiEnv::Mainnet))),
+        "bluefin" => Some(StatsAdapter::Bluefin(BluefinClient::new(BluefinEnv::Mainnet))),
+        "drift" => Some(StatsAdapter::Drift(DriftClient::new(DriftEnv::Mainnet))),
+
         _ => None,
     }
 }
-
 
 pub async fn collect_daily_market_stats(pool: &PgPool) -> Result<()> {
     let exchanges = sqlx::query!(

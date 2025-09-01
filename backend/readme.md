@@ -2,21 +2,18 @@ DEXES of interest ;
 
 edgeX
 
-Extended
 
-Paradex
 
 asterdex
 
 Kana Labs
 
-hyperliquid
 
 lighter
 
 Aster
 
-Hibachi
+
 Saros
 
 Helix
@@ -69,4 +66,12 @@ Ostium
 MISC : 
 
 panora
+
+
+
+
+# To do : 
+
+Set up so it prioritized based on dexes that are on the same chain In an attempt to minimize potential bridging fees for rebalancing. . 
+
 
