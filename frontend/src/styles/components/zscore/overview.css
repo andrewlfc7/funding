@@ -1,63 +1,83 @@
-/* Z-Score Overview Dashboard Specific Styles */
+/* =================================================================
+   Z-SCORE OVERVIEW DASHBOARD SPECIFIC STYLES
+   ================================================================= */
 
-/* Scatter Plot Cards - Compact Layout */
-.zscore-overview .dashboard-grid {
-  grid-template-rows: repeat(2, minmax(280px, 350px)) minmax(350px, 450px);
-}
-
-/* First row - 3 scatter plots */
-.zscore-overview .dashboard-grid > .metric-card:nth-child(1),
-.zscore-overview .dashboard-grid > .metric-card:nth-child(2),
-.zscore-overview .dashboard-grid > .metric-card:nth-child(3) {
-  grid-column: span 1;
-}
-
-/* Make first 3 cards in a row on larger screens */
-@media (min-width: 1400px) {
-  .zscore-overview .dashboard-grid {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: minmax(280px, 350px) minmax(280px, 350px) minmax(350px, 450px);
-  }
-  
-  .zscore-overview .dashboard-grid > .metric-card:nth-child(4) {
-    grid-column: span 3;
-  }
-  
-  .zscore-overview .dashboard-grid > .metric-card:nth-child(5) {
-    grid-column: span 3;
-  }
-}
-
-/* Rankings Table Specific */
+/* ---- RANKINGS TABLE STYLES ---------------------------------- */
 .zscore-overview .rankings-table {
-  padding: var(--space-sm);
-  background: var(--bg-primary);
-  border-radius: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  height: 100%;
+  padding: var(--space-md);
+}
+
+.zscore-overview .table-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.zscore-overview .table-section h4 {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.zscore-overview .coin-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  flex: 1;
+  overflow-y: auto;
+  padding-right: var(--space-xs);
 }
 
 .zscore-overview .coin-row {
+  display: grid;
+  grid-template-columns: 30px 80px 80px 80px 100px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  font-size: 14px;
   transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
 .zscore-overview .coin-row:hover {
   background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
   transform: translateX(2px);
 }
 
 .zscore-overview .coin-row .rank {
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
 }
 
 .zscore-overview .coin-row .symbol {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
+  font-family: var(--font-mono);
 }
 
 .zscore-overview .coin-row .zscore {
   font-weight: 600;
   font-family: var(--font-mono);
+  text-align: right;
 }
 
 .zscore-overview .coin-row .zscore.positive {
@@ -70,34 +90,218 @@
 
 .zscore-overview .coin-row .returns {
   text-align: right;
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-mono);
 }
 
-/* Highlight extreme values */
-.zscore-overview .coin-row:has(.zscore:where([class*="negative"]:not([class*="2"]))) {
-  background: rgba(239, 68, 68, 0.05);
+.zscore-overview .coin-row .returns.positive {
+  color: var(--color-positive);
 }
 
-.zscore-overview .coin-row:has(.zscore:where([class*="positive"]:not([class*="2"]))) {
-  background: rgba(34, 197, 94, 0.05);
+.zscore-overview .coin-row .returns.negative {
+  color: var(--color-negative);
 }
 
-/* Custom scrollbar for rankings */
-.zscore-overview .rankings-table::-webkit-scrollbar {
+.zscore-overview .coin-row .volume {
+  text-align: right;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+/* ---- CUSTOM SCROLLBAR FOR COIN LIST ------------------------- */
+.zscore-overview .coin-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.zscore-overview .rankings-table::-webkit-scrollbar-track {
+.zscore-overview .coin-list::-webkit-scrollbar-track {
   background: var(--bg-primary);
   border-radius: 3px;
 }
 
-.zscore-overview .rankings-table::-webkit-scrollbar-thumb {
+.zscore-overview .coin-list::-webkit-scrollbar-thumb {
   background: var(--border-primary);
   border-radius: 3px;
 }
 
-.zscore-overview .rankings-table::-webkit-scrollbar-thumb:hover {
+.zscore-overview .coin-list::-webkit-scrollbar-thumb:hover {
   background: var(--border-secondary);
+}
+
+/* ---- RESPONSIVE STYLES -------------------------------------- */
+@media (max-width: 768px) {
+  .zscore-overview .rankings-table {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+  
+  .zscore-overview .coin-row {
+    grid-template-columns: 25px 60px 60px 60px 80px;
+    font-size: 12px;
+    padding: 8px;
+  }
+  
+  .zscore-overview .coin-row .rank {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+  
+  .zscore-overview .coin-row .symbol {
+    font-size: 13px;
+  }
+  
+  .zscore-overview .coin-row .zscore,
+  .zscore-overview .coin-row .returns,
+  .zscore-overview .coin-row .volume {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .zscore-overview .coin-row {
+    grid-template-columns: 25px 50px 50px 50px 70px;
+    padding: 6px;
+    gap: 4px;
+  }
+  
+  .zscore-overview .table-section h4 {
+    font-size: 13px;
+  }
+}
+
+/* ---- DARK MODE ENHANCEMENTS --------------------------------- */
+@media (prefers-color-scheme: dark) {
+  .zscore-overview .coin-row {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  
+  .zscore-overview .coin-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .zscore-overview .coin-row .rank {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .zscore-overview .table-section h4 {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ---- ANIMATIONS --------------------------------------------- */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.zscore-overview .coin-row {
+  animation: slideIn 0.3s ease-out;
+  animation-fill-mode: backwards;
+}
+
+.zscore-overview .coin-row:nth-child(1) { animation-delay: 0.05s; }
+.zscore-overview .coin-row:nth-child(2) { animation-delay: 0.1s; }
+.zscore-overview .coin-row:nth-child(3) { animation-delay: 0.15s; }
+.zscore-overview .coin-row:nth-child(4) { animation-delay: 0.2s; }
+.zscore-overview .coin-row:nth-child(5) { animation-delay: 0.25s; }
+.zscore-overview .coin-row:nth-child(6) { animation-delay: 0.3s; }
+.zscore-overview .coin-row:nth-child(7) { animation-delay: 0.35s; }
+.zscore-overview .coin-row:nth-child(8) { animation-delay: 0.4s; }
+.zscore-overview .coin-row:nth-child(9) { animation-delay: 0.45s; }
+.zscore-overview .coin-row:nth-child(10) { animation-delay: 0.5s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .zscore-overview .coin-row {
+    animation: none;
+  }
+}
+
+/* ---- SPECIAL HIGHLIGHTS ------------------------------------- */
+/* Highlight extreme z-scores */
+.zscore-overview .coin-row .zscore[data-extreme="true"] {
+  font-weight: 700;
+  position: relative;
+}
+
+.zscore-overview .coin-row .zscore[data-extreme="true"]::after {
+  content: '!';
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* Highlight top volume */
+.zscore-overview .coin-row[data-top-volume="true"] .volume {
+  color: var(--color-info);
+  font-weight: 600;
+}
+
+/* ---- CHART-SPECIFIC STYLES ---------------------------------- */
+/* Ensure charts fill their containers properly */
+.zscore-overview .scatter-chart,
+.zscore-overview .histogram-chart,
+.zscore-overview .time-series-chart {
+  height: 100%;
+  min-height: 280px;
+}
+
+/* Time series needs more height */
+.zscore-overview .time-series-chart {
+  min-height: 350px;
+}
+
+/* ---- LOADING & EMPTY STATES --------------------------------- */
+.zscore-overview .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.zscore-overview .empty-state .empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-md);
+  opacity: 0.3;
+}
+
+/* ---- PRINT STYLES ------------------------------------------- */
+@media print {
+  .zscore-overview .coin-row {
+    background: white;
+    border: 1px solid #ccc;
+  }
+  
+  .zscore-overview .coin-row .rank {
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+  }
+}
+
+/* ---- HIGH CONTRAST MODE ------------------------------------- */
+@media (prefers-contrast: high) {
+  .zscore-overview .coin-row {
+    border: 1px solid currentColor;
+  }
+  
+  .zscore-overview .coin-row .rank {
+    border: 1px solid currentColor;
+  }
+  
+  .zscore-overview .table-section h4 {
+    border-bottom-width: 3px;
+  }
 }

@@ -1,0 +1,432 @@
+/* =================================================================
+   MARKET REGIME & MOMENTUM ANALYSIS DASHBOARD STYLES
+   ================================================================= */
+
+/* ---- MOMENTUM HEATMAP STYLES -------------------------------- */
+.market-regime .momentum-heatmap {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.market-regime .heatmap-header {
+  display: grid;
+  grid-template-columns: 60px repeat(5, 1fr);
+  gap: 4px;
+  margin-bottom: var(--space-xs);
+}
+
+.market-regime .heatmap-header .timeframe {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.market-regime .heatmap-row {
+  display: grid;
+  grid-template-columns: 60px repeat(5, 1fr);
+  gap: 4px;
+  align-items: center;
+}
+
+.market-regime .heatmap-row .symbol {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.market-regime .heatmap-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  transition: all 0.2s ease;
+}
+
+.market-regime .heatmap-cell.positive {
+  background: var(--color-positive);
+  color: white;
+}
+
+.market-regime .heatmap-cell.negative {
+  background: var(--color-negative);
+  color: white;
+}
+
+.market-regime .heatmap-cell.neutral {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+}
+
+.market-regime .heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding: var(--space-sm);
+}
+
+.market-regime .legend-label {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.market-regime .legend-gradient {
+  width: 200px;
+  height: 16px;
+  background: linear-gradient(90deg, 
+    var(--color-negative) 0%, 
+    var(--bg-primary) 50%, 
+    var(--color-positive) 100%
+  );
+  border-radius: 8px;
+}
+
+/* ---- TRANSITION MATRIX STYLES ------------------------------- */
+.market-regime .transition-matrix {
+  padding: var(--space-md);
+}
+
+.market-regime .matrix-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+  margin-bottom: var(--space-md);
+}
+
+.market-regime .matrix-table th,
+.market-regime .matrix-table td {
+  padding: 12px;
+  text-align: center;
+  background: var(--bg-primary);
+  border-radius: 4px;
+}
+
+.market-regime .matrix-table th {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+}
+
+.market-regime .regime-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.market-regime .probability-cell {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.market-regime .probability-cell.highlight {
+  background: var(--color-accent);
+  color: white;
+}
+
+.market-regime .regime-status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm);
+  background: var(--bg-primary);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.market-regime .regime-status .current {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.market-regime .regime-status .next {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+/* ---- VELOCITY CHART STYLES ---------------------------------- */
+.market-regime .velocity-chart {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.market-regime .velocity-header {
+  text-align: center;
+  margin-bottom: var(--space-sm);
+}
+
+.market-regime .velocity-header .label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.market-regime .velocity-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-sm);
+  padding: 0 var(--space-md);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.market-regime .velocity-scale .zero {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ---- MOMENTUM DIVERGENCE STYLES ----------------------------- */
+.market-regime .momentum-divergence {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.market-regime .divergence-group h4 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.market-regime .coin-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.market-regime .coin-tag {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.market-regime .coin-tag.leaders {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--color-positive);
+}
+
+.market-regime .coin-tag.laggards {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-negative);
+}
+
+.market-regime .divergence-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm);
+  background: var(--bg-primary);
+  border-radius: 4px;
+}
+
+.market-regime .divergence-metric .label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.market-regime .divergence-metric .value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.market-regime .divergence-metric .value.positive {
+  color: var(--color-positive);
+}
+
+.market-regime .divergence-metric .value.negative {
+  color: var(--color-negative);
+}
+
+.market-regime .divergence-score {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md);
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  margin-top: var(--space-sm);
+}
+
+.market-regime .divergence-score .label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.market-regime .divergence-score .score {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.market-regime .divergence-score .score.high {
+  color: var(--color-negative);
+}
+
+.market-regime .divergence-score .score.medium {
+  color: var(--color-warning);
+}
+
+.market-regime .divergence-score .score.low {
+  color: var(--color-positive);
+}
+
+/* ---- RESPONSIVE STYLES -------------------------------------- */
+@media (max-width: 1200px) {
+  .market-regime .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .market-regime .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Smaller heatmap on mobile */
+  .market-regime .heatmap-row {
+    grid-template-columns: 50px repeat(5, 1fr);
+  }
+  
+  .market-regime .heatmap-cell {
+    height: 28px;
+    font-size: 11px;
+  }
+  
+  /* Smaller matrix table */
+  .market-regime .matrix-table th,
+  .market-regime .matrix-table td {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  /* Stack divergence groups */
+  .market-regime .momentum-divergence {
+    gap: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even smaller cells for very small screens */
+  .market-regime .heatmap-cell {
+    height: 24px;
+    font-size: 10px;
+  }
+  
+  .market-regime .legend-gradient {
+    width: 150px;
+    height: 12px;
+  }
+  
+  /* Simplify coin tags */
+  .market-regime .coin-tag {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+}
+
+/* ---- DARK MODE ENHANCEMENTS --------------------------------- */
+@media (prefers-color-scheme: dark) {
+  .market-regime .heatmap-cell.neutral {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .market-regime .matrix-table th,
+  .market-regime .matrix-table td {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  
+  .market-regime .regime-label,
+  .market-regime .matrix-table th {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* ---- ANIMATIONS --------------------------------------------- */
+@keyframes pulseHighlight {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+.market-regime .probability-cell.highlight {
+  animation: pulseHighlight 2s ease-in-out infinite;
+}
+
+/* Cell hover effects */
+.market-regime .heatmap-cell:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.market-regime .coin-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .market-regime .probability-cell.highlight {
+    animation: none;
+  }
+  
+  .market-regime .heatmap-cell:hover,
+  .market-regime .coin-tag:hover {
+    transform: none;
+  }
+}
+
+/* ---- PRINT STYLES ------------------------------------------- */
+@media print {
+  .market-regime .heatmap-cell {
+    border: 1px solid #ccc;
+  }
+  
+  .market-regime .matrix-table {
+    border: 1px solid #000;
+  }
+  
+  .market-regime .matrix-table th,
+  .market-regime .matrix-table td {
+    border: 1px solid #ccc;
+  }
+  
+  /* Hide gradient in print */
+  .market-regime .legend-gradient {
+    display: none;
+  }
+}
+
+/* ---- HIGH CONTRAST MODE ------------------------------------- */
+@media (prefers-contrast: high) {
+  .market-regime .heatmap-cell {
+    border: 1px solid currentColor;
+  }
+  
+  .market-regime .matrix-table th,
+  .market-regime .matrix-table td {
+    border: 1px solid currentColor;
+  }
+  
+  .market-regime .coin-tag {
+    border: 1px solid currentColor;
+  }
+}

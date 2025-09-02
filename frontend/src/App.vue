@@ -30,7 +30,7 @@ const currentPageTitle = computed(() => {
   switch(route.path) {
     case '/funding': return 'Funding Dashboard';
     case '/trend': return 'Trend Analysis';
-    case '/zscore': return 'Z-Score Analysis';
+      case '/zscore': return 'Z-Score Analysis';
     default: return 'Dashboard';
   }
 });
@@ -41,6 +41,7 @@ const currentPageTitle = computed(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .top-nav {
@@ -50,15 +51,24 @@ const currentPageTitle = computed(() => {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);
   height: 60px;
+  width: 100%;
 }
 
 .nav-content {
-  max-width: 100%;
+  /* Remove max-width constraint */
+  width: 100%;
   height: 100%;
   padding: 0 var(--space-xl);
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+/* Add padding adjustment for very wide screens */
+@media (min-width: 2560px) {
+  .nav-content {
+    padding: 0 var(--space-2xl);
+  }
 }
 
 .brand {
@@ -71,5 +81,6 @@ main {
   flex: 1;
   display: flex;
   overflow: hidden;
+  width: 100%;
 }
 </style>

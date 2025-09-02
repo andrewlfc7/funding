@@ -1,0 +1,282 @@
+/* src/styles/components/zscore/heatmap.css */
+
+/* Heatmap Chart Wrapper */
+.heatmap-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  height: 100%;
+  width: 100%;
+}
+
+.heatmap-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Top labels */
+.heatmap-labels-top {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.corner-spacer {
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.x-labels {
+  flex: 1;
+  display: flex;
+  padding-bottom: var(--space-sm);
+}
+
+.x-label {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  transform: rotate(-45deg);
+  transform-origin: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Main content */
+.heatmap-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* Y labels */
+.y-labels {
+  display: flex;
+  flex-direction: column;
+  width: 60px;
+  flex-shrink: 0;
+  padding-right: var(--space-sm);
+}
+
+.y-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Canvas container */
+.heatmap-chart-container {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+}
+
+.heatmap-chart-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Legend */
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.legend-gradient {
+  width: 200px;
+  height: 16px;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.legend-gradient.correlation {
+  background: linear-gradient(to right, #ef4444, #facc15, #22c55e);
+}
+
+.legend-gradient.beta {
+  background: linear-gradient(to right, rgba(59,130,246,0.2), rgba(59,130,246,0.8));
+}
+
+.legend-gradient.default {
+  background: linear-gradient(to right, rgba(99,102,241,0.2), rgba(99,102,241,1));
+}
+
+.legend-min, .legend-max {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Matrix container specific */
+.matrix-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 400px;
+  gap: var(--space-md);
+}
+
+.matrix-container .heatmap-chart-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Remove duplicate matrix legend */
+.cross-asset-matrix .matrix-legend {
+  display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .corner-spacer,
+  .y-labels {
+    width: 40px;
+  }
+  
+  .x-label,
+  .y-label {
+    font-size: 10px;
+  }
+}
+
+/* Rest of the cross-asset specific styles... */
+.correlations-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  padding: var(--space-md);
+}
+
+.table-section h4 {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.correlation-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.corr-row {
+  display: grid;
+  grid-template-columns: 40px 80px 80px 80px 1fr;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--bg-primary);
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.corr-row:hover {
+  background: var(--bg-secondary);
+}
+
+.corr-row .rank {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.corr-row .symbol {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.corr-row .correlation {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.corr-row .correlation.positive {
+  color: var(--color-positive);
+}
+
+.corr-row .correlation.negative {
+  color: var(--color-negative);
+}
+
+.corr-row .beta {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bar-container {
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: var(--color-positive);
+  transition: width 0.3s ease;
+}
+
+.bar.negative {
+  background: var(--color-negative);
+}
+
+/* Chart container adjustments */
+.cross-asset-matrix .chart-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: var(--space-md);
+}
+
+.cross-asset-matrix .stats-panel {
+  display: flex;
+  gap: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  justify-content: center;
+}
+
+.cross-asset-matrix .stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.cross-asset-matrix .stat-item .label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.cross-asset-matrix .stat-item .value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}

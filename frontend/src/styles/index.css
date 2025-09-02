@@ -20,13 +20,18 @@
 /* Z-Score Components */
 @import './components/zscore.css';
 @import './components/zscore/overview.css';
-@import './components/zscore/volatility.css';
+@import './components/zscore/volatility-analysis.css';
 @import './components/zscore/cross-asset.css';
 @import './components/zscore/liquidity.css';
 @import './components/zscore/inter-asset.css';
 @import './components/zscore/leaders.css';
-@import './components/zscore/microstructure.css';
 
-/* Utils */
 @import './utils/animations.css';
 @import './utils/responsive.css';
+
+@import './components/zscore/heatmap.css';
+
+@import './components/zscore/microstructure.css'; 
+
+@import './components/zscore/relative-strength.css'; 
+@import './components/zscore/market-regime.css';

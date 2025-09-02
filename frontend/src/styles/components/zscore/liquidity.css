@@ -1,7 +1,28 @@
+/* src/styles/components/zscore/liquidity.css */
+
 /* Volatility & Liquidity Dashboard Specific Styles */
+.volatility-liquidity {
+  width: 100%;
+
+}
+
+.volatility-liquidity .dashboard-header {
+  margin-bottom: var(--space-lg);
+}
+
+.volatility-liquidity .header-controls {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-top: var(--space-md);
+}
+
+/* Grid layout */
 .volatility-liquidity .dashboard-grid {
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: clamp(16px, 2vw, 24px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+  width: 100%;
 }
 
 /* Full width items */
@@ -9,60 +30,441 @@
   grid-column: 1 / -1;
 }
 
-/* Volatility specific charts */
+/* Chart containers should fill available space */
+.volatility-liquidity .chart-wrapper {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  min-height: 0; /* Important for flexbox */
+}
+
+/* Vol Z-Score container */
 .volatility-liquidity .vol-zscore-container {
-  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+  gap: var(--space-md);
 }
 
-/* Range and volume analysis */
-.volatility-liquidity .range-analysis,
-.volatility-liquidity .volume-analysis {
-  min-height: 320px;
+.volatility-liquidity .vol-zscore-container .chart-wrapper {
+  flex: 1;
 }
 
-/* Liquidity depth chart */
-.volatility-liquidity .liquidity-depth {
-  min-height: 400px;
-}
-
-/* Current stats styling */
+/* Current stats positioned below chart */
 .volatility-liquidity .current-stats {
-  margin-top: auto;
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
-/* Percentile indicator animation */
-.volatility-liquidity .percentile-fill {
-  animation: fillAnimation 1s ease-out;
+/* Volume Analysis card */
+.volatility-liquidity .volume-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+  height: 100%;
+  padding: var(--space-md);
 }
 
-@keyframes fillAnimation {
-  from {
-    width: 0;
-  }
+/* Distribution analysis */
+.volatility-liquidity .distribution-analysis {
+  display: flex;
+  flex-direction: column;
+  height: 320px;
+  gap: var(--space-md);
 }
 
-/* Volume indicators hover effect */
-.volatility-liquidity .indicator {
-  cursor: pointer;
+.volatility-liquidity .distribution-analysis .chart-wrapper {
+  flex: 1;
 }
 
-.volatility-liquidity .indicator:hover {
-  transform: scale(1.05);
+.volatility-liquidity .distribution-stats {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  flex-shrink: 0;
+  padding: var(--space-sm);
+}
+
+/* Volume ratios */
+.volatility-liquidity .volume-ratios {
+  display: flex;
+  flex-direction: column;
+  height: 320px;
+  gap: var(--space-md);
+}
+
+.volatility-liquidity .volume-ratios .chart-wrapper {
+  flex: 1;
+}
+
+.volatility-liquidity .ratio-summary {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* Liquidity depth */
+.volatility-liquidity .liquidity-depth {
+  display: flex;
+  flex-direction: column;
+  height: 350px;
+  gap: var(--space-md);
+}
+
+.volatility-liquidity .liquidity-depth .chart-wrapper {
+  flex: 1;
+}
+
+.volatility-liquidity .liquidity-metrics {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: var(--space-md);
+  flex-shrink: 0;
+}
+
+/* Spread volume analysis */
+.volatility-liquidity .spread-volume-analysis {
+  display: flex;
+  flex-direction: column;
+  height: 350px;
+  gap: var(--space-md);
+}
+
+.volatility-liquidity .spread-volume-analysis .chart-wrapper {
+  flex: 1;
+}
+
+.volatility-liquidity .spread-insights {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-around;
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* Ensure charts fill their containers */
+.volatility-liquidity .time-series-chart-container,
+.volatility-liquidity .histogram-chart-container,
+.volatility-liquidity .scatter-chart-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Remove min-height from chart containers */
+.volatility-liquidity .time-series-chart-container {
+  min-height: unset;
+}
+
+/* Metric styling */
+.volatility-liquidity .metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+}
+
+.volatility-liquidity .metric.highlight {
+  grid-column: span 2;
+  background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+}
+
+/* Insight items */
+.volatility-liquidity .insight-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  text-align: center;
+}
+
+.volatility-liquidity .insight-item .label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.volatility-liquidity .insight-item .value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Ensure metric cards have proper height */
+.volatility-liquidity .metric-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.volatility-liquidity .metric-card .card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Responsive adjustments */
 @media (max-width: 1400px) {
   .volatility-liquidity .dashboard-grid {
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
   .volatility-liquidity .dashboard-grid {
     grid-template-columns: 1fr;
   }
   
-  .volatility-liquidity .full-width {
+  .volatility-liquidity .volume-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .volatility-liquidity {
+    padding: var(--space-md);
+  }
+    .volatility-liquidity .header-controls {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .volatility-liquidity .header-controls select,
+  .volatility-liquidity .header-controls button {
+    width: 100%;
+  }
+  
+  .volatility-liquidity .volume-metrics {
+    grid-template-columns: 1fr;
+  }
+  
+  .volatility-liquidity .metric.highlight {
     grid-column: 1;
   }
+  
+  .volatility-liquidity .spread-insights {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+  
+  .volatility-liquidity .current-stats {
+    flex-direction: column;
+  }
+  
+  .volatility-liquidity .ratio-summary {
+    flex-direction: column;
+  }
+}
+
+/* Color classes for values */
+.volatility-liquidity .stat-badge.extreme-high {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.volatility-liquidity .stat-badge.high {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.volatility-liquidity .stat-badge.low {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.volatility-liquidity .stat-badge.extreme-low {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.volatility-liquidity .stat-badge.normal {
+  border-color: var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+/* Value color classes */
+.volatility-liquidity .value.very-high {
+  color: #ef4444;
+}
+
+.volatility-liquidity .value.high {
+  color: #f59e0b;
+}
+
+.volatility-liquidity .value.normal {
+  color: var(--text-primary);
+}
+
+.volatility-liquidity .value.low {
+  color: #6b7280;
+}
+
+.volatility-liquidity .value.very-low {
+  color: #374151;
+}
+
+/* Spread specific colors */
+.volatility-liquidity .value.very-tight {
+  color: var(--color-positive);
+}
+
+.volatility-liquidity .value.tight {
+  color: #22c55e;
+}
+
+.volatility-liquidity .value.wide {
+  color: #f59e0b;
+}
+
+.volatility-liquidity .value.very-wide {
+  color: var(--color-negative);
+}
+
+/* Indicator states */
+.volatility-liquidity .indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 20px;
+  border: 1px solid var(--border-primary);
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.volatility-liquidity .indicator.active {
+  opacity: 1;
+  background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+  transform: scale(1.05);
+}
+
+.volatility-liquidity .indicator .icon {
+  font-size: 16px;
+}
+
+.volatility-liquidity .indicator .text {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Liquidity score colors */
+.volatility-liquidity .value.excellent {
+  color: var(--color-positive);
+}
+
+.volatility-liquidity .value.good {
+  color: #22c55e;
+}
+
+.volatility-liquidity .value.fair {
+  color: #f59e0b;
+}
+
+.volatility-liquidity .value.poor {
+  color: var(--color-negative);
+}
+
+/* Ensure proper spacing */
+.volatility-liquidity .metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+}
+
+.volatility-liquidity .metric-grid .metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: none;
+}
+
+.volatility-liquidity .metric-grid .metric .label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.volatility-liquidity .metric-grid .metric .value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Ratio item styling */
+.volatility-liquidity .ratio-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.volatility-liquidity .ratio-item .label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.volatility-liquidity .ratio-item .value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Stat badge styling */
+.volatility-liquidity .stat-badge {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  transition: all 0.2s ease;
+}
+
+.volatility-liquidity .stat-badge .label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.volatility-liquidity .stat-badge .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Sublabel styling */
+.volatility-liquidity .metric .sublabel {
+  font-size: 10px;
+  color: var(--text-tertiary);
 }

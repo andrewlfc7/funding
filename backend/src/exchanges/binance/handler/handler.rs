@@ -70,20 +70,41 @@ pub fn parse_binance_klines(raw_data: &[u8], market_symbol: &str) -> Result<Vec<
 }
 
 pub fn parse_binance_trades(raw_data: &[u8], market_symbol: &str) -> Result<Vec<NormalizedTrade>> {
+    // If top-level is an error object, surface it clearly (no extra deps)
+    if raw_data.first() == Some(&b'{') {
+        #[derive(serde::Deserialize)]
+        struct ErrObj { code: Option<i64>, msg: Option<String> }
+        if let Ok(e) = serde_json::from_slice::<ErrObj>(raw_data) {
+            if e.code.is_some() || e.msg.is_some() {
+                return Err(anyhow::anyhow!(
+                    "Binance API error: code={:?} msg={:?}",
+                    e.code, e.msg
+                ));
+            }
+        }
+    }
+
     let response: Vec<BinanceTrade> = serde_json::from_slice(raw_data)
-        .context("Failed to parse Binance trades")?;
+        .context("Failed to parse Binance trades (expected /api/v3/trades or /api/v3/aggTrades)")?;
 
-    response.into_iter().map(|trade| {
-        let side = if trade.isBuyerMaker { "Sell" } else { "Buy" };
+    response
+        .into_iter()
+        .map(|trade| {
+            let side = if trade.isBuyerMaker { "Sell" } else { "Buy" };
+            let ts = match Utc.timestamp_millis_opt(trade.time) {
+                LocalResult::Single(dt) => dt,
+                _ => Utc.timestamp_millis(0),
+            };
 
-        Ok(NormalizedTrade {
-            market_symbol: market_symbol.to_string(),
-            trade_id: trade.id.to_string(),
-            trade_time: Utc.timestamp_millis_opt(trade.time).unwrap(),
-            side: side.to_string(),
-            price: trade.price.parse()?,
-            qty: trade.qty.parse()?,
-            quote_qty: trade.quoteQty.parse()?,
+            Ok(NormalizedTrade {
+                market_symbol: market_symbol.to_string(),
+                trade_id: trade.id.to_string(),
+                trade_time: ts,
+                side: side.to_string(),
+                price: trade.price.parse()?,
+                qty: trade.qty.parse()?,
+                quote_qty: trade.quoteQty.as_deref().unwrap_or("0").parse()?, // <= tolerant
+            })
         })
-    }).collect()
+        .collect()
 }

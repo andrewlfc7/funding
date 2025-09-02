@@ -10,6 +10,8 @@ pub mod leaders_laggards;
 pub mod inter_asset_zscore;
 pub mod vol_liquidity;
 pub mod microstructure_flow;
+pub mod relative_strength;
+pub mod regime_momentum;
 
 
 // -------- Timeframe + period parsing --------

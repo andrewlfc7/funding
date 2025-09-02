@@ -36,6 +36,12 @@
       
       <!-- Dashboard 7: Market Microstructure -->
       <MarketMicrostructure v-if="currentDashboard === 6" />
+      
+      <!-- Dashboard 8: Relative Strength -->
+      <RelativeStrength v-if="currentDashboard === 7" />
+      
+      <!-- Dashboard 9: Market Regime -->
+      <MarketRegime v-if="currentDashboard === 8" />
     </div>
   </div>
 </template>
@@ -49,7 +55,8 @@ import VolatilityLiquidity from './dashboards/VolatilityLiquidity.vue'
 import InterAssetZScore from './dashboards/InterAssetZScore.vue'
 import LeadersLaggards from './dashboards/LeadersLaggards.vue'
 import MarketMicrostructure from './dashboards/MarketMicrostructure.vue'
-
+import RelativeStrength from './dashboards/RelativeStrength.vue'
+import MarketRegime from './dashboards/MarketRegime.vue'
 
 const dashboards = [
   { name: 'Z-Score Overview' },
@@ -58,9 +65,10 @@ const dashboards = [
   { name: 'Volatility & Liquidity' },
   { name: 'Inter-Asset Z-Score' },
   { name: 'Leaders & Laggards' },
-  { name: 'Market Microstructure' }
+  { name: 'Market Microstructure' },
+  { name: 'Relative Strength' },
+  { name: 'Market Regime' }
 ];
-
 
 // Current dashboard state
 const currentDashboard = ref(0)
@@ -72,6 +80,3 @@ const selectedPeriod = ref('24h')
 provide('exchange', selectedExchange)
 provide('period', selectedPeriod)
 </script>
-
-
-

@@ -21,7 +21,7 @@ pub fn router() -> Router<PgPool> {
         )
         .route(
             "/api/statistics/cross-asset/matrix",
-            get(crate::api::statistics::cross_asset_matrix::get_cross_asset_matrix),
+            get(crate::api::statistics::cross_asset_matrix::get_cross_asset_analytics),
         )
         .route(
             "/api/statistics/cross-section/leaders-laggards",
@@ -32,10 +32,15 @@ pub fn router() -> Router<PgPool> {
             get(crate::api::statistics::microstructure_flow::get_microstructure_flow),
         )
 
+        .route(
+            "/api/statistics/relative-strength/overview",
+            get(crate::api::statistics::relative_strength::get_relative_strength),
+        )
+        .route(
+            "/api/statistics/momentum/regime",
+            get(crate::api::statistics::regime_momentum::get_regime_momentum),
+        )
+
 
 }
-
-
-
-
 

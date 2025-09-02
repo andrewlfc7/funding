@@ -1,199 +1,220 @@
 <template>
-  <div class="heatmap-chart-container" ref="containerRef">
-    <canvas ref="chartCanvas"></canvas>
+  <div class="heatmap-chart-wrapper">
+    <div class="heatmap-container">
+      <!-- Top labels -->
+      <div class="heatmap-labels-top">
+        <div class="corner-spacer"></div>
+        <div class="x-labels">
+          <div 
+            v-for="(label, i) in labels" 
+            :key="`x-${i}`" 
+            class="x-label"
+          >
+            {{ label }}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Main content row -->
+      <div class="heatmap-main">
+        <!-- Left labels -->
+        <div class="y-labels">
+          <div 
+            v-for="(label, i) in labels" 
+            :key="`y-${i}`" 
+            class="y-label"
+          >
+            {{ label }}
+          </div>
+        </div>
+        
+        <!-- Heatmap canvas -->
+        <div class="heatmap-chart-container" ref="containerRef">
+          <canvas ref="chartCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="heatmap-legend" v-if="showLegend">
+      <span class="legend-min">{{ min.toFixed(2) }}</span>
+      <div class="legend-gradient" :class="colorScheme"></div>
+      <span class="legend-max">{{ max.toFixed(2) }}</span>
+    </div>
   </div>
 </template>
 
+
 <script setup lang="ts">
-import { ref, onMounted, watch, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, watch, onUnmounted, nextTick, computed } from 'vue'
+
+type Matrix = number[][]
+type HeatmapInput =
+  | { labels: string[]; data: Matrix }
+  | { coins: string[]; matrix: Matrix }
 
 interface Props {
-  data: {
-    labels: string[]
-    data: number[][]
-  }
+  data: HeatmapInput
   min?: number
   max?: number
   colorScheme?: 'correlation' | 'beta' | 'default'
+  showLegend?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  min: 0,
+  min: -1,
   max: 1,
-  colorScheme: 'default'
+  colorScheme: 'correlation',
+  showLegend: true
 })
 
 const chartCanvas = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
+let animationId: number | null = null
 let resizeObserver: ResizeObserver | null = null
-let animationFrameId: number | null = null
 
+// Unify inputs
+const labels = computed<string[]>(() => {
+  const d = props.data as any
+  return (d.labels || d.coins || []) as string[]
+})
+
+const matrix = computed<Matrix>(() => {
+  const d = props.data as any
+  return (d.data || d.matrix || []) as Matrix
+})
+
+// Color functions
 function getColorForValue(value: number): string {
-  const normalized = (value - props.min) / (props.max - props.min)
+  const normalizedValue = (value - props.min) / (props.max - props.min)
   
   if (props.colorScheme === 'correlation') {
-    // Red to green for correlations
-    if (normalized < 0.5) {
-      const intensity = normalized * 2
-      return `rgba(239, 68, 68, ${0.2 + intensity * 0.8})`
+    // Red to yellow to green for correlation
+    const clampedValue = Math.max(-1, Math.min(1, value))
+    const t = (clampedValue + 1) / 2 // Normalize to 0-1
+    
+    if (t < 0.5) {
+      // Red to yellow
+      const localT = t * 2
+      const r = 239
+      const g = Math.round(68 + (204 - 68) * localT)
+      const b = 68
+      return `rgb(${r}, ${g}, ${b})`
     } else {
-      const intensity = (normalized - 0.5) * 2
-      return `rgba(34, 197, 94, ${0.2 + intensity * 0.8})`
+      // Yellow to green
+      const localT = (t - 0.5) * 2
+      const r = Math.round(250 - (250 - 34) * localT)
+      const g = Math.round(204 - (204 - 197) * localT)
+      const b = Math.round(21 + (94 - 21) * localT)
+      return `rgb(${r}, ${g}, ${b})`
     }
   } else if (props.colorScheme === 'beta') {
-    // Blue to purple for beta
-    const r = 59 + (139 - 59) * normalized
-    const g = 130 - (130 - 92) * normalized
-    const b = 246 - (246 - 233) * normalized
-    return `rgba(${r}, ${g}, ${b}, 0.8)`
+    // Blue gradient for beta
+    const opacity = 0.2 + normalizedValue * 0.6
+    return `rgba(59, 130, 246, ${opacity})`
   } else {
-    // Default gradient
-    return `rgba(99, 102, 241, ${0.2 + normalized * 0.8})`
+    // Default purple gradient
+    const opacity = 0.2 + normalizedValue * 0.8
+    return `rgba(99, 102, 241, ${opacity})`
   }
 }
 
 function drawHeatmap() {
-  if (!chartCanvas.value || !containerRef.value || !props.data) return
+  const canvas = chartCanvas.value
+  const container = containerRef.value
+  if (!canvas || !container || !matrix.value.length) return
 
-  const ctx = chartCanvas.value.getContext('2d')!
-  const { labels, data } = props.data
-  
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
   // Get container dimensions
-  const containerWidth = containerRef.value.clientWidth
-  const containerHeight = containerRef.value.clientHeight
-  
-  // Set canvas size to match container
-  chartCanvas.value.width = containerWidth
-  chartCanvas.value.height = containerHeight
-  
-  // Calculate cell dimensions
-  const padding = 40 // Space for labels
-  const availableWidth = containerWidth - padding
-  const availableHeight = containerHeight - padding
-  
-  const cellWidth = availableWidth / labels.length
-  const cellHeight = availableHeight / data.length
-  
+  const rect = container.getBoundingClientRect()
+  const width = rect.width
+  const height = rect.height
+
+  // Set canvas size with device pixel ratio for sharp rendering
+  const dpr = window.devicePixelRatio || 1
+  canvas.width = width * dpr
+  canvas.height = height * dpr
+  canvas.style.width = `${width}px`
+  canvas.style.height = `${height}px`
+  ctx.scale(dpr, dpr)
+
   // Clear canvas
-  ctx.clearRect(0, 0, containerWidth, containerHeight)
-  
+  ctx.clearRect(0, 0, width, height)
+
+  // Calculate dimensions - no margins needed since labels are outside
+  const numRows = matrix.value.length
+  const numCols = matrix.value[0]?.length || 0
+  const cellWidth = width / numCols
+  const cellHeight = height / numRows
+
   // Draw cells
-  data.forEach((row, i) => {
-    row.forEach((value, j) => {
+  for (let i = 0; i < numRows; i++) {
+    for (let j = 0; j < numCols; j++) {
+      const value = matrix.value[i][j]
       const x = j * cellWidth
       const y = i * cellHeight
-      
+
+      // Draw cell
       ctx.fillStyle = getColorForValue(value)
       ctx.fillRect(x, y, cellWidth - 1, cellHeight - 1)
-      
-      // Add text labels for small matrices
-      if (labels.length <= 10) {
-        ctx.save()
-        ctx.fillStyle = normalized > 0.5 ? '#000' : '#fff'
-        ctx.font = '11px sans-serif'
+
+      // Draw cell border
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
+      ctx.lineWidth = 0.5
+      ctx.strokeRect(x, y, cellWidth - 1, cellHeight - 1)
+
+      // Draw value text for small matrices
+      if (numRows <= 10 && numCols <= 10 && cellWidth > 40 && cellHeight > 30) {
+        ctx.fillStyle = Math.abs(value) > 0.5 ? '#000' : '#fff'
+        ctx.font = '11px monospace'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(value.toFixed(2), x + cellWidth / 2, y + cellHeight / 2)
-        ctx.restore()
       }
-    })
-  })
-  
-  // Draw labels
-  ctx.save()
-  ctx.fillStyle = '#999'
-  ctx.font = '11px sans-serif'
-  
-  // X-axis labels
-  labels.forEach((label, i) => {
-    const x = i * cellWidth + cellWidth / 2
-    const y = availableHeight + 20
-    
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.rotate(-Math.PI / 4)
-    ctx.textAlign = 'right'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(label, 0, 0)
-    ctx.restore()
-  })
-  
-  // Y-axis labels (for square matrices)
-  if (data.length === labels.length) {
-    labels.forEach((label, i) => {
-      const x = availableWidth + 10
-      const y = i * cellHeight + cellHeight / 2
-      
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(label, x, y)
-    })
+    }
   }
-  
-  ctx.restore()
 }
 
-function handleResize() {
-  // Cancel any pending animation frame
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId)
-  }
-  
-  // Schedule redraw on next animation frame
-  animationFrameId = requestAnimationFrame(() => {
+function scheduleDraw() {
+  if (animationId) cancelAnimationFrame(animationId)
+  animationId = requestAnimationFrame(() => {
     drawHeatmap()
+    animationId = null
   })
+}
+
+// Setup resize observer
+function setupResizeObserver() {
+  if (!containerRef.value) return
+  
+  resizeObserver = new ResizeObserver(() => {
+    scheduleDraw()
+  })
+  
+  resizeObserver.observe(containerRef.value)
 }
 
 onMounted(async () => {
   await nextTick()
-  
-  if (containerRef.value) {
-    // Initial draw
-    drawHeatmap()
-    
-    // Set up resize observer
-    resizeObserver = new ResizeObserver((entries) => {
-      // Only handle resize if size actually changed
-      const entry = entries[0]
-      if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-        handleResize()
-      }
-    })
-    
-    resizeObserver.observe(containerRef.value)
-  }
+  setupResizeObserver()
+  scheduleDraw()
 })
 
-watch(() => props.data, () => {
-  handleResize()
-}, { deep: true })
+watch(
+  () => props.data,
+  () => {
+    scheduleDraw()
+  },
+  { deep: true }
+)
 
 onUnmounted(() => {
   if (resizeObserver) {
     resizeObserver.disconnect()
-    resizeObserver = null
   }
-  
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId)
+  if (animationId) {
+    cancelAnimationFrame(animationId)
   }
 })
 </script>
-
-<style scoped>
-.heatmap-chart-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 300px;
-  max-height: 500px; /* Prevent infinite growth */
-  overflow: hidden;
-}
-
-.heatmap-chart-container canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-</style>

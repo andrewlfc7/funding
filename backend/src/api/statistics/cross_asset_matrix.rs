@@ -3,15 +3,32 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::{Error as DeError, SeqAccess, Visitor};
 use sqlx::PgPool;
 use std::fmt;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
     fetch_multi_hourly_ohlcv, log_returns, parse_period_days, resample_from_hourly,
     top_markets_by_usd_volume_live, Tf,
 };
 
+// ---------- Configuration & Helpers ----------
+
 fn default_market_type() -> String { "spot".to_string() }
 fn default_timeframe() -> String { "1h".to_string() }
 #[inline] fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
+
+// Treat common and variant tickers as stables (extend as needed)
+fn is_stable_symbol(sym: &str) -> bool {
+    let s = sym.trim().to_ascii_uppercase();
+    // common stables & variants
+    const STABLES: &[&str] = &[
+        "USD","USDT","USDC","FDUSD","FUSD","TUSD","BUSD","DAI","PYUSD","USDE","USDD","USDP",
+        "GUSD","USDJ","USDX","FRAX","LUSD","SUSD","MIM","DOLA","EURS","EURC","EURT","CRVUSD",
+        "USDL",
+    ];
+    if STABLES.contains(&s.as_str()) { return true; }
+    // generic catch-alls (covers many chain-specific stables)
+    s.ends_with("USD") || s.ends_with("USDT") || s.ends_with("USDC")
+}
 
 // Accept string, CSV string, or sequence (?compareCoins=A&compareCoins=B)
 fn string_or_seq<'de, D>(de: D) -> Result<Vec<String>, D::Error>
@@ -22,24 +39,13 @@ where D: Deserializer<'de> {
         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "string, CSV string, or sequence of strings")
         }
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where E: DeError {
-            let parts: Vec<String> = v.split(',')
-                .map(|s| s.trim()).filter(|s| !s.is_empty())
-                .map(|s| s.to_string()).collect();
-            Ok(if parts.is_empty() { vec![v.to_string()] } else { parts })
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: DeError {
+            Ok(v.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(String::from).collect())
         }
-        fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-        where E: DeError { self.visit_str(&v) }
-        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-        where A: SeqAccess<'de> {
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error> where A: SeqAccess<'de> {
             let mut out = Vec::new();
             while let Some(elem) = seq.next_element::<String>()? {
-                if elem.contains(',') {
-                    out.extend(elem.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(|s| s.to_string()));
-                } else {
-                    out.push(elem);
-                }
+                out.extend(elem.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(String::from));
             }
             Ok(out)
         }
@@ -47,36 +53,35 @@ where D: Deserializer<'de> {
     de.deserialize_any(StrOrSeq)
 }
 
-// ---------- Request / Response ----------
+// ---------- Request DTO ----------
 
 #[derive(Debug, Deserialize)]
-pub struct CrossAssetMatrixRequest {
+pub struct CrossAssetRequest {
     #[serde(default)]
     pub indexCoin: Option<String>,
-
     #[serde(default, deserialize_with = "string_or_seq")]
     pub compareCoins: Vec<String>,
-
     pub period: String,
     pub window: usize,
     pub exchange: String,
-
     #[serde(default = "default_market_type")]
     pub marketType: String,
-
     #[serde(default)]
     pub topN: Option<i64>,
-
     #[serde(default = "default_timeframe")]
     pub timeframe: String,
 }
 
+// ---------- Unified Response DTOs (without histograms) ----------
+
 #[derive(Debug, Serialize)]
-pub struct CrossAssetMatrixResponse {
-    pub correlationMatrix: CorrMatrix,
-    pub betaMatrix: BetaMatrix,
-    pub correlationHistogram: StatsHist,
-    pub betaHistogram: StatsHist,
+#[serde(rename_all = "camelCase")]
+pub struct CrossAssetAnalyticsResponse {
+    pub correlation_matrix: CorrMatrix,
+    pub beta_matrix: BetaMatrix,
+    pub index: String,
+    pub rolling_corr: Vec<Vec<f64>>,
+    pub rolling_beta: Vec<Vec<f64>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -89,22 +94,14 @@ pub struct CorrMatrix {
 #[derive(Debug, Serialize)]
 pub struct BetaMatrix {
     pub coins: Vec<String>,
-    pub betas: Vec<f64>, // beta vs index
+    pub betas: Vec<f64>,
 }
 
-#[derive(Debug, Serialize)]
-pub struct StatsHist {
-    pub buckets: Vec<f64>,
-    pub counts: Vec<usize>,
-    pub mean: f64,
-    pub std: f64,
-}
-
-// ---------- helpers ----------
+// ---------- Calculation Helpers ----------
 
 fn pearson(x: &[f64], y: &[f64]) -> f64 {
-    let n = x.len().min(y.len());
-    if n == 0 { return 0.0; }
+    let n = x.len();
+    if n == 0 || n != y.len() { return 0.0; }
     let (mut sx, mut sy, mut sxx, mut syy, mut sxy) = (0.0, 0.0, 0.0, 0.0, 0.0);
     let mut m = 0usize;
     for i in 0..n {
@@ -115,205 +112,193 @@ fn pearson(x: &[f64], y: &[f64]) -> f64 {
     }
     if m <= 1 { return 0.0; }
     let m_f = m as f64;
-    let cov = sxy - sx*sy/m_f;
-    let vx  = sxx - sx*sx/m_f;
-    let vy  = syy - sy*sy/m_f;
+    let cov = sxy - sx * sy / m_f;
+    let vx  = sxx - sx * sx / m_f;
+    let vy  = syy - sy * sy / m_f;
     if vx <= 0.0 || vy <= 0.0 { return 0.0; }
-    finite(cov / (vx.sqrt()*vy.sqrt()))
+    finite(cov / (vx.sqrt() * vy.sqrt()))
 }
 
 fn beta_vs(x: &[f64], idx: &[f64]) -> f64 {
-    let n = x.len().min(idx.len());
-    if n == 0 { return 0.0; }
-    let (mut sx, mut si, mut sxx, mut sii, mut sxi) = (0.0, 0.0, 0.0, 0.0, 0.0);
+    let n = x.len();
+    if n == 0 || n != idx.len() { return 0.0; }
+    let (mut sx, mut si, mut sxi, mut sii) = (0.0, 0.0, 0.0, 0.0);
     let mut m = 0usize;
     for i in 0..n {
         let (xi, ii) = (x[i], idx[i]);
         if xi.is_finite() && ii.is_finite() {
-            sx += xi; si += ii; sxx += xi*xi; sii += ii*ii; sxi += xi*ii; m += 1;
+            sx += xi; si += ii; sxi += xi * ii; sii += ii * ii; m += 1;
         }
     }
     if m <= 1 { return 0.0; }
     let m_f = m as f64;
-    let cov = sxi - sx*si/m_f;
-    let var = sii - si*si/m_f;
+    let cov = sxi - sx * si / m_f;
+    let var = sii - si * si / m_f;
     if var <= 0.0 { return 0.0; }
     finite(cov / var)
 }
 
-fn histogram(xs: &[f64], start: f64, stop: f64, step: f64) -> (Vec<f64>, Vec<usize>, f64, f64) {
-    let mut buckets = Vec::new();
-    let mut v = start;
-    while v <= stop + 1e-12 { buckets.push(v); v += step; }
-    let mut counts = vec![0usize; buckets.len()];
-    let mut sum = 0.0; let mut sumsq = 0.0; let mut m = 0usize;
-    let half = step/2.0;
-    for &x in xs {
-        if !x.is_finite() { continue; }
-        sum += x; sumsq += x*x; m += 1;
-        for (i, &b) in buckets.iter().enumerate() {
-            if x >= b - half && x < b + half { counts[i] += 1; break; }
-        }
-    }
-    let mean = if m>0 { sum / (m as f64) } else { 0.0 };
-    let var  = if m>0 { sumsq/(m as f64) - mean*mean } else { 0.0 };
-    (buckets, counts, mean, var.max(0.0).sqrt())
-}
+// ---------- Handler (stablecoin-filtered) ----------
 
-// ---------- handler ----------
-
-pub async fn get_cross_asset_matrix(
+pub async fn get_cross_asset_analytics(
     State(pool): State<PgPool>,
-    Query(q): Query<CrossAssetMatrixRequest>,
-) -> Json<CrossAssetMatrixResponse> {
+    Query(q): Query<CrossAssetRequest>,
+) -> Json<CrossAssetAnalyticsResponse> {
+    // 1) Setup
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
     let since_unix = (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
 
-
-    // --- inside handler, right after you parse q/timeframe/etc. ---
-
-    // 0) Decide the index (default BTC) *before* building the universe
-    let idx_name = q.indexCoin
-        .clone()
-        .unwrap_or_else(|| "BTC".to_string())
-        .to_uppercase();
-
-    // 1) Build universe
-    let mut sym_set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
-
-    // (a) explicit list if provided
-    for s in &q.compareCoins {
-        sym_set.insert(s.to_uppercase());
+    // guard index; fall back if it's a stable
+    let mut index_sym = q.indexCoin.clone().unwrap_or_else(|| "BTC".to_string()).to_uppercase();
+    if is_stable_symbol(&index_sym) {
+        index_sym = "BTC".to_string();
     }
 
-    // (b) topN (volume-ranked) if requested
+    // build universe (explicit + topN), uppercase, then drop stables
+    let mut sym_set: BTreeSet<String> = q.compareCoins.iter().map(|s| s.to_uppercase()).collect();
+
     if let Some(n) = q.topN {
         if let Ok(top) = top_markets_by_usd_volume_live(&pool, &q.exchange, &q.marketType, days as i32, n).await {
-            // NOTE: ensure `top` yields BASE symbols (e.g., ETH), not full market codes.
-            for (sym, _, _) in top {
-                sym_set.insert(sym.to_uppercase());
-            }
+            sym_set.extend(top.into_iter().map(|(sym, _, _)| sym.to_uppercase()));
         }
     }
 
-    // (c) ensure index coin is present even if not in compareCoins/topN
-    sym_set.insert(idx_name.clone());
+    // always include index
+    sym_set.insert(index_sym.clone());
+    // remove stables (compareCoins or topN may include them)
+    sym_set = sym_set.into_iter().filter(|s| !is_stable_symbol(s)).collect();
 
-    // (d) final fallback if still empty (e.g., no topN and no compareCoins were valid)
-    if sym_set.is_empty() {
-        if let Ok(top) = top_markets_by_usd_volume_live(&pool, &q.exchange, &q.marketType, days as i32, 30).await {
-            for (sym, _, _) in top {
-                sym_set.insert(sym.to_uppercase());
-            }
-            // include index again to be safe
-            sym_set.insert(idx_name.clone());
-        }
+    // need at least 2 symbols after filtering
+    if sym_set.len() < 2 {
+        return Json(CrossAssetAnalyticsResponse::default());
     }
 
-    let symbols: Vec<String> = sym_set.into_iter().collect();
+    let all_symbols: Vec<String> = sym_set.into_iter().collect();
 
-    // 2) Resolve market IDs (be lenient on since_unix if it’s too strict)
+    // 2) Resolve market ids + hourly data
     let mut mids = Vec::new();
-    let mut sym_to_mid = Vec::new();
-    for sym in &symbols {
-        // If resolve filters out due to since_unix gaps, try a looser lookup:
+    let mut sym_mid_map = Vec::new();
+    for sym in &all_symbols {
         if let Ok(mid) = super::resolve_market_id_with_data(&pool, &q.exchange, sym, &q.marketType, since_unix).await {
             mids.push(mid);
-            sym_to_mid.push((sym.clone(), mid));
-        } else if let Ok(mid_any) = super::resolve_market_id_with_data(&pool, &q.exchange, sym, &q.marketType, 0).await {
-            // fallback: allow any data horizon
-            mids.push(mid_any);
-            sym_to_mid.push((sym.clone(), mid_any));
+            sym_mid_map.push((sym.clone(), mid));
         }
     }
 
     let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix).await.unwrap_or_default();
 
-    // 3) Convert to returns; relax the length requirement
-    let mut coin_returns: Vec<(String, Vec<f64>, i64)> = Vec::new();
-    for (sym, mid) in sym_to_mid {
-        if let Some(hourly) = by_mid.get(&mid) {
+    // 3) Resample + compute log returns
+    let mut resampled_data = BTreeMap::new(); // mid -> (sym, ts, lr)
+    for (sym, mid) in &sym_mid_map {
+        if let Some(hourly) = by_mid.get(mid) {
             let series = resample_from_hourly(hourly, tf.period_secs());
-            // require at least enough points to compute some returns
-            if series.len() < 3 { continue; }
-
-            let close: Vec<f64> = series.iter().map(|r| r.close).collect();
-            let lr = log_returns(&close);
-            if lr.len() < 2 { continue; }
-
-            let last_ts = series.last().map(|r| r.ts).unwrap_or(since_unix);
-            // prefer last `window`, but accept shorter if still meaningful
-            let want = q.window;
-            let have = lr.len();
-            let start = have.saturating_sub(want);
-            let slice = &lr[start..have];
-
-            // skip only if slice is truly too short to correlate/beta (need >= 2)
-            if slice.len() < 2 { continue; }
-
-            coin_returns.push((sym, slice.to_vec(), last_ts));
+            if series.len() > q.window {
+                let closes: Vec<f64> = series.iter().map(|r| r.close).collect();
+                let lr = log_returns(&closes);
+                if !lr.is_empty() {
+                    let ts: Vec<i64> = series.iter().map(|r| r.ts).collect();
+                    resampled_data.insert(mid, (sym.clone(), ts, lr));
+                }
+            }
         }
     }
 
-    // 4) hard fail with a message if empty (better than silent empty JSON)
-    if coin_returns.is_empty() {
-        // You can define a proper error type; for brevity returning empty JSON with a clear ts:
-        let ts = since_unix;
-        return Json(CrossAssetMatrixResponse {
-            correlationMatrix: CorrMatrix { coins: vec![], matrix: vec![], timestamp: ts },
-            betaMatrix: BetaMatrix { coins: vec![], betas: vec![] },
-            correlationHistogram: StatsHist { buckets: vec![], counts: vec![], mean: 0.0, std: 0.0 },
-            betaHistogram: StatsHist { buckets: vec![], counts: vec![], mean: 0.0, std: 0.0 },
-        });
+    if resampled_data.len() < 2 { return Json(CrossAssetAnalyticsResponse::default()); }
+
+    // 4) Align by common timestamps
+    let mut common_timestamps = resampled_data.values().next().unwrap().1.clone();
+    for data in resampled_data.values().skip(1) {
+        let mut intersection = Vec::new();
+        let (mut i, mut j) = (0, 0);
+        while i < common_timestamps.len() && j < data.1.len() {
+            if common_timestamps[i] == data.1[j] {
+                intersection.push(common_timestamps[i]); i += 1; j += 1;
+            } else if common_timestamps[i] < data.1[j] { i += 1; } else { j += 1; }
+        }
+        common_timestamps = intersection;
     }
 
-    // 5) Reorder so index coin is first
-    let mut coins: Vec<String> = coin_returns.iter().map(|(s, _, _)| s.clone()).collect();
-    let ts_last = coin_returns.iter().map(|(_,_,ts)| *ts).max().unwrap_or(since_unix);
-    let idx_pos = coins.iter().position(|s| s == &idx_name).unwrap_or(0);
-    if idx_pos != 0 { coins.swap(0, idx_pos); coin_returns.swap(0, idx_pos); }
-
-    // (rest of your corr/beta/hist logic unchanged)
-
-
-
-
-    // Corr matrix
-    let m = coin_returns.len();
-    let mut mat = vec![vec![0.0; m]; m];
-    for i in 0..m {
-        for j in i..m {
-            let c = pearson(&coin_returns[i].1, &coin_returns[j].1);
-            mat[i][j] = c; mat[j][i] = c;
+    let mut aligned_data = BTreeMap::new(); // mid -> (sym, lr_aligned)
+    for (mid, (sym, ts, lr)) in resampled_data {
+        let mut new_lr = Vec::with_capacity(common_timestamps.len());
+        let (mut i, mut j) = (0, 0);
+        while i < ts.len() && j < common_timestamps.len() {
+            if ts[i] == common_timestamps[j] {
+                new_lr.push(lr[i]); j += 1;
+            }
+            i += 1;
+        }
+        if new_lr.len() >= q.window {
+            aligned_data.insert(mid, (sym, new_lr));
         }
     }
 
-    // Betas vs index
-    let idx_ret = &coin_returns[0].1;
-    let mut betas = vec![0.0; m];
-    for i in 0..m {
-        betas[i] = beta_vs(&coin_returns[i].1, idx_ret);
+    if aligned_data.len() < 2 { return Json(CrossAssetAnalyticsResponse::default()); }
+
+    let all_symbols_final: Vec<String> = aligned_data.values().map(|(s, _)| s.clone()).collect();
+    let all_returns_final: Vec<&Vec<f64>> = aligned_data.values().map(|(_, lr)| lr).collect();
+
+    // ensure index exists post-filter; else fallback to first
+    let index_pos = all_symbols_final.iter().position(|s| *s == index_sym).unwrap_or(0);
+    let index_returns = &all_returns_final[index_pos];
+    if index_returns.len() < q.window { return Json(CrossAssetAnalyticsResponse::default()); }
+
+    let steps = index_returns.len().saturating_sub(q.window) + 1;
+
+    // 5) Rolling stats
+    let mut rolling_corr = vec![vec![0.0; steps]; all_symbols_final.len()];
+    let mut rolling_beta = vec![vec![0.0; steps]; all_symbols_final.len()];
+
+    for i in 0..steps {
+        let w0 = i;
+        let w1 = w0 + q.window;
+        let idx_slice = &index_returns[w0..w1];
+        for (j, coin_returns) in all_returns_final.iter().enumerate() {
+            let coin_slice = &coin_returns[w0..w1];
+            rolling_corr[j][i] = pearson(coin_slice, idx_slice);
+            rolling_beta[j][i] = beta_vs(coin_slice, idx_slice);
+        }
     }
 
-    // Hists
-    let mut corr_flat: Vec<f64> = Vec::new();
-    for i in 0..m { for j in (i+1)..m { corr_flat.push(mat[i][j]); } }
-    let (corr_b, corr_c, corr_mean, corr_std) = histogram(&corr_flat, -1.0, 1.0, 0.1);
-    let (beta_b, beta_c, beta_mean, beta_std) = histogram(&betas, -3.0, 3.0, 0.25);
+    // 6) Matrices from last window
+    let last_window_start = index_returns.len() - q.window;
+    let last_ts = *common_timestamps.last().unwrap_or(&0);
 
-    Json(CrossAssetMatrixResponse {
-        correlationMatrix: CorrMatrix { coins, matrix: mat, timestamp: ts_last },
-        betaMatrix: BetaMatrix {
-            coins: coin_returns.iter().map(|(s,_,_)| s.clone()).collect(),
-            betas
-        },
-        correlationHistogram: StatsHist { buckets: corr_b, counts: corr_c, mean: finite(corr_mean), std: finite(corr_std) },
-        betaHistogram: StatsHist { buckets: beta_b, counts: beta_c, mean: finite(beta_mean), std: finite(beta_std) },
+    let mut corr_matrix_values = vec![vec![0.0; all_symbols_final.len()]; all_symbols_final.len()];
+    for i in 0..all_symbols_final.len() {
+        for j in i..all_symbols_final.len() {
+            let c = pearson(&all_returns_final[i][last_window_start..],
+                            &all_returns_final[j][last_window_start..]);
+            corr_matrix_values[i][j] = c;
+            corr_matrix_values[j][i] = c;
+        }
+    }
+
+    let final_betas: Vec<f64> = all_returns_final.iter()
+        .map(|s| beta_vs(&s[last_window_start..], &index_returns[last_window_start..]))
+        .collect();
+
+    // 7) Response
+    Json(CrossAssetAnalyticsResponse {
+        correlation_matrix: CorrMatrix { coins: all_symbols_final.clone(), matrix: corr_matrix_values, timestamp: last_ts },
+        beta_matrix: BetaMatrix { coins: all_symbols_final.clone(), betas: final_betas },
+        index: index_sym,
+        rolling_corr,
+        rolling_beta,
     })
 }
 
-
-
-
+// Default implementation for empty/error responses
+impl Default for CrossAssetAnalyticsResponse {
+    fn default() -> Self {
+        Self {
+            correlation_matrix: CorrMatrix { coins: vec![], matrix: vec![], timestamp: 0 },
+            beta_matrix: BetaMatrix { coins: vec![], betas: vec![] },
+            index: "BTC".to_string(),
+            rolling_corr: vec![],
+            rolling_beta: vec![],
+        }
+    }
+}
 

@@ -17,14 +17,19 @@ pub struct BinanceSymbol {
     pub contractType: Option<String>,
 }
 
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 #[allow(non_snake_case)]
 pub struct BinanceTrade {
+    #[serde(alias = "a")]
     pub id: i64,
+    #[serde(alias = "p")]
     pub price: String,
+    #[serde(alias = "q")]
     pub qty: String,
-    pub quoteQty: String,
+    #[serde(default)]
+    pub quoteQty: Option<String>,   // may be absent on aggTrades
+    #[serde(alias = "T")]
     pub time: i64,
+    #[serde(alias = "m")]
     pub isBuyerMaker: bool,
 }

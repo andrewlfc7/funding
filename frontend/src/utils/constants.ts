@@ -32,7 +32,7 @@ export const ZSCORE_VOLATILITY_ENDPOINT =
   (env.VITE_ZSCORE_VOLATILITY_ENDPOINT as string) || '/api/statistics/volatility/analysis'
 
 export const ZSCORE_CROSS_ASSET_ENDPOINT =
-  (env.VITE_ZSCORE_CROSS_ASSET_ENDPOINT as string) || '/api/statistics/cross-asset/matrix'
+  (env.VITE_STATS_CROSS_ASSET as string) || '/api/statistics/cross-asset/matrix'
 
 export const ZSCORE_INTER_ASSET_ENDPOINT =
   (env.VITE_ZSCORE_INTER_ASSET_ENDPOINT as string) || '/api/statistics/inter-asset/zscore'
@@ -45,6 +45,28 @@ export const ZSCORE_LEADERS_LAGGARDS_ENDPOINT =
 
 export const ZSCORE_MICROSTRUCTURE_ENDPOINT =
   (env.VITE_ZSCORE_MICROSTRUCTURE_ENDPOINT as string) || '/api/statistics/microstructure/flow'
+
+export const LEADERS_LAGGARDS_ENDPOINT = '/api/statistics/cross-section/leaders-laggards'
+
+// src/utils/constants.ts
+export const ZSCORE_RELATIVE_STRENGTH_ENDPOINT =
+  (env.VITE_ZSCORE_RELATIVE_STRENGTH_ENDPOINT as string) || '/api/statistics/relative-strength/overview'
+
+export const ZSCORE_REGIME_MOMENTUM_ENDPOINT =
+  (env.VITE_ZSCORE_REGIME_MOMENTUM_ENDPOINT as string) || '/api/statistics/momentum/regime'
+
+
+export const RS_OVERVIEW_ENDPOINT =
+  (env.VITE_RS_OVERVIEW_ENDPOINT as string) || '/api/statistics/relative-strength/overview'
+
+
+
+
+export const MARKET_REGIME_ENDPOINT =
+  (env.VITE_MARKET_REGIME_ENDPOINT as string) || '/api/statistics/momentum/regime'
+
+
+
 
 // ---- helpers & sanity checks ----
 export function joinUrl(base: string, path: string) {

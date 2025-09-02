@@ -94,12 +94,33 @@
   background: var(--bg-primary);
 }
 
-/* Inner content wrapper for consistent padding */
+/* Inner content wrapper - UPDATED FOR FULL WIDTH */
 .dashboard-content > * {
   padding: var(--space-lg);
-  max-width: 1600px;
-  margin: 0 auto;
+  /* REMOVED: max-width: 1600px; */
+  /* REMOVED: margin: 0 auto; */
   width: 100%;
+}
+
+/* Add responsive padding for wider screens */
+@media (min-width: 1920px) {
+  .dashboard-content > * {
+    padding: var(--space-lg) var(--space-xl);
+  }
+}
+
+@media (min-width: 2560px) {
+  .dashboard-content > * {
+    padding: var(--space-xl) var(--space-2xl);
+  }
+}
+
+/* Optional: Add max-width only for ultra-wide screens */
+@media (min-width: 3440px) {
+  .dashboard-content > * {
+    max-width: 3200px;
+    margin: 0 auto;
+  }
 }
 
 /* Dashboard Header - Consistent across all dashboards */
@@ -173,25 +194,36 @@
   transform: translateY(0);
 }
 
-/* Dashboard Grid Layout - Consistent sizing */
+/* Dashboard Grid Layout - UPDATED FOR BETTER FULL WIDTH */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: var(--space-md);
   grid-auto-rows: minmax(320px, auto);
+  width: 100%;
 }
 
-/* 2-column layout for medium screens */
-@media (min-width: 1200px) and (max-width: 1600px) {
+/* Responsive grid columns */
+@media (max-width: 1199px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1200px) {
   .dashboard-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* 3-column layout for large screens */
-@media (min-width: 1600px) {
+@media (min-width: 1920px) {
   .dashboard-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 2560px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -211,14 +243,20 @@
   border-color: var(--border-secondary);
 }
 
-/* Span 2 columns */
-.metric-card.span-2 {
+/* Span classes for grid items */
+.metric-card.span-2,
+.span-2 {
   grid-column: span 2;
 }
 
-/* Span 3 columns */
-.metric-card.span-3 {
+.metric-card.span-3,
+.span-3 {
   grid-column: span 3;
+}
+
+.metric-card.full-width,
+.full-width {
+  grid-column: 1 / -1;
 }
 
 /* Card Header */
@@ -306,8 +344,7 @@
   .nav-label {
     font-size: 11px;
   }
-  
-  .dashboard-content > * {
+    .dashboard-content > * {
     padding: var(--space-md);
   }
   
@@ -331,7 +368,11 @@
   }
   
   .metric-card.span-2,
-  .metric-card.span-3 {
+  .metric-card.span-3,
+  .metric-card.full-width,
+  .span-2,
+  .span-3,
+  .full-width {
     grid-column: span 1;
   }
 }
@@ -357,4 +398,12 @@
 .dashboard-nav::-webkit-scrollbar-thumb:hover,
 .dashboard-content::-webkit-scrollbar-thumb:hover {
   background: var(--border-secondary);
+}
+
+/* Add nav-tooltip styling that was missing */
+.nav-tooltip {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

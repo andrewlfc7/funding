@@ -1,9 +1,10 @@
 /* Dashboard Container */
 .dashboard {
   width: 100%;
-  max-width: 2400px;
-  margin: 0 auto;
-  padding: 0 var(--space-xl) var(--space-3xl);
+  /* Remove max-width constraint to use full screen */
+  /* max-width: 2400px; */
+  margin: 0;
+  padding: var(--space-xl) var(--space-xl) var(--space-3xl);
 }
 
 .dashboard-card {
@@ -21,14 +22,15 @@
   justify-content: center;
   gap: var(--space-2xl);
   padding: 0 var(--space-xl) var(--space-xl);
-  margin: 0 auto;
-  max-width: 2400px;
+  margin: 0;
+  /* Remove max-width here too */
+  /* max-width: 2400px; */
 }
 
 /* Responsive Dashboard */
 @media (max-width: 768px) {
   .dashboard {
-    padding: 0 var(--space-md) var(--space-lg);
+    padding: var(--space-md) var(--space-md) var(--space-lg);
   }
   
   .dashboard-controls {
@@ -38,3 +40,26 @@
   }
 }
 
+/* For very wide screens, add some breathing room */
+@media (min-width: 2560px) {
+  .dashboard {
+    padding: var(--space-xl) var(--space-2xl) var(--space-3xl);
+  }
+  
+  .dashboard-controls {
+    padding: 0 var(--space-2xl) var(--space-xl);
+  }
+}
+
+/* Optional: If you want to limit width for readability on ultra-wide screens */
+@media (min-width: 3440px) {
+  .dashboard {
+    max-width: 3200px;
+    margin: 0 auto;
+  }
+  
+  .dashboard-controls {
+    max-width: 3200px;
+    margin: 0 auto;
+  }
+}

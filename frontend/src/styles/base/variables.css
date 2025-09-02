@@ -80,3 +80,11 @@
   --dashboard-padding: var(--space-lg);
   --dashboard-gap: var(--space-md);
 }
+
+:root {
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+}

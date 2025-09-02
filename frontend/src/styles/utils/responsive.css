@@ -188,3 +188,34 @@
     border: 1px solid #ddd;
   }
 }
+
+/* Full Width Utilities */
+.full-width {
+  width: 100%;
+}
+
+.container-fluid {
+  width: 100%;
+  padding-left: var(--space-xl);
+  padding-right: var(--space-xl);
+}
+
+@media (min-width: 2560px) {
+  .container-fluid {
+    padding-left: var(--space-2xl);
+    padding-right: var(--space-2xl);
+  }
+}
+
+/* Grid optimizations for wide screens */
+@media (min-width: 1920px) {
+  .grid-auto-wide {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  }
+}
+
+@media (min-width: 2560px) {
+  .grid-auto-wide {
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  }
+}

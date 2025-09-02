@@ -169,8 +169,7 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 240px;
-  max-height: 320px;
+
 }
 
 /* Ensure canvas fills container */

@@ -1,140 +1,168 @@
+// frontend/src/composables/useVolatilityData.ts
 import { ref, computed } from 'vue'
 import { 
-  fetchVolatilityAnalysis, 
-  transformVolatilityToTimeSeries,
-  groupDataBySymbol,
-  getLatestBySymbol,
-  type VolatilityDataPoint 
+  fetchVolatilityAnalysis,
+  type VolatilityDataPoint,
+  type VolatilityAnalysisResponse,
+  type Timeframe
 } from '@/api/zscore'
 
 export function useVolatilityData() {
   // State
-  const rawData = ref<VolatilityDataPoint[]>([])
+  const rawData = ref<VolatilityAnalysisResponse | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
   
-  // Group data by symbol
-  const dataBySymbol = computed(() => groupDataBySymbol(rawData.value))
-  const latestBySymbol = computed(() => getLatestBySymbol(rawData.value))
+  // Constants for annualization
+  const ANNUALIZATION_FACTOR = {
+    '1h': Math.sqrt(24 * 365),  // Hourly to annual
+    '4h': Math.sqrt(6 * 365),   // 4-hourly to annual
+    '1d': Math.sqrt(365)        // Daily to annual
+  }
   
-  // Transform data for charts
-  const chartData = computed(() => transformVolatilityToTimeSeries(rawData.value))
+  // Group volatility time series data by symbol
+  const dataBySymbol = computed(() => {
+    if (!rawData.value?.volatilityTimeSeries) return new Map()
+    const grouped = new Map<string, VolatilityDataPoint[]>()
+    rawData.value.volatilityTimeSeries.forEach(point => {
+      const list = grouped.get(point.symbol) || []
+      list.push(point)
+      grouped.set(point.symbol, list)
+    })
+    return grouped
+  })
   
-  // For Dashboard 2: Volatility Analysis plots
+  // Get the latest data point for each symbol
+  const latestBySymbol = computed(() => {
+    const latest = new Map<string, VolatilityDataPoint>()
+    dataBySymbol.value.forEach((points, symbol) => {
+      if (points.length > 0) {
+        latest.set(symbol, points[points.length - 1])
+      }
+    })
+    return latest
+  })
   
-  // 1. Vol Z-Score vs Returns
-  const volZScoreVsReturns = computed(() => {
-    return Array.from(latestBySymbol.value.entries()).map(([symbol, data]) => ({
+  // Calculate volume statistics for z-score calculation
+  const volumeStats = computed(() => {
+    if (!rawData.value?.volatilityTimeSeries) return { mean: 0, std: 0 }
+    
+    const validVolumes = rawData.value.volatilityTimeSeries
+      .map(d => d.volume)
+      .filter((v): v is number => v !== undefined && v !== null && v > 0)
+    
+    if (validVolumes.length === 0) return { mean: 0, std: 0 }
+    
+    const mean = validVolumes.reduce((a, b) => a + b, 0) / validVolumes.length
+    const variance = validVolumes.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / validVolumes.length
+    const std = Math.sqrt(variance)
+    
+    return { mean, std }
+  })
+  
+  // Calculate volume z-score for a given volume
+  const calculateVolumeZScore = (volume: number | undefined): number => {
+    if (!volume || volumeStats.value.std === 0) return 0
+    return (volume - volumeStats.value.mean) / volumeStats.value.std
+  }
+  
+  // Annualized volatility data for heatmap
+  const annualizedVolatilityData = computed(() => {
+    if (!latestBySymbol.value.size) return []
+    
+    const currentTimeframe = rawData.value?.volatilityTimeSeries[0]?.symbol ? '1h' : '1h' // Default to 1h
+    const annualizationFactor = ANNUALIZATION_FACTOR[currentTimeframe as keyof typeof ANNUALIZATION_FACTOR]
+    
+    const data = Array.from(latestBySymbol.value.entries()).map(([symbol, point]) => ({
       symbol,
-      returns: data.returns * 100,
-      volatilityZScore: data.volatilityZScore
+      volatility: point.volatility * 100,
+      annualizedVol: point.volatility * 100 * annualizationFactor,
+      volatilityZScore: point.volatilityZScore,
+      volumeZScore: calculateVolumeZScore(point.volume),
+      returns: point.returns * 100,
+      volume: point.volume || 0
+    }))
+    
+    // Sort by annualized volatility descending and add rank
+    return data
+      .sort((a, b) => b.annualizedVol - a.annualizedVol)
+      .map((item, index) => ({ ...item, rank: index }))
+  })
+  
+  // 1-Hour Volatility vs Volume Z-Score
+  const volVsVolumeZScore1H = computed(() => {
+    if (!latestBySymbol.value.size) return []
+    
+    // For 1H volatility, use the raw volatility if timeframe is 1h
+    // Otherwise, scale appropriately
+    return Array.from(latestBySymbol.value.entries()).map(([symbol, point]) => ({
+      symbol,
+      volatility: point.volatility * 100, // Already in 1H if timeframe is 1h
+      volumeZScore: calculateVolumeZScore(point.volume),
+      volatilityZScore: point.volatilityZScore
     }))
   })
   
-  // 2. Daily Range Distribution
-  const rangeDistribution = computed(() => {
-    const allRanges = Array.from(latestBySymbol.value.values()).map(d => d.range * 100)
+  // 1-Day Volatility vs Volume Z-Score
+  const volVsVolumeZScore1D = computed(() => {
+    if (!latestBySymbol.value.size) return []
     
-    if (allRanges.length === 0) return null
+    // Scale to daily volatility
+    const scaleFactor = Math.sqrt(24) // 1H to 1D scaling
     
-    const buckets = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    const counts = new Array(buckets.length - 1).fill(0)
-    
-    allRanges.forEach(range => {
-      const bucketIndex = buckets.findIndex((b, i) => 
-        range >= b && (i === buckets.length - 1 || range < buckets[i + 1])
-      ) - 1
-      if (bucketIndex >= 0 && bucketIndex < counts.length) {
-        counts[bucketIndex]++
-      }
-    })
-    
-    return { 
-      buckets: buckets.slice(0, -1).map((b, i) => `${b}-${buckets[i+1]}%`),
-      counts
-    }
-  })
-  
-  // 3. Volume Z-Score vs Daily Range (need to add volume z-score to backend data)
-  const volumeZScoreVsRange = computed(() => {
-    return Array.from(latestBySymbol.value.entries()).map(([symbol, data]) => ({
+    return Array.from(latestBySymbol.value.entries()).map(([symbol, point]) => ({
       symbol,
-      range: data.range * 100,
-      volumeZScore: 0, // TODO: Backend needs to provide this
-      volatilityZScore: data.volatilityZScore
+      volatility: point.volatility * 100 * scaleFactor, // Scale to daily
+      volumeZScore: calculateVolumeZScore(point.volume),
+      volatilityZScore: point.volatilityZScore
     }))
   })
   
-  // 4. High/Low volatility coins
-  const highVolCoins = computed(() => 
-    Array.from(latestBySymbol.value.entries())
-      .filter(([_, data]) => data.volatilityZScore > 1.5)
-      .sort((a, b) => b[1].volatilityZScore - a[1].volatilityZScore)
-      .slice(0, 10)
-      .map(([symbol, data]) => ({
-        symbol,
-        volatility: data.volatility * 100,
-        volatilityZScore: data.volatilityZScore,
-        range: data.range * 100,
-        returns: data.returns * 100
-      }))
-  )
-  
-  const lowVolCoins = computed(() => 
-    Array.from(latestBySymbol.value.entries())
-      .filter(([_, data]) => data.volatilityZScore < -1.5)
-      .sort((a, b) => a[1].volatilityZScore - b[1].volatilityZScore)
-      .slice(0, 10)
-      .map(([symbol, data]) => ({
-        symbol,
-        volatility: data.volatility * 100,
-        volatilityZScore: data.volatilityZScore,
-        range: data.range * 100,
-        returns: data.returns * 100
-      }))
-  )
-  
-  // 5. Realized Vol Percentiles (need backend support)
-  const realizedVolPercentiles = computed(() => {
-    // For now, calculate simple percentiles based on current data
-    const sortedVols = Array.from(latestBySymbol.value.values())
-      .sort((a, b) => a.volatility - b.volatility)
+  // Volume Z-Score vs Returns
+  const volumeZScoreVsReturns = computed(() => {
+    if (!rawData.value?.volVsReturns) return []
     
-    return Array.from(latestBySymbol.value.entries()).map(([symbol, data]) => {
-      const rank = sortedVols.findIndex(v => v.volatility >= data.volatility)
-      const percentile = (rank / sortedVols.length) * 100
-      
-      return {
-        symbol,
-        volatility: data.volatility * 100,
-        volatilityZScore: data.volatilityZScore,
-        percentile
-      }
-    })
+    // Use the volVsReturns data from API, but calculate volume z-scores
+    return rawData.value.volVsReturns.map(d => ({
+      symbol: 'BTC', // Default symbol, update if API provides it
+      returns: d.returns * 100,
+      volumeZScore: calculateVolumeZScore(d.volume),
+      volatilityZScore: d.volZScore,
+      volume: d.volume
+    }))
   })
   
-  // Aggregate statistics
-  const stats = computed(() => {
-    const allVolatilities = Array.from(latestBySymbol.value.values()).map(d => d.volatility)
-    
-    if (allVolatilities.length === 0) {
-      return { 
-        meanVolatility: 0, 
-        maxVolatility: 0,
-        minVolatility: 0,
-        highVolCount: 0,
-        lowVolCount: 0
-      }
-    }
-    
-    return { 
-      meanVolatility: (allVolatilities.reduce((a, b) => a + b, 0) / allVolatilities.length) * 100,
-      maxVolatility: Math.max(...allVolatilities) * 100,
-      minVolatility: Math.min(...allVolatilities) * 100,
-      highVolCount: highVolCoins.value.length,
-      lowVolCount: lowVolCoins.value.length
-    }
+  // High volatility coins (Z > 1.5)
+  const highVolCoins = computed(() => {
+    return annualizedVolatilityData.value
+      .filter(coin => coin.volatilityZScore > 1.5)
+      .slice(0, 10)
   })
+  
+  // Low volatility coins (Z < -1.5)
+  const lowVolCoins = computed(() => {
+    return annualizedVolatilityData.value
+      .filter(coin => coin.volatilityZScore < -1.5)
+      .sort((a, b) => a.volatilityZScore - b.volatilityZScore)
+      .slice(0, 10)
+  })
+  
+  // Color scale for volatility heatmap
+  function getVolatilityHeatmapColor(annualizedVol: number): string {
+    // Scale: 0% (blue) -> 50% (yellow) -> 100%+ (red)
+    const clampedVol = Math.min(Math.max(annualizedVol, 0), 100)
+    const ratio = clampedVol / 100
+    
+    if (ratio < 0.5) {
+      // Blue to Yellow
+      const intensity = ratio * 2
+      return `rgb(${Math.floor(255 * intensity)}, ${Math.floor(255 * intensity)}, ${Math.floor(255 * (1 - intensity))})`
+    } else {
+      // Yellow to Red
+      const intensity = (ratio - 0.5) * 2
+      return `rgb(255, ${Math.floor(255 * (1 - intensity))}, 0)`
+    }
+  }
   
   // Fetch data
   async function fetchData(params: {
@@ -142,6 +170,7 @@ export function useVolatilityData() {
     period: string
     exchange: string
     topN?: number
+    coin?: string
   }) {
     loading.value = true
     error.value = null
@@ -149,9 +178,10 @@ export function useVolatilityData() {
     try {
       const response = await fetchVolatilityAnalysis({
         ...params,
+        timeframe: params.timeframe as Timeframe,
         topN: params.topN || 50
       })
-      rawData.value = response.volatilityTimeSeries || []
+      rawData.value = response
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch volatility data'
       console.error('Volatility fetch error:', e)
@@ -161,33 +191,29 @@ export function useVolatilityData() {
   }
   
   function clear() {
-    rawData.value = []
+    rawData.value = null
     error.value = null
   }
   
   return {
     // State
-    rawData,
     loading,
     error,
     
-    // Grouped data
-    dataBySymbol,
-    latestBySymbol,
-    chartData,
-    
-    // Computed plots data
-    volZScoreVsReturns,
-    rangeDistribution,
-    volumeZScoreVsRange,
-    realizedVolPercentiles,
+    // Computed data
+    annualizedVolatilityData,
+    volVsVolumeZScore1H,
+    volVsVolumeZScore1D,
+    volumeZScoreVsReturns,
     highVolCoins,
     lowVolCoins,
-    stats,
+    
+    // Helper functions
+    getVolatilityHeatmapColor,
     
     // Methods
     fetchData,
     clear,
-    hasData: computed(() => rawData.value.length > 0)
+    hasData: computed(() => rawData.value !== null && rawData.value.volatilityTimeSeries.length > 0)
   }
 }
