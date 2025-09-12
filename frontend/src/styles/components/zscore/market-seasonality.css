@@ -1,0 +1,420 @@
+/* src/styles/components/zscore/market-seasonality.css */
+
+/* ---- PATTERN TABS -------------------------------------------- */
+.pattern-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: var(--space-lg);
+  background: var(--bg-primary);
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: capitalize;
+}
+
+.tab-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--color-accent);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+/* ---- ANOMALY GRID -------------------------------------------- */
+.anomaly-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-lg);
+}
+
+.anomaly-card {
+  padding: var(--space-lg);
+  background: var(--bg-primary);
+  border-radius: 12px;
+  border: 2px solid var(--border-primary);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.anomaly-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--border-primary);
+  transition: background 0.2s ease;
+}
+
+.anomaly-card.extreme {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.02);
+}
+
+.anomaly-card.extreme::before {
+  background: var(--color-negative);
+}
+
+.anomaly-card.moderate {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.02);
+}
+
+.anomaly-card.moderate::before {
+  background: var(--color-warning);
+}
+
+.anomaly-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.anomaly-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.anomaly-symbol {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.anomaly-zscore {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}
+
+.anomaly-card.extreme .anomaly-zscore {
+  color: var(--color-negative);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.anomaly-card.moderate .anomaly-zscore {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.anomaly-period {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.anomaly-metric {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+  margin-bottom: var(--space-md);
+}
+
+.anomaly-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+}
+
+.current-value,
+.historical-value {
+  text-align: center;
+}
+
+.anomaly-values .label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.anomaly-values .value {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.anomaly-status {
+  font-size: 13px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+/* ---- PERSISTENCE RANKINGS ------------------------------------ */
+.persistence-rankings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.persistence-header {
+  display: grid;
+  grid-template-columns: 80px repeat(3, 60px) 1fr;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--border-primary);
+  background: var(--bg-primary);
+}
+
+.persistence-item {
+  display: grid;
+  grid-template-columns: 80px repeat(3, 60px) 1fr;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  align-items: center;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.persistence-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-primary);
+  transform: translateX(2px);
+}
+
+.persistence-item .symbol {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.correlation {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-align: center;
+  font-size: 13px;
+}
+
+.correlation.strong { 
+  color: var(--color-positive);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.correlation.medium { 
+  color: var(--color-info);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.correlation.weak { 
+  color: var(--text-tertiary); 
+}
+
+.pattern-type {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ---- ACTIVITY COMPARISON ------------------------------------- */
+.activity-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2xl);
+}
+
+.activity-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-section h4 {
+  margin: 0 0 var(--space-lg) 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.activity-item {
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+  transition: all 0.2s ease;
+}
+
+.activity-item.high {
+  border-color: rgba(239, 68, 68, 0.2);
+  background: var(--bg-primary);
+  border-left: 3px solid var(--color-negative);
+}
+
+.activity-item.low {
+  border-color: rgba(59, 130, 246, 0.2);
+  background: var(--bg-primary);
+  border-left: 3px solid var(--color-info);
+}
+
+.activity-item:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.period-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.period-info .asset {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.period-info .time {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.metrics {
+  display: flex;
+  gap: var(--space-lg);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+
+.metrics .vol {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.metrics .volume {
+  color: var(--text-secondary);
+}
+
+/* ---- INSIGHTS GRID ------------------------------------------- */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-lg);
+}
+
+.insight-card {
+  background: var(--bg-primary);
+  padding: var(--space-lg);
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  transition: all 0.2s ease;
+}
+
+.insight-card:hover {
+  border-color: var(--border-secondary);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.insight-card h4 {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--border-primary);
+}
+
+/* ---- RESPONSIVE ADJUSTMENTS ---------------------------------- */
+@media (max-width: 1200px) {
+  .anomaly-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+  
+  .activity-comparison {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+  
+  .insights-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .pattern-tabs {
+    flex-direction: column;
+  }
+  
+  .tab-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .persistence-header,
+  .persistence-item {
+    font-size: 11px;
+    grid-template-columns: 60px repeat(3, 50px) 1fr;
+    gap: var(--space-sm);
+  }
+  
+  .anomaly-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .timezone-item {
+    font-size: 11px;
+    grid-template-columns: 60px 80px 1fr;
+  }
+}

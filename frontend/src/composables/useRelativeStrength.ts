@@ -82,7 +82,7 @@ export function useRelativeStrength() {
   const topPerformers = computed(() => rsRankings.value.slice(0, 5))
   const bottomPerformers = computed(() => rsRankings.value.slice(-5).reverse())
   
-  // Pair divergence analysis
+  // Pair divergence analysis - FIXED TYPE COMPATIBILITY
   const pairDivergences = computed<PairDivergence[]>(() => {
     if (!rawData.value?.pairDivergence) return []
     
@@ -90,31 +90,49 @@ export function useRelativeStrength() {
       .filter(div => div.timeSeries && div.timeSeries.length > 0)
       .map(div => {
         const timeSeries = div.timeSeries || []
-        const zscores = timeSeries.map(t => t.zscore || Math.abs(t.spread))
-        const spreads = timeSeries.map(t => t.spread)
+        
+        // Filter out undefined spreads and ensure they are numbers
+        const validSpreads = timeSeries
+          .map(t => t.spread)
+          .filter((spread): spread is number => spread !== undefined && spread !== null)
+        
+        const validZScores = timeSeries
+          .map(t => t.zscore)
+          .filter((zscore): zscore is number => zscore !== undefined && zscore !== null)
+        
+        // Use the last valid values or defaults
+        const lastSpread = validSpreads.length > 0 ? validSpreads[validSpreads.length - 1] : 0
+        const lastZScore = validZScores.length > 0 ? validZScores[validZScores.length - 1] : 0
+        
+        // Calculate historical range only from valid numbers
+        const historicalMin = validSpreads.length > 0 ? Math.min(...validSpreads) : 0
+        const historicalMax = validSpreads.length > 0 ? Math.max(...validSpreads) : 0
+        
+        // Create time series with guaranteed number types
+        const processedTimeSeries = timeSeries.map(t => ({
+          timestamp: t.timestamp,
+          spread: t.spread !== undefined && t.spread !== null ? t.spread : 0,
+          zScore: t.zscore !== undefined && t.zscore !== null ? t.zscore : Math.abs(t.spread || 0)
+        }))
         
         return {
           pair: div.pair,
           coin1: div.pair.split('-')[0],
           coin2: div.pair.split('-')[1],
-          spread: spreads[spreads.length - 1] || 0,
-          zScore: zscores[zscores.length - 1] || 0,
+          spread: lastSpread,
+          zScore: lastZScore,
           historicalRange: {
-            min: Math.min(...spreads),
-            max: Math.max(...spreads)
+            min: historicalMin,
+            max: historicalMax
           },
-          timeSeries: timeSeries.map(t => ({
-            timestamp: t.timestamp,
-            spread: t.spread,
-            zScore: t.zscore || Math.abs(t.spread)
-          }))
+          timeSeries: processedTimeSeries
         }
       })
       .filter(d => d.zScore > 1.5) // Only extreme divergences
   })
   
-  // Momentum persistence analysis
-  const momentumPersistence = computed<MomentumPersistence[]>(() => {
+  // Momentum persistence analysis - FIXED TYPE COMPATIBILITY
+  const momentumPersistence = computed(() => {
     if (!rawData.value?.persistence) return []
     
     // Group by persistence strength
@@ -129,26 +147,28 @@ export function useRelativeStrength() {
       return acc
     }, {} as Record<string, string[]>)
     
-    return [
+    const result = [
       {
-        category: 'strong',
+        category: 'strong' as const,
         correlation: 0.85, // Average of strong correlations
         coins: grouped.strong || [],
         description: 'ρ > 0.7'
       },
       {
-        category: 'medium',
+        category: 'medium' as const,
         correlation: 0.5,
         coins: grouped.medium || [],
         description: '0.3 - 0.7'
       },
       {
-        category: 'weak',
+        category: 'weak' as const,
         correlation: 0.15,
         coins: grouped.weak || [],
         description: 'ρ < 0.3'
       }
     ].filter(cat => cat.coins.length > 0)
+    
+    return result
   })
   
   // Cross-sectional momentum factors

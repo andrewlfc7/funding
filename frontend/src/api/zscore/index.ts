@@ -28,3 +28,5 @@ export { fetchInterAssetZScore } from './interAsset'        // if you have it
 export { fetchVolatilityLiquidity } from './volatilityLiquidity'
 export { fetchMarketRegime } from './marketRegime'
 export { fetchRelativeStrength } from './relativeStrength'
+export { getMarketMicrostructureFlow } from './marketMicroStructure'
+

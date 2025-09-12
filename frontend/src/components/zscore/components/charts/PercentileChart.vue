@@ -72,34 +72,6 @@ function createChart() {
             }
           }
         },
-        annotation: {
-          annotations: {
-            line25: {
-              type: 'line',
-              yMin: 25,
-              yMax: 25,
-              borderColor: 'rgba(255, 255, 255, 0.2)',
-              borderWidth: 1,
-              borderDash: [5, 5]
-            },
-            line50: {
-              type: 'line',
-              yMin: 50,
-              yMax: 50,
-              borderColor: 'rgba(255, 255, 255, 0.3)',
-              borderWidth: 1,
-              borderDash: [5, 5]
-            },
-            line75: {
-              type: 'line',
-              yMin: 75,
-              yMax: 75,
-              borderColor: 'rgba(255, 255, 255, 0.2)',
-              borderWidth: 1,
-              borderDash: [5, 5]
-            }
-          }
-        }
       },
       scales: {
         x: {

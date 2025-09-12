@@ -1,21 +1,25 @@
 use axum::{extract::{Query, State}, Json};
-use serde::{Deserialize,Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use serde::de::{Error as DeError, SeqAccess, Visitor};
 use sqlx::PgPool;
+use std::fmt;
+use std::sync::OnceLock;
+
+use crate::infra::task_pools::{EndpointPool, threads_from_env};
 
 use super::{
-    de_string_or_vec, fetch_multi_hourly_ohlcv, parse_period_days, resample_from_hourly,
+    fetch_multi_hourly_ohlcv, parse_period_days, resample_from_hourly,
     top_markets_by_usd_volume_live, zscore_series, Tf,
 };
 
+fn default_market_type() -> String { "spot".to_string() }
+fn default_timeframe() -> String { "1h".to_string() }
+fn default_window() -> usize { 48 } // ~2 days @1h
+#[inline] fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
 
-use serde::de::{Error as DeError, SeqAccess, Visitor};
-use std::fmt;
-
-// Accept string, CSV string, or a sequence (?coins[]=A&coins[]=B, or repeated coins=)
+// Accept string, CSV string, or a sequence (?coins=A&coins=B or coins=A,B)
 fn string_or_seq<'de, D>(de: D) -> Result<Vec<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
+where D: Deserializer<'de> {
     struct StrOrSeq;
     impl<'de> Visitor<'de> for StrOrSeq {
         type Value = Vec<String>;
@@ -33,9 +37,7 @@ where
             Ok(if parts.is_empty() { vec![v.to_string()] } else { parts })
         }
         fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-        where E: DeError {
-            self.visit_str(&v)
-        }
+        where E: DeError { self.visit_str(&v) }
         fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
         where A: SeqAccess<'de> {
             let mut out = Vec::new();
@@ -57,15 +59,9 @@ where
     de.deserialize_any(StrOrSeq)
 }
 
+// ---------- DTOs ----------
 
-fn default_market_type() -> String { "spot".to_string() }
-fn default_timeframe() -> String { "1h".to_string() }
-#[inline] fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
-
-
-
-
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct InterAssetZScoreRequest {
     #[serde(default, deserialize_with = "string_or_seq")]
     pub coins: Vec<String>,
@@ -83,9 +79,6 @@ pub struct InterAssetZScoreRequest {
     pub indexCoin: Option<String>,
 }
 
-
-fn default_window() -> usize { 48 } // 2 days @1h
-
 #[derive(Debug, Serialize)]
 pub struct InterAssetZScoreResponse {
     pub zscoreCorrelationMatrix: ZCorrMat,
@@ -101,13 +94,13 @@ pub struct ZCorrMat {
 
 #[derive(Debug, Serialize)]
 pub struct ZBetaMat {
-    pub coins: Vec<String>,  // same order as corr coins
-    pub matrix: Vec<Vec<f64>>, // for completeness, diagonal 1.0 for index row
+    pub coins: Vec<String>,        // matches the order of matrices (index first)
+    pub matrix: Vec<Vec<f64>>,     // here: m x 1 (beta vs index)
 }
 
 #[derive(Debug, Serialize)]
 pub struct PairDiv {
-    pub pair: String, // "BTC-ETH"
+    pub pair: String,              // "BTC-ETH"
     pub timeSeries: Vec<DivergenceRow>,
 }
 
@@ -116,62 +109,122 @@ pub struct DivergenceRow {
     pub timestamp: i64,
     pub zscore1: f64,
     pub zscore2: f64,
-    pub divergence: f64, // z1 - z2
+    pub divergence: f64,           // z1 - z2
 }
 
+// ---------- Math helpers ----------
+
 fn pearson(x: &[f64], y: &[f64]) -> f64 {
-    let n = x.len().min(y.len()); if n==0 {return 0.0;}
-    let (mut sx,mut sy,mut sxx,mut syy,mut sxy)=(0.0,0.0,0.0,0.0,0.0); let mut m=0usize;
-    for i in 0..n { let (a,b)=(x[i],y[i]); if a.is_finite()&&b.is_finite(){sx+=a;sy+=b;sxx+=a*a;syy+=b*b;sxy+=a*b;m+=1;} }
-    if m<=1 {return 0.0;} let mf=m as f64; let cov=sxy - sx*sy/mf; let vx=sxx - sx*sx/mf; let vy=syy - sy*sy/mf;
-    if vx<=0.0||vy<=0.0 {0.0} else { finite(cov/(vx.sqrt()*vy.sqrt())) }
+    let n = x.len().min(y.len());
+    if n == 0 { return 0.0; }
+    let (mut sx, mut sy, mut sxx, mut syy, mut sxy) = (0.0, 0.0, 0.0, 0.0, 0.0);
+    let mut m = 0usize;
+    for i in 0..n {
+        let (a, b) = (x[i], y[i]);
+        if a.is_finite() && b.is_finite() {
+            sx += a; sy += b; sxx += a*a; syy += b*b; sxy += a*b; m += 1;
+        }
+    }
+    if m <= 1 { return 0.0; }
+    let mf = m as f64;
+    let cov = sxy - sx*sy/mf;
+    let vx  = sxx - sx*sx/mf;
+    let vy  = syy - sy*sy/mf;
+    if vx <= 0.0 || vy <= 0.0 { 0.0 } else { finite(cov / (vx.sqrt() * vy.sqrt())) }
 }
 
 fn beta_vs(x: &[f64], idx: &[f64]) -> f64 {
-    let n = x.len().min(idx.len()); if n==0 {return 0.0;}
-    let (mut sx,mut si,mut sxx,mut sii,mut sxi)=(0.0,0.0,0.0,0.0,0.0); let mut m=0usize;
-    for i in 0..n { let (a,b)=(x[i],idx[i]); if a.is_finite()&&b.is_finite(){sx+=a;si+=b;sxx+=a*a;sii+=b*b;sxi+=a*b;m+=1;} }
-    if m<=1 {return 0.0;} let mf=m as f64; let cov=sxi - sx*si/mf; let var=sii - si*si/mf;
-    if var<=0.0 {0.0} else { finite(cov/var) }
+    let n = x.len().min(idx.len());
+    if n == 0 { return 0.0; }
+    let (mut sx, mut si, mut sxx, mut sii, mut sxi) = (0.0, 0.0, 0.0, 0.0, 0.0);
+    let mut m = 0usize;
+    for i in 0..n {
+        let (a, b) = (x[i], idx[i]);
+        if a.is_finite() && b.is_finite() {
+            sx += a; si += b; sxx += a*a; sii += b*b; sxi += a*b; m += 1;
+        }
+    }
+    if m <= 1 { return 0.0; }
+    let mf = m as f64;
+    let cov = sxi - sx*si/mf;
+    let var = sii - si*si/mf;
+    if var <= 0.0 { 0.0 } else { finite(cov / var) }
 }
 
+// ---------- Task pool plumbing ----------
+
+#[derive(Clone)]
+struct Job { pool: PgPool, q: InterAssetZScoreRequest }
+
+static INTER_Z_POOL: OnceLock<EndpointPool<Job, InterAssetZScoreResponse>> = OnceLock::new();
+
+fn pool() -> &'static EndpointPool<Job, InterAssetZScoreResponse> {
+    INTER_Z_POOL.get_or_init(|| {
+        let n = threads_from_env("INTER_ASSET_Z_THREADS", 2);
+        EndpointPool::start("inter-asset-z", n, |job: Job| async move {
+            compute_inter_asset_zscore(job.pool, job.q).await
+        })
+    })
+}
+
+// ---------- Handler (dispatches to pool) ----------
+
 pub async fn get_inter_asset_zscore(
-    State(pool): State<PgPool>,
+    State(pool_state): State<PgPool>,
     Query(q): Query<InterAssetZScoreRequest>,
 ) -> Json<InterAssetZScoreResponse> {
+    let res = pool().run(Job { pool: pool_state.clone(), q }).await;
+    Json(res)
+}
+
+// ---------- Heavy computation (runs inside pool runtime) ----------
+
+async fn compute_inter_asset_zscore(
+    pool: PgPool,
+    q: InterAssetZScoreRequest,
+) -> InterAssetZScoreResponse {
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
-    let since_unix = (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
+    let since_unix =
+        (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
 
     // Universe
     let mut symbols: Vec<String> = if !q.coins.is_empty() {
         q.coins.iter().map(|s| s.to_uppercase()).collect()
     } else {
-        top_markets_by_usd_volume_live(&pool, &q.exchange, &q.marketType, days as i32, q.topN.unwrap_or(30))
-            .await
-            .unwrap_or_default()
-            .into_iter()
-            .map(|(s,_,_)| s)
-            .collect()
+        top_markets_by_usd_volume_live(
+            &pool, &q.exchange, &q.marketType, days as i32, q.topN.unwrap_or(30),
+        )
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .map(|(s, _, _)| s)
+        .collect()
     };
+
     if symbols.is_empty() {
-        return Json(InterAssetZScoreResponse {
+        return InterAssetZScoreResponse {
             zscoreCorrelationMatrix: ZCorrMat { coins: vec![], matrix: vec![] },
             zscoreBetaMatrix: ZBetaMat { coins: vec![], matrix: vec![] },
             pairDivergence: vec![],
-        });
+        };
     }
 
     // Resolve market ids and load hourly data
     let mut mids: Vec<i32> = Vec::new();
     let mut sym_mid: Vec<(String, i32)> = Vec::new();
     for s in &symbols {
-        if let Ok(mid) = super::resolve_market_id_with_data(&pool, &q.exchange, s, &q.marketType, since_unix).await {
+        if let Ok(mid) = super::resolve_market_id_with_data(
+            &pool, &q.exchange, s, &q.marketType, since_unix
+        ).await {
             mids.push(mid);
             sym_mid.push((s.clone(), mid));
         }
     }
-    let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix).await.unwrap_or_default();
+
+    let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix)
+        .await
+        .unwrap_or_default();
 
     // Build aligned z-score series
     #[derive(Clone)]
@@ -182,6 +235,7 @@ pub async fn get_inter_asset_zscore(
         let Some(hourly) = by_mid.get(&mid) else { continue; };
         let ser = resample_from_hourly(hourly, tf.period_secs());
         if ser.len() < q.window + 6 { continue; }
+
         let ts: Vec<i64> = ser.iter().map(|r| r.ts).collect();
         let close: Vec<f64> = ser.iter().map(|r| r.close).collect();
 
@@ -197,14 +251,14 @@ pub async fn get_inter_asset_zscore(
     }
 
     if zsers.len() < 2 {
-        return Json(InterAssetZScoreResponse {
+        return InterAssetZScoreResponse {
             zscoreCorrelationMatrix: ZCorrMat { coins: vec![], matrix: vec![] },
             zscoreBetaMatrix: ZBetaMat { coins: vec![], matrix: vec![] },
             pairDivergence: vec![],
-        });
+        };
     }
 
-    // Align all by last common length
+    // Align all by last common length (assumes same cadence)
     let min_len = zsers.iter().map(|s| s.z.len()).min().unwrap_or(0);
     for s in &mut zsers {
         if s.z.len() > min_len {
@@ -214,16 +268,15 @@ pub async fn get_inter_asset_zscore(
         }
     }
 
-    let coins: Vec<String> = zsers.iter().map(|s| s.sym.clone()).collect();
-    let m = zsers.len();
-
-    // Choose index
+    // Put index first (if present)
     let idx_name = q.indexCoin.clone().unwrap_or_else(|| "BTC".to_string()).to_uppercase();
-    let mut idx_pos = 0usize;
-    if let Some(pos) = coins.iter().position(|s| s == &idx_name) { idx_pos = pos; }
-    if idx_pos != 0 {
-        zsers.swap(0, idx_pos);
+    if let Some(pos) = zsers.iter().position(|s| s.sym == idx_name) {
+        if pos != 0 { zsers.swap(0, pos); }
     }
+
+    // Coins order used for all matrices (index first)
+    let coins_order: Vec<String> = zsers.iter().map(|s| s.sym.clone()).collect();
+    let m = zsers.len();
 
     // Correlation of z-scores
     let mut corr = vec![vec![0.0; m]; m];
@@ -234,14 +287,14 @@ pub async fn get_inter_asset_zscore(
         }
     }
 
-    // Beta of z-scores vs index
+    // Beta of z-scores vs index (matrix m x 1)
     let idx = &zsers[0].z;
     let mut beta = vec![vec![0.0; 1]; m];
     for i in 0..m {
         beta[i][0] = beta_vs(&zsers[i].z, idx);
     }
 
-    // Pair divergence: pick top 5 by |last divergence|
+    // Pair divergence: rank by |last divergence|
     let mut pair_divs: Vec<(String, Vec<DivergenceRow>, f64)> = Vec::new();
     for i in 0..m {
         for j in (i+1)..m {
@@ -265,15 +318,15 @@ pub async fn get_inter_asset_zscore(
         }
     }
     pair_divs.sort_by(|a,b| b.2.total_cmp(&a.2));
-    let pairDivergence = pair_divs.into_iter().take(5).map(|(p, rows, _)| PairDiv {
-        pair: p, timeSeries: rows,
-    }).collect();
+    let pairDivergence = pair_divs
+        .into_iter()
+        .take(5)
+        .map(|(p, rows, _)| PairDiv { pair: p, timeSeries: rows })
+        .collect();
 
-    Json(InterAssetZScoreResponse {
-        zscoreCorrelationMatrix: ZCorrMat { coins, matrix: corr },
-        zscoreBetaMatrix: ZBetaMat { coins: zsers.iter().map(|s| s.sym.clone()).collect(), matrix: beta },
+    InterAssetZScoreResponse {
+        zscoreCorrelationMatrix: ZCorrMat { coins: coins_order.clone(), matrix: corr },
+        zscoreBetaMatrix:        ZBetaMat { coins: coins_order,          matrix: beta },
         pairDivergence,
-    })
+    }
 }
-
-

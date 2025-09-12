@@ -2,8 +2,11 @@ use axum::{extract::{Query, State}, Json};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::{Error as DeError, SeqAccess, Visitor};
 use sqlx::PgPool;
-use std::fmt;
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt;
+use std::sync::OnceLock;
+
+use crate::infra::task_pools::{EndpointPool, threads_from_env};
 
 use super::{
     fetch_multi_hourly_ohlcv, log_returns, parse_period_days, resample_from_hourly,
@@ -19,14 +22,12 @@ fn default_timeframe() -> String { "1h".to_string() }
 // Treat common and variant tickers as stables (extend as needed)
 fn is_stable_symbol(sym: &str) -> bool {
     let s = sym.trim().to_ascii_uppercase();
-    // common stables & variants
     const STABLES: &[&str] = &[
         "USD","USDT","USDC","FDUSD","FUSD","TUSD","BUSD","DAI","PYUSD","USDE","USDD","USDP",
         "GUSD","USDJ","USDX","FRAX","LUSD","SUSD","MIM","DOLA","EURS","EURC","EURT","CRVUSD",
         "USDL",
     ];
     if STABLES.contains(&s.as_str()) { return true; }
-    // generic catch-alls (covers many chain-specific stables)
     s.ends_with("USD") || s.ends_with("USDT") || s.ends_with("USDC")
 }
 
@@ -40,12 +41,21 @@ where D: Deserializer<'de> {
             write!(f, "string, CSV string, or sequence of strings")
         }
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: DeError {
-            Ok(v.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(String::from).collect())
+            Ok(v.split(',')
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+                .map(String::from)
+                .collect())
         }
         fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error> where A: SeqAccess<'de> {
             let mut out = Vec::new();
             while let Some(elem) = seq.next_element::<String>()? {
-                out.extend(elem.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(String::from));
+                out.extend(
+                    elem.split(',')
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                        .map(String::from)
+                );
             }
             Ok(out)
         }
@@ -55,7 +65,7 @@ where D: Deserializer<'de> {
 
 // ---------- Request DTO ----------
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct CrossAssetRequest {
     #[serde(default)]
     pub indexCoin: Option<String>,
@@ -72,29 +82,37 @@ pub struct CrossAssetRequest {
     pub timeframe: String,
 }
 
-// ---------- Unified Response DTOs (without histograms) ----------
+// ---------- Response DTOs ----------
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CrossAssetAnalyticsResponse {
     pub correlation_matrix: CorrMatrix,
-    pub beta_matrix: BetaMatrix,
+    pub covariance_matrix: CovMatrix,
     pub index: String,
-    pub rolling_corr: Vec<Vec<f64>>,
-    pub rolling_beta: Vec<Vec<f64>>,
+    pub rolling_corr: Vec<Vec<f64>>,   // [coin][time] rolling Pearson
+    pub rolling_beta: Vec<Vec<f64>>,   // [coin][time] rolling beta vs index
+    pub coin_betas: CoinBetas,         // latest-window betas (vector)
 }
 
 #[derive(Debug, Serialize)]
 pub struct CorrMatrix {
     pub coins: Vec<String>,
     pub matrix: Vec<Vec<f64>>,
+    pub timestamp: i64, // Timestamp of the last data point used
+}
+
+#[derive(Debug, Serialize)]
+pub struct CovMatrix {
+    pub coins: Vec<String>,
+    pub matrix: Vec<Vec<f64>>,
     pub timestamp: i64,
 }
 
 #[derive(Debug, Serialize)]
-pub struct BetaMatrix {
+pub struct CoinBetas {
     pub coins: Vec<String>,
-    pub betas: Vec<f64>,
+    pub betas: Vec<f64>, // beta vs index for the last window
 }
 
 // ---------- Calculation Helpers ----------
@@ -119,6 +137,23 @@ fn pearson(x: &[f64], y: &[f64]) -> f64 {
     finite(cov / (vx.sqrt() * vy.sqrt()))
 }
 
+fn covariance_sample(x: &[f64], y: &[f64]) -> f64 {
+    let n = x.len();
+    if n == 0 || n != y.len() { return 0.0; }
+    let (mut sx, mut sy, mut sxy) = (0.0, 0.0, 0.0);
+    let mut m = 0usize;
+    for i in 0..n {
+        let (xi, yi) = (x[i], y[i]);
+        if xi.is_finite() && yi.is_finite() {
+            sx += xi; sy += yi; sxy += xi*yi; m += 1;
+        }
+    }
+    if m <= 1 { return 0.0; }
+    let m_f = m as f64;
+    let cov_num = sxy - sx * sy / m_f;        // sum((x-mean)(y-mean))
+    cov_num / ((m - 1) as f64)                // sample covariance
+}
+
 fn beta_vs(x: &[f64], idx: &[f64]) -> f64 {
     let n = x.len();
     if n == 0 || n != idx.len() { return 0.0; }
@@ -132,18 +167,44 @@ fn beta_vs(x: &[f64], idx: &[f64]) -> f64 {
     }
     if m <= 1 { return 0.0; }
     let m_f = m as f64;
-    let cov = sxi - sx * si / m_f;
-    let var = sii - si * si / m_f;
-    if var <= 0.0 { return 0.0; }
-    finite(cov / var)
+    let cov_num = sxi - sx * si / m_f;        // numerator of covariance
+    let var_num = sii - si * si / m_f;        // numerator of variance
+    if var_num <= 0.0 { return 0.0; }
+    finite(cov_num / var_num)
 }
 
-// ---------- Handler (stablecoin-filtered) ----------
+// ---------- Pool plumbing ----------
+
+#[derive(Clone)]
+struct Job { pool: PgPool, q: CrossAssetRequest }
+
+static CROSS_ASSET_POOL: OnceLock<EndpointPool<Job, CrossAssetAnalyticsResponse>> = OnceLock::new();
+
+fn pool() -> &'static EndpointPool<Job, CrossAssetAnalyticsResponse> {
+    CROSS_ASSET_POOL.get_or_init(|| {
+        let n = threads_from_env("CROSS_ASSET_THREADS", 2);
+        EndpointPool::start("cross-asset", n, |job: Job| async move {
+            compute_cross_asset_analytics(job.pool, job.q).await
+        })
+    })
+}
+
+// ---------- Handler (posts work to pool) ----------
 
 pub async fn get_cross_asset_analytics(
-    State(pool): State<PgPool>,
+    State(pool_state): State<PgPool>,
     Query(q): Query<CrossAssetRequest>,
 ) -> Json<CrossAssetAnalyticsResponse> {
+    let res = pool().run(Job { pool: pool_state.clone(), q }).await;
+    Json(res)
+}
+
+// ---------- Heavy compute (runs inside the pool runtime) ----------
+
+async fn compute_cross_asset_analytics(
+    pool: PgPool,
+    q: CrossAssetRequest,
+) -> CrossAssetAnalyticsResponse {
     // 1) Setup
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
@@ -171,7 +232,7 @@ pub async fn get_cross_asset_analytics(
 
     // need at least 2 symbols after filtering
     if sym_set.len() < 2 {
-        return Json(CrossAssetAnalyticsResponse::default());
+        return CrossAssetAnalyticsResponse::default();
     }
 
     let all_symbols: Vec<String> = sym_set.into_iter().collect();
@@ -204,7 +265,7 @@ pub async fn get_cross_asset_analytics(
         }
     }
 
-    if resampled_data.len() < 2 { return Json(CrossAssetAnalyticsResponse::default()); }
+    if resampled_data.len() < 2 { return CrossAssetAnalyticsResponse::default(); }
 
     // 4) Align by common timestamps
     let mut common_timestamps = resampled_data.values().next().unwrap().1.clone();
@@ -234,27 +295,27 @@ pub async fn get_cross_asset_analytics(
         }
     }
 
-    if aligned_data.len() < 2 { return Json(CrossAssetAnalyticsResponse::default()); }
+    if aligned_data.len() < 2 { return CrossAssetAnalyticsResponse::default(); }
 
-    let all_symbols_final: Vec<String> = aligned_data.values().map(|(s, _)| s.clone()).collect();
-    let all_returns_final: Vec<&Vec<f64>> = aligned_data.values().map(|(_, lr)| lr).collect();
+    let coins: Vec<String> = aligned_data.values().map(|(s, _)| s.clone()).collect();
+    let returns: Vec<&Vec<f64>> = aligned_data.values().map(|(_, lr)| lr).collect();
 
     // ensure index exists post-filter; else fallback to first
-    let index_pos = all_symbols_final.iter().position(|s| *s == index_sym).unwrap_or(0);
-    let index_returns = &all_returns_final[index_pos];
-    if index_returns.len() < q.window { return Json(CrossAssetAnalyticsResponse::default()); }
+    let index_pos = coins.iter().position(|s| *s == index_sym).unwrap_or(0);
+    let index_returns = &returns[index_pos];
+    if index_returns.len() < q.window { return CrossAssetAnalyticsResponse::default(); }
 
     let steps = index_returns.len().saturating_sub(q.window) + 1;
 
     // 5) Rolling stats
-    let mut rolling_corr = vec![vec![0.0; steps]; all_symbols_final.len()];
-    let mut rolling_beta = vec![vec![0.0; steps]; all_symbols_final.len()];
+    let mut rolling_corr = vec![vec![0.0; steps]; coins.len()];
+    let mut rolling_beta = vec![vec![0.0; steps]; coins.len()];
 
     for i in 0..steps {
         let w0 = i;
         let w1 = w0 + q.window;
         let idx_slice = &index_returns[w0..w1];
-        for (j, coin_returns) in all_returns_final.iter().enumerate() {
+        for (j, coin_returns) in returns.iter().enumerate() {
             let coin_slice = &coin_returns[w0..w1];
             rolling_corr[j][i] = pearson(coin_slice, idx_slice);
             rolling_beta[j][i] = beta_vs(coin_slice, idx_slice);
@@ -265,28 +326,42 @@ pub async fn get_cross_asset_analytics(
     let last_window_start = index_returns.len() - q.window;
     let last_ts = *common_timestamps.last().unwrap_or(&0);
 
-    let mut corr_matrix_values = vec![vec![0.0; all_symbols_final.len()]; all_symbols_final.len()];
-    for i in 0..all_symbols_final.len() {
-        for j in i..all_symbols_final.len() {
-            let c = pearson(&all_returns_final[i][last_window_start..],
-                            &all_returns_final[j][last_window_start..]);
+    // Correlation matrix
+    let mut corr_matrix_values = vec![vec![0.0; coins.len()]; coins.len()];
+    for i in 0..coins.len() {
+        for j in i..coins.len() {
+            let c = pearson(&returns[i][last_window_start..],
+                            &returns[j][last_window_start..]);
             corr_matrix_values[i][j] = c;
             corr_matrix_values[j][i] = c;
         }
     }
 
-    let final_betas: Vec<f64> = all_returns_final.iter()
+    // Covariance matrix (sample)
+    let mut cov_matrix_values = vec![vec![0.0; coins.len()]; coins.len()];
+    for i in 0..coins.len() {
+        for j in i..coins.len() {
+            let cov = covariance_sample(&returns[i][last_window_start..],
+                                        &returns[j][last_window_start..]);
+            cov_matrix_values[i][j] = cov;
+            cov_matrix_values[j][i] = cov;
+        }
+    }
+
+    // Latest-window betas (vector)
+    let final_betas: Vec<f64> = returns.iter()
         .map(|s| beta_vs(&s[last_window_start..], &index_returns[last_window_start..]))
         .collect();
 
     // 7) Response
-    Json(CrossAssetAnalyticsResponse {
-        correlation_matrix: CorrMatrix { coins: all_symbols_final.clone(), matrix: corr_matrix_values, timestamp: last_ts },
-        beta_matrix: BetaMatrix { coins: all_symbols_final.clone(), betas: final_betas },
+    CrossAssetAnalyticsResponse {
+        correlation_matrix: CorrMatrix { coins: coins.clone(), matrix: corr_matrix_values, timestamp: last_ts },
+        covariance_matrix:  CovMatrix  { coins: coins.clone(), matrix: cov_matrix_values,  timestamp: last_ts },
         index: index_sym,
         rolling_corr,
         rolling_beta,
-    })
+        coin_betas: CoinBetas { coins, betas: final_betas },
+    }
 }
 
 // Default implementation for empty/error responses
@@ -294,10 +369,11 @@ impl Default for CrossAssetAnalyticsResponse {
     fn default() -> Self {
         Self {
             correlation_matrix: CorrMatrix { coins: vec![], matrix: vec![], timestamp: 0 },
-            beta_matrix: BetaMatrix { coins: vec![], betas: vec![] },
+            covariance_matrix:  CovMatrix  { coins: vec![], matrix: vec![], timestamp: 0 },
             index: "BTC".to_string(),
             rolling_corr: vec![],
             rolling_beta: vec![],
+            coin_betas: CoinBetas { coins: vec![], betas: vec![] },
         }
     }
 }

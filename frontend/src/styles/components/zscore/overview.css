@@ -1,23 +1,20 @@
-/* =================================================================
-   Z-SCORE OVERVIEW DASHBOARD SPECIFIC STYLES
-   ================================================================= */
+/* frontend/src/styles/components/zscore/overview.css */
 
 /* ---- RANKINGS TABLE STYLES ---------------------------------- */
-.zscore-overview .rankings-table {
+.rankings-table {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-lg);
   height: 100%;
-  padding: var(--space-md);
 }
 
-.zscore-overview .table-section {
+.table-section {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.zscore-overview .table-section h4 {
+.table-section h4 {
   margin: 0 0 var(--space-md) 0;
   color: var(--text-secondary);
   font-size: 14px;
@@ -28,7 +25,7 @@
   border-bottom: 2px solid var(--border-primary);
 }
 
-.zscore-overview .coin-list {
+.coin-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -37,7 +34,7 @@
   padding-right: var(--space-xs);
 }
 
-.zscore-overview .coin-row {
+.coin-row {
   display: grid;
   grid-template-columns: 30px 80px 80px 80px 100px;
   align-items: center;
@@ -49,13 +46,13 @@
   border: 1px solid transparent;
 }
 
-.zscore-overview .coin-row:hover {
+.coin-row:hover {
   background: var(--bg-tertiary);
   border-color: var(--border-secondary);
   transform: translateX(2px);
 }
 
-.zscore-overview .coin-row .rank {
+.coin-row .rank {
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
@@ -68,41 +65,41 @@
   border-radius: 4px;
 }
 
-.zscore-overview .coin-row .symbol {
+.coin-row .symbol {
   font-weight: 600;
   color: var(--text-primary);
   font-family: var(--font-mono);
 }
 
-.zscore-overview .coin-row .zscore {
+.coin-row .zscore {
   font-weight: 600;
   font-family: var(--font-mono);
   text-align: right;
 }
 
-.zscore-overview .coin-row .zscore.positive {
+.coin-row .zscore.positive {
   color: var(--color-positive);
 }
 
-.zscore-overview .coin-row .zscore.negative {
+.coin-row .zscore.negative {
   color: var(--color-negative);
 }
 
-.zscore-overview .coin-row .returns {
+.coin-row .returns {
   text-align: right;
   font-size: 13px;
   font-family: var(--font-mono);
 }
 
-.zscore-overview .coin-row .returns.positive {
+.coin-row .returns.positive {
   color: var(--color-positive);
 }
 
-.zscore-overview .coin-row .returns.negative {
+.coin-row .returns.negative {
   color: var(--color-negative);
 }
 
-.zscore-overview .coin-row .volume {
+.coin-row .volume {
   text-align: right;
   color: var(--text-secondary);
   font-size: 13px;
@@ -110,198 +107,84 @@
 }
 
 /* ---- CUSTOM SCROLLBAR FOR COIN LIST ------------------------- */
-.zscore-overview .coin-list::-webkit-scrollbar {
+.coin-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.zscore-overview .coin-list::-webkit-scrollbar-track {
+.coin-list::-webkit-scrollbar-track {
   background: var(--bg-primary);
   border-radius: 3px;
 }
 
-.zscore-overview .coin-list::-webkit-scrollbar-thumb {
+.coin-list::-webkit-scrollbar-thumb {
   background: var(--border-primary);
   border-radius: 3px;
 }
 
-.zscore-overview .coin-list::-webkit-scrollbar-thumb:hover {
+.coin-list::-webkit-scrollbar-thumb:hover {
   background: var(--border-secondary);
 }
 
 /* ---- RESPONSIVE STYLES -------------------------------------- */
 @media (max-width: 768px) {
-  .zscore-overview .rankings-table {
+  .rankings-table {
     grid-template-columns: 1fr;
     gap: var(--space-md);
   }
   
-  .zscore-overview .coin-row {
+  .coin-row {
     grid-template-columns: 25px 60px 60px 60px 80px;
     font-size: 12px;
     padding: 8px;
   }
   
-  .zscore-overview .coin-row .rank {
+  .coin-row .rank {
     width: 20px;
     height: 20px;
     font-size: 11px;
   }
   
-  .zscore-overview .coin-row .symbol {
+  .coin-row .symbol {
     font-size: 13px;
   }
   
-  .zscore-overview .coin-row .zscore,
-  .zscore-overview .coin-row .returns,
-  .zscore-overview .coin-row .volume {
+  .coin-row .zscore,
+  .coin-row .returns,
+  .coin-row .volume {
     font-size: 12px;
   }
 }
 
 @media (max-width: 480px) {
-  .zscore-overview .coin-row {
+  .coin-row {
     grid-template-columns: 25px 50px 50px 50px 70px;
     padding: 6px;
     gap: 4px;
   }
   
-  .zscore-overview .table-section h4 {
+  .table-section h4 {
     font-size: 13px;
   }
 }
 
-/* ---- DARK MODE ENHANCEMENTS --------------------------------- */
-@media (prefers-color-scheme: dark) {
-  .zscore-overview .coin-row {
-    background: rgba(255, 255, 255, 0.02);
-  }
-  
-  .zscore-overview .coin-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  
-  .zscore-overview .coin-row .rank {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  
-  .zscore-overview .table-section h4 {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-}
-
-/* ---- ANIMATIONS --------------------------------------------- */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.zscore-overview .coin-row {
-  animation: slideIn 0.3s ease-out;
-  animation-fill-mode: backwards;
-}
-
-.zscore-overview .coin-row:nth-child(1) { animation-delay: 0.05s; }
-.zscore-overview .coin-row:nth-child(2) { animation-delay: 0.1s; }
-.zscore-overview .coin-row:nth-child(3) { animation-delay: 0.15s; }
-.zscore-overview .coin-row:nth-child(4) { animation-delay: 0.2s; }
-.zscore-overview .coin-row:nth-child(5) { animation-delay: 0.25s; }
-.zscore-overview .coin-row:nth-child(6) { animation-delay: 0.3s; }
-.zscore-overview .coin-row:nth-child(7) { animation-delay: 0.35s; }
-.zscore-overview .coin-row:nth-child(8) { animation-delay: 0.4s; }
-.zscore-overview .coin-row:nth-child(9) { animation-delay: 0.45s; }
-.zscore-overview .coin-row:nth-child(10) { animation-delay: 0.5s; }
-
-@media (prefers-reduced-motion: reduce) {
-  .zscore-overview .coin-row {
-    animation: none;
-  }
-}
-
-/* ---- SPECIAL HIGHLIGHTS ------------------------------------- */
-/* Highlight extreme z-scores */
-.zscore-overview .coin-row .zscore[data-extreme="true"] {
-  font-weight: 700;
-  position: relative;
-}
-
-.zscore-overview .coin-row .zscore[data-extreme="true"]::after {
-  content: '!';
-  position: absolute;
-  right: -12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 10px;
-  opacity: 0.7;
-}
-
-/* Highlight top volume */
-.zscore-overview .coin-row[data-top-volume="true"] .volume {
-  color: var(--color-info);
-  font-weight: 600;
-}
-
-/* ---- CHART-SPECIFIC STYLES ---------------------------------- */
-/* Ensure charts fill their containers properly */
-.zscore-overview .scatter-chart,
-.zscore-overview .histogram-chart,
-.zscore-overview .time-series-chart {
-  height: 100%;
-  min-height: 280px;
-}
-
-/* Time series needs more height */
-.zscore-overview .time-series-chart {
-  min-height: 350px;
-}
-
-/* ---- LOADING & EMPTY STATES --------------------------------- */
-.zscore-overview .empty-state {
+/* Add this to overview.css */
+.chart-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-style: italic;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: var(--text-secondary);
+  gap: 4px;
+}
+
+.chart-hint::before {
+  content: '↔';
   font-size: 14px;
-  text-align: center;
+  opacity: 0.6;
 }
 
-.zscore-overview .empty-state .empty-icon {
-  font-size: 48px;
-  margin-bottom: var(--space-md);
-  opacity: 0.3;
-}
-
-/* ---- PRINT STYLES ------------------------------------------- */
-@media print {
-  .zscore-overview .coin-row {
-    background: white;
-    border: 1px solid #ccc;
-  }
-  
-  .zscore-overview .coin-row .rank {
-    background: #f0f0f0;
-    border: 1px solid #ccc;
-  }
-}
-
-/* ---- HIGH CONTRAST MODE ------------------------------------- */
-@media (prefers-contrast: high) {
-  .zscore-overview .coin-row {
-    border: 1px solid currentColor;
-  }
-  
-  .zscore-overview .coin-row .rank {
-    border: 1px solid currentColor;
-  }
-  
-  .zscore-overview .table-section h4 {
-    border-bottom-width: 3px;
+@media (max-width: 768px) {
+  .chart-hint {
+    display: none;
   }
 }

@@ -1,43 +1,41 @@
 <template>
-  <div class="leaders-laggards">
-    <div class="dashboard-header">
-      <h2>Cross-Sectional Leaders & Laggards</h2>
-      <div class="header-controls">
-        <select v-model="topN" @change="updateData">
-          <option :value="10">Top 10</option>
-          <option :value="20">Top 20</option>
-          <option :value="30">Top 30</option>
-          <option :value="50">Top 50</option>
-        </select>
-        <select v-model="timeframe" @change="updateData">
-          <option value="1h">1 Hour</option>
-          <option value="4h">4 Hours</option>
-          <option value="1d">1 Day</option>
-        </select>
-        <select v-model="period" @change="updateData">
-          <option value="7d">7 Days</option>
-          <option value="30d">30 Days</option>
-                    <option value="90d">90 Days</option>
-        </select>
-        <button @click="updateData" class="update-btn" :disabled="loading">
-          {{ loading ? 'Loading...' : 'Update' }}
-        </button>
+  <!-- Remove wrapper div -->
+  <div class="dashboard-header">
+    <h2>Cross-Sectional Leaders & Laggards</h2>
+    <div class="header-controls">
+      <select v-model="topN" @change="updateData">
+        <option :value="10">Top 10</option>
+        <option :value="20">Top 20</option>
+        <option :value="30">Top 30</option>
+        <option :value="50">Top 50</option>
+      </select>
+      <select v-model="timeframe" @change="updateData">
+        <option value="1h">1 Hour</option>
+        <option value="4h">4 Hours</option>
+        <option value="1d">1 Day</option>
+      </select>
+      <select v-model="period" @change="updateData">
+        <option value="7d">7 Days</option>
+        <option value="30d">30 Days</option>
+        <option value="90d">90 Days</option>
+      </select>
+      <button @click="updateData" class="update-btn" :disabled="loading">
+        {{ loading ? 'Loading...' : 'Update' }}
+      </button>
+    </div>
+  </div>
+
+  <div v-if="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Market Overview Stats -->
+    <div class="metric-card full-width">
+      <div class="card-header">
+        <h3>Market Overview</h3>
       </div>
-    </div>
-
-    <div v-if="error" class="error-message">
-      {{ error }}
-    </div>
-
-    <div class="dashboard-grid">
-      <!-- Market Overview Stats -->
-      <MetricCard 
-        title="Market Overview"
-        class="full-width"
-        :loading="loading"
-        :error="error"
-        @retry="updateData"
-      >
+      <div class="card-content">
         <div class="market-stats">
           <div class="stat-item">
             <span class="label">Mean Z-Score</span>
@@ -62,15 +60,15 @@
             </span>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Momentum Leaders -->
-      <MetricCard 
-        title="Momentum Leaders"
-        :loading="loading"
-        :error="error"
-        @retry="updateData"
-      >
+    <!-- Momentum Leaders -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Momentum Leaders</h3>
+      </div>
+      <div class="card-content">
         <div class="ranking-list">
           <div 
             v-for="coin in leaders.slice(0, 10)" 
@@ -99,15 +97,15 @@
             </div>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Momentum Laggards -->
-      <MetricCard 
-        title="Momentum Laggards"
-        :loading="loading"
-        :error="error"
-        @retry="updateData"
-      >
+    <!-- Momentum Laggards -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Momentum Laggards</h3>
+      </div>
+      <div class="card-content">
         <div class="ranking-list">
           <div 
             v-for="coin in laggards.slice(0, 10)" 
@@ -136,15 +134,15 @@
             </div>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Volume Spike Detection -->
-      <MetricCard 
-        title="Volume Spike Detection"
-        :loading="loading"
-        :error="error"
-        @retry="updateData"
-      >
+    <!-- Volume Spike Detection -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Volume Spike Detection</h3>
+      </div>
+      <div class="card-content">
         <div class="volume-spikes">
           <div class="spike-threshold">
             <span>Showing assets with |volume Z-score| > </span>
@@ -175,15 +173,15 @@
             </div>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Decorrelation Alert -->
-      <MetricCard 
-        title="Decorrelation Analysis"
-        :loading="loading"
-        :error="error"
-        @retry="updateData"
-      >
+    <!-- Decorrelation Alert -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Decorrelation Analysis</h3>
+      </div>
+      <div class="card-content">
         <div class="decorrelation-container">
           <div class="correlation-threshold">
             <span>Market correlation threshold: </span>
@@ -222,16 +220,15 @@
             </div>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Lead-Lag Analysis -->
-      <MetricCard 
-        title="Lead-Lag Correlation Analysis"
-        class="full-width"
-        :loading="loading"
-        :error="error"
-        @retry="updateData"
-      >
+    <!-- Lead-Lag Analysis -->
+    <div class="metric-card full-width">
+      <div class="card-header">
+        <h3>Lead-Lag Correlation Analysis</h3>
+      </div>
+      <div class="card-content">
         <div class="lead-lag-container" v-if="leadLagMatrix">
           <div class="matrix-controls">
             <select v-model="leadLagPair.coin1">
@@ -270,7 +267,7 @@
             Select two different coins to analyze lead-lag relationship
           </div>
         </div>
-      </MetricCard>
+      </div>
     </div>
   </div>
 </template>
@@ -455,3 +452,5 @@ watch(leadLagData, () => {
   updateLeadLagChart()
 })
 </script>
+
+

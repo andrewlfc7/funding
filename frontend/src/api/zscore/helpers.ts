@@ -46,24 +46,3 @@ export function transformVolatilityToTimeSeries(data: VolatilityDataPoint[]) {
 export const volrowToSeries = transformVolatilityToTimeSeries
 
 
-
-// All the other dashboard components to check their structure:
-
-// frontend/src/components/zscore/dashboards/ZScoreOverview.vue
-// frontend/src/components/zscore/dashboards/CrossAssetMatrix.vue
-// frontend/src/components/zscore/dashboards/VolatilityLiquidity.vue
-// frontend/src/components/zscore/dashboards/InterAssetZScore.vue
-// frontend/src/components/zscore/dashboards/LeadersLaggards.vue
-// frontend/src/components/zscore/dashboards/MarketMicrostructure.vue
-// frontend/src/components/zscore/dashboards/RelativeStrength.vue
-// frontend/src/components/zscore/dashboards/MarketRegime.vue
-// Their corresponding CSS files to check for any width overrides:
-
-// frontend/src/styles/components/zscore/overview.css
-// frontend/src/styles/components/zscore/cross-asset.css
-// frontend/src/styles/components/zscore/liquidity.css
-// frontend/src/styles/components/zscore/inter-asset.css
-// frontend/src/styles/components/zscore/leaders.css
-// frontend/src/styles/components/zscore/microstructure.css
-// frontend/src/styles/components/zscore/relative-strength.css
-// frontend/src/styles/components/zscore/market-regime.css

@@ -1,131 +1,137 @@
-
 <template>
-  <div class="zscore-overview">
-    <div class="dashboard-header">
-      <h2>Z-Score Overview</h2>
-      <div class="header-controls">
-        <select v-model="topN" @change="fetchData">
-          <option :value="30">Top 30</option>
-          <option :value="50">Top 50</option>
-          <option :value="100">Top 100</option>
-        </select>
-        <select v-model="timeframe" @change="fetchData">
-          <option value="1h">1H</option>
-          <option value="4h">4H</option>
-          <option value="1d">1D</option>
-        </select>
-        <select v-model="period" @change="fetchData">
-          <option value="7d">7 Days</option>
-          <option value="30d">30 Days</option>
-          <option value="90d">90 Days</option>
-        </select>
-        <select v-model="exchange" @change="fetchData" :disabled="metaLoading">
-          <option v-for="ex in exchanges" :key="ex" :value="ex">
-            {{ ex }}
-          </option>
-        </select>
-        <button @click="fetchData" class="update-btn" :disabled="loading || metaLoading">
-          {{ loading ? 'Loading...' : 'Update' }}
-        </button>
+  <!-- Remove the wrapper div -->
+  <div class="dashboard-header">
+    <h2>Z-Score Overview</h2>
+    <div class="header-controls">
+      <select v-model="topN" @change="fetchData">
+        <option :value="30">Top 30</option>
+        <option :value="50">Top 50</option>
+        <option :value="100">Top 100</option>
+      </select>
+      <select v-model="timeframe" @change="fetchData">
+        <option value="1h">1H</option>
+        <option value="4h">4H</option>
+        <option value="1d">1D</option>
+      </select>
+      <select v-model="period" @change="fetchData">
+        <option value="7d">7 Days</option>
+        <option value="30d">30 Days</option>
+        <option value="90d">90 Days</option>
+      </select>
+      <select v-model="exchange" @change="fetchData" :disabled="metaLoading">
+        <option v-for="ex in exchanges" :key="ex" :value="ex">
+          {{ ex }}
+        </option>
+      </select>
+      <button @click="fetchData" class="update-btn" :disabled="loading || metaLoading">
+        {{ loading ? 'Loading...' : 'Update' }}
+      </button>
+    </div>
+  </div>
+
+  <div v-if="!metaLoading" class="dashboard-grid">
+    <!-- 1. Z-Score vs 1D Returns -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Z-Score vs 1D Returns</h3>
+      </div>
+      <div class="card-content">
+        <div class="chart-container">
+          <ScatterChart
+            v-if="zscoreVsReturns1d.length > 0"
+            :data="zscoreVsReturns1d"
+            x-field="zscore"
+            y-field="returns"
+            label-field="symbol"
+            x-label="Z-Score"
+            y-label="1D Returns (%)"
+            :show-labels="true"
+          />
+        </div>
       </div>
     </div>
 
-    <div v-if="!metaLoading" class="dashboard-grid">
-      <!-- 1. Z-Score vs 1D Returns -->
-      <MetricCard 
-        title="Z-Score vs 1D Returns"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
-        <ScatterChart
-          v-if="zscoreVsReturns1d.length > 0"
-          :data="zscoreVsReturns1d"
-          x-field="zscore"
-          y-field="returns"
-          label-field="symbol"
-          x-label="Z-Score"
-          y-label="1D Returns (%)"
-          :show-labels="true"
-        />
-      </MetricCard>
+    <!-- 2. Z-Score vs 1H Log Returns -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Z-Score vs 1H Log Returns</h3>
+      </div>
+      <div class="card-content">
+        <div class="chart-container">
+          <ScatterChart
+            v-if="zscoreVsLogReturns1h.length > 0"
+            :data="zscoreVsLogReturns1h"
+            x-field="zscore"
+            y-field="logReturns"
+            label-field="symbol"
+            x-label="Z-Score"
+            y-label="1H Log Returns"
+            :show-labels="true"
+          />
+        </div>
+      </div>
+    </div>
 
-      <!-- 2. Z-Score vs 1H Log Returns -->
-      <MetricCard 
-        title="Z-Score vs 1H Log Returns"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
-        <ScatterChart
-          v-if="zscoreVsLogReturns1h.length > 0"
-          :data="zscoreVsLogReturns1h"
-          x-field="zscore"
-          y-field="logReturns"
-          label-field="symbol"
-          x-label="Z-Score"
-          y-label="1H Log Returns"
-          :show-labels="true"
-        />
-      </MetricCard>
+    <!-- 3. Z-Score vs Rolling Volume -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Z-Score vs Rolling Volume</h3>
+      </div>
+      <div class="card-content">
+        <div class="chart-container">
+          <ScatterChart
+            v-if="zscoreVsRollingVolume.length > 0"
+            :data="zscoreVsRollingVolume"
+            x-field="zscore"
+            y-field="rollingVolume"
+            label-field="symbol"
+            x-label="Z-Score"
+            y-label="20-MA Volume (M USD)"
+            :show-labels="true"
+          />
+        </div>
+      </div>
+    </div>
 
-      <!-- 3. Z-Score vs Rolling Volume -->
-      <MetricCard 
-        title="Z-Score vs Rolling Volume"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
-        <ScatterChart
-          v-if="zscoreVsRollingVolume.length > 0"
-          :data="zscoreVsRollingVolume"
-          x-field="zscore"
-          y-field="rollingVolume"
-          label-field="symbol"
-          x-label="Z-Score"
-          y-label="20-MA Volume (M USD)"
-          :show-labels="true"
-        />
-      </MetricCard>
+    <!-- 4. Z-Score Distribution -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Z-Score Distribution (All Coins)</h3>
+      </div>
+      <div class="card-content">
+        <div class="chart-container">
+          <HistogramChart
+            v-if="zscoreDistribution"
+            :data="zscoreDistribution"
+          />
+        </div>
+      </div>
+    </div>
 
-      <!-- 4. Z-Score Distribution -->
-      <MetricCard 
-        title="Z-Score Distribution (All Coins)"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
-        <HistogramChart
-          v-if="zscoreDistribution"
-          :data="zscoreDistribution"
-        />
-      </MetricCard>
+    <!-- 5. Z-Score Time Series (full width) -->
+    <div class="metric-card span-2">
+      <div class="card-header">
+        <h3>Z-Score Time Series</h3>
+      </div>
+      <div class="card-content">
+        <div class="chart-container">
+          <TimeSeriesChart
+            v-if="hasData"
+            :data="chartData"
+            :y-field="'value'"
+            :y-label="'Z-Score'"
+            :group-by="'symbol'"
+          />
+        </div>
+      </div>
+    </div>
 
-      <!-- 5. Z-Score Time Series (full width) -->
-      <MetricCard 
-        title="Z-Score Time Series"
-        :span="2"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
-        <TimeSeriesChart
-          v-if="hasData"
-          :data="chartData"
-          :y-field="'value'"
-          :y-label="'Z-Score'"
-          :group-by="'symbol'"
-        />
-      </MetricCard>
-
-      <!-- Rankings Tables -->
-      <MetricCard 
-        title="Z-Score Rankings"
-        :span="2"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Rankings Tables -->
+    <div class="metric-card span-2">
+      <div class="card-header">
+        <h3>Z-Score Rankings</h3>
+      </div>
+      <div class="card-content">
         <div class="rankings-table">
           <div class="table-section">
             <h4>Oversold (Z < -2)</h4>
@@ -157,7 +163,7 @@
             </div>
           </div>
         </div>
-      </MetricCard>
+      </div>
     </div>
   </div>
 </template>
@@ -176,10 +182,12 @@ import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 // Meta data
 const { exchanges, defaultExchange, loading: metaLoading, loadMetaData } = useMetaData()
 
+
 // Controls
 const topN = ref(50)
-const timeframe = ref('1h')
 const period = ref('30d')
+const timeframe = ref<'1h' | '4h' | '1d'>('1h') 
+
 const exchange = ref('')
 
 // Use the Z-score composable with multi-coin support

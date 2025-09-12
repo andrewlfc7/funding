@@ -35,3 +35,9 @@
 
 @import './components/zscore/relative-strength.css'; 
 @import './components/zscore/market-regime.css';
+
+@import './components/zscore/trades-analysis.css';
+@import './components/zscore/volatility-dynamics.css';
+
+@import './components/zscore/market-seasonality.css';
+

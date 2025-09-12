@@ -1,32 +1,30 @@
 <template>
-  <div class="market-microstructure">
-    <div class="dashboard-header">
-      <h2>Market Microstructure</h2>
-      <div class="header-controls">
-        <select v-model="timeframe" @change="fetchData">
-          <option value="5min">5min</option>
-          <option value="15min">15min</option>
-          <option value="1h">1H</option>
-        </select>
-        <select v-model="topN" @change="fetchData">
-          <option :value="30">Top 30</option>
-          <option :value="50">Top 50</option>
-          <option :value="100">Top 100</option>
-        </select>
-        <button @click="fetchData" class="update-btn" :disabled="loading">
-          {{ loading ? 'Loading...' : 'Update' }}
-        </button>
-      </div>
+  <div class="dashboard-header">
+    <h2>Market Microstructure</h2>
+    <div class="header-controls">
+      <select v-model="timeframe" @change="fetchData">
+        <option value="5min">5min</option>
+        <option value="15min">15min</option>
+        <option value="1h">1H</option>
+      </select>
+      <select v-model="topN" @change="fetchData">
+        <option :value="30">Top 30</option>
+        <option :value="50">Top 50</option>
+        <option :value="100">Top 100</option>
+      </select>
+      <button @click="fetchData" class="update-btn" :disabled="loading">
+        {{ loading ? 'Loading...' : 'Update' }}
+      </button>
     </div>
+  </div>
 
-    <div class="dashboard-grid">
-      <!-- Cross-Asset Volume Flow -->
-      <MetricCard 
-        title="Cross-Asset Volume Flow"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+  <div class="dashboard-grid">
+    <!-- Cross-Asset Volume Flow -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Cross-Asset Volume Flow</h3>
+      </div>
+      <div class="card-content">
         <div class="volume-flow-container">
           <div class="flow-header">
             <span class="into">Into</span>
@@ -56,52 +54,50 @@
             </div>
           </div>
         </div>
-      </MetricCard>
-
-      <!-- Rotation Matrix -->
-      <MetricCard 
-        title="Rotation Matrix"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+      </div>
+    </div>
+    <!-- Rotation Matrix -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Rotation Matrix</h3>
+      </div>
+      <div class="card-content">
         <div class="rotation-matrix">
           <div class="matrix-header">Money flow between coins</div>
-          <table class="rotation-table">
+          <table class="rotation-table" v-if="rotationCoins.length > 0">
             <thead>
               <tr>
                 <th>From\To</th>
-                <th>BTC</th>
-                <th>ETH</th>
-                <th>SOL</th>
-                <th>USDT</th>
+                <th v-for="coin in rotationCoins" :key="coin">{{ coin }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="from in ['BTC', 'ETH', 'SOL', 'USDT']" :key="from">
-                <td class="coin-label">{{ from }}</td>
-                <td v-for="to in ['BTC', 'ETH', 'SOL', 'USDT']" :key="to">
-                  <span v-if="from === to" class="diagonal">─</span>
-                  <span v-else :class="getRotationClass(from, to)">
-                    {{ getRotationSymbol(from, to) }}
+              <tr v-for="fromCoin in rotationCoins" :key="fromCoin">
+                <td class="coin-label">{{ fromCoin }}</td>
+                <td v-for="toCoin in rotationCoins" :key="toCoin">
+                  <span v-if="fromCoin === toCoin" class="diagonal">─</span>
+                  <span v-else :class="getRotationClass(fromCoin, toCoin)">
+                    {{ getRotationSymbol(fromCoin, toCoin) }}
                   </span>
                 </td>
               </tr>
             </tbody>
           </table>
+          <div v-else class="no-data">No rotation data available</div>
           <div class="rotation-summary">
             <span :class="netRotationClass">{{ netRotationText }}</span>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Liquidity Concentration -->
-      <MetricCard 
-        title="Liquidity Concentration"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+
+    <!-- Liquidity Concentration -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Liquidity Concentration</h3>
+      </div>
+      <div class="card-content">
         <div class="liquidity-concentration">
           <div class="concentration-header">% of total volume</div>
           <div class="concentration-bars">
@@ -121,38 +117,40 @@
             </div>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Hourly Seasonality -->
-      <MetricCard 
-        title="Hourly Seasonality"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Hourly Seasonality -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Hourly Seasonality</h3>
+      </div>
+      <div class="card-content">
         <div class="seasonality-container">
           <div class="seasonality-header">Z-Score by Hour (UTC)</div>
-          <TimeSeriesChart
-            v-if="hourlySeasonalityData.length > 0"
-            :data="hourlySeasonalityData"
-            y-field="avgZScore"
-            :show-grid="true"
-            :show-labels="true"
-          />
+          <div class="chart-container">
+            <TimeSeriesChart
+              v-if="hourlySeasonalityData.length > 0"
+              :data="hourlySeasonalityData"
+              y-field="avgZScore"
+              :show-grid="false"
+              :show-labels="true"
+            />
+          </div>
           <div class="seasonality-stats">
             <span class="peak">Peak: {{ peakHour }}:00 UTC</span>
             <span class="trough">Trough: {{ troughHour }}:00 UTC</span>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Day of Week Effect -->
-      <MetricCard 
-        title="Day-of-Week Effect"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Day of Week Effect -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Day-of-Week Effect</h3>
+      </div>
+      <div class="card-content">
         <div class="day-effect-container">
           <div class="day-effect-header">Average Z-Score</div>
           <div class="day-bars">
@@ -181,15 +179,18 @@
             <span class="scale-max">+0.5</span>
           </div>
         </div>
-      </MetricCard>
+      </div>
     </div>
   </div>
 </template>
 
+
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useMarketMicrostructure } from '@/composables/useMarketMicrostructure'
-import MetricCard from '../components/common/MetricCard.vue'
+
+import { useMarketMicrostructure } from '@/composables/useMarketMicrostructure' 
+import MetricCard from '../components/common/MetricCard.vue' 
+
 import TimeSeriesChart from '../components/charts/TimeSeriesChart.vue'
 
 const {
@@ -207,7 +208,22 @@ const {
   fetchData
 } = useMarketMicrostructure()
 
-// Computed helpers for rotation matrix
+
+
+const rotationCoins = computed(() => {
+  const coins = new Set<string>()
+  
+  // Add all from and to coins from the rotation matrix
+  rotationMatrix.value.forEach(item => {
+    coins.add(item.from)
+    coins.add(item.to)
+  })
+  
+  return Array.from(coins).sort()
+})
+
+
+
 const getRotationClass = (from: string, to: string) => {
   const flow = rotationMatrix.value.find(r => r.from === from && r.to === to)
   if (!flow) return ''
@@ -220,6 +236,8 @@ const getRotationSymbol = (from: string, to: string) => {
   return flow.flow > 0 ? '▲' : '▼'
 }
 
+
+
 const netRotationClass = computed(() => {
   const totalFlow = rotationMatrix.value.reduce((sum, r) => sum + r.flow, 0)
   return totalFlow > 0 ? 'risk-on' : 'risk-off'
@@ -230,13 +248,17 @@ const netRotationText = computed(() => {
   return totalFlow > 0 ? 'Net: Risk-On Rotation' : 'Net: Risk-Off Rotation'
 })
 
-// Computed helpers for hourly seasonality
-const hourlySeasonalityData = computed(() => 
-  hourlySeasonality.value.map(h => ({
-    timestamp: h.hour * 3600000, // Convert hour to timestamp
+
+const hourlySeasonalityData = computed(() => {
+  const baseDate = new Date(); // Current date: Sep 04, 2025, 07:28 AM EDT (11:28 UTC)
+  baseDate.setUTCHours(0, 0, 0, 0); // Set to start of UTC day
+
+  return hourlySeasonality.value.map(h => ({
+    timestamp: new Date(baseDate.getTime() + h.hour * 3600000).getTime(), // Offset by hour in milliseconds
     avgZScore: h.avgZScore
-  }))
-)
+  }));
+});
+
 
 const peakHour = computed(() => {
   if (!hourlySeasonality.value.length) return 0
@@ -258,3 +280,4 @@ onMounted(() => {
   fetchData()
 })
 </script>
+

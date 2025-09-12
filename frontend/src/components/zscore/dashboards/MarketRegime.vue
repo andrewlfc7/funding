@@ -1,33 +1,30 @@
 <template>
-  <div class="market-regime">
-    <div class="dashboard-header">
-      <h2>Market Regime & Momentum Analysis</h2>
-      <div class="header-controls">
-        <select v-model="period" @change="fetchData">
-          <option value="7d">7D</option>
-          <option value="30d">30D</option>
-          <option value="90d">90D</option>
-        </select>
-        <select v-model="topN" @change="fetchData">
-          <option :value="10">Top 10</option>
-          <option :value="20">Top 20</option>
-          <option :value="50">Top 50</option>
-        </select>
-        <button @click="fetchData" class="update-btn" :disabled="loading">
-          {{ loading ? 'Loading...' : 'Update' }}
-        </button>
-      </div>
+  <div class="dashboard-header">
+    <h2>Market Regime & Momentum Analysis</h2>
+    <div class="header-controls">
+      <select v-model="period" @change="fetchData">
+        <option value="7d">7D</option>
+        <option value="30d">30D</option>
+        <option value="90d">90D</option>
+      </select>
+      <select v-model="topN" @change="fetchData">
+        <option :value="10">Top 10</option>
+        <option :value="20">Top 20</option>
+        <option :value="50">Top 50</option>
+      </select>
+      <button @click="fetchData" class="update-btn" :disabled="loading">
+        {{ loading ? 'Loading...' : 'Update' }}
+      </button>
     </div>
+  </div>
 
-    <div class="dashboard-grid">
-      <!-- Z-Score Momentum Heatmap -->
-      <MetricCard 
-        title="Z-Score Momentum Heatmap"
-        subtitle="Rolling Z-Score Change"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+  <div class="dashboard-grid">
+    <!-- Z-Score Momentum Heatmap -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Z-Score Momentum Heatmap <span class="subtitle">Rolling Z-Score Change</span></h3>
+      </div>
+      <div class="card-content">
         <div class="momentum-heatmap" v-if="heatmapData">
           <div class="heatmap-header">
             <div></div>
@@ -55,15 +52,15 @@
             <span class="legend-label">+2</span>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Regime Transition Matrix -->
-      <MetricCard 
-        title="Regime Transition Matrix"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Regime Transition Matrix -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Regime Transition Matrix</h3>
+      </div>
+      <div class="card-content">
         <div class="transition-matrix">
           <table class="matrix-table">
             <thead>
@@ -96,16 +93,15 @@
             </span>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Z-Score Velocity -->
-      <MetricCard 
-        title="Z-Score Velocity"
-        subtitle="Rate of Z-Score Change"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Z-Score Velocity -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Z-Score Velocity <span class="subtitle">Rate of Z-Score Change</span></h3>
+      </div>
+      <div class="card-content">
         <div class="velocity-chart">
           <div class="velocity-header">
             <span class="label">Accelerating ↗</span>
@@ -113,30 +109,30 @@
           <div v-if="velocityData.length === 0" class="empty-state">
             <p>Velocity data not available for this period</p>
           </div>
-          <TimeSeriesChart
-            v-else
-            :data="velocityData"
-            y-field="velocity"
-            :secondary-y-field="'acceleration'"
-            :show-zero-line="true"
-            :height="250"
-          />
+          <div v-else class="chart-container">
+            <TimeSeriesChart
+              :data="velocityData"
+              y-field="velocity"
+              :secondary-y-field="'acceleration'"
+              :show-zero-line="true"
+              :height="250"
+            />
+          </div>
           <div class="velocity-scale">
             <span>+1</span>
             <span class="zero">0</span>
             <span>-1</span>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Cross-Asset Momentum Divergence -->
-      <MetricCard 
-        title="Cross-Asset Momentum"
-        subtitle="Divergence"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Cross-Asset Momentum Divergence -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Cross-Asset Momentum <span class="subtitle">Divergence</span></h3>
+      </div>
+      <div class="card-content">
         <div class="momentum-divergence">
           <div 
             v-for="group in momentumDivergence" 
@@ -168,12 +164,13 @@
             </span>
           </div>
         </div>
-      </MetricCard>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+// Keep the script section as is, remove the <style> section
 import { ref, computed, onMounted } from 'vue'
 import { useMarketRegime } from '@/composables/useMarketRegime'
 import MetricCard from '../components/common/MetricCard.vue'
@@ -252,15 +249,3 @@ onMounted(() => {
   fetchData()
 })
 </script>
-
-<style scoped>
-/* Component uses external CSS file */
-.empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-</style>

@@ -1,34 +1,14 @@
-/* =================================================================
-   MARKET MICROSTRUCTURE DASHBOARD STYLES
-   ================================================================= */
-
-/* ---- MAIN LAYOUT -------------------------------------------- */
-
-.market-microstructure .dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--space-md);
-
-}
-
-/* ---- FIX FOR PLOT CONTAINERS -------------------------------- */
-/* Only affect metric cards within market microstructure */
-.market-microstructure .metric-card {
-  position: relative;
-  overflow: hidden;
-  contain: layout size;
-}
+/* frontend/src/styles/components/zscore/microstructure.css */
 
 /* ---- VOLUME FLOW STYLES ------------------------------------- */
-.market-microstructure .volume-flow-container {
-  padding: var(--space-md);
+.volume-flow-container {
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.market-microstructure .flow-header {
+.flow-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -38,24 +18,24 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .flow-header .into {
+.flow-header .into {
   color: var(--color-positive);
   font-weight: 600;
 }
 
-.market-microstructure .flow-header .out-of {
+.flow-header .out-of {
   color: var(--color-negative);
   font-weight: 600;
 }
 
-.market-microstructure .flow-header .arrow {
+.flow-header .arrow {
   flex: 1;
   text-align: center;
   opacity: 0.5;
   font-family: var(--font-mono);
 }
 
-.market-microstructure .flow-list {
+.flow-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
@@ -64,7 +44,7 @@
   min-height: 0;
 }
 
-.market-microstructure .flow-item {
+.flow-item {
   display: grid;
   grid-template-columns: 60px 1fr 60px;
   align-items: center;
@@ -72,13 +52,13 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .flow-item .symbol {
+.flow-item .symbol {
   font-weight: 600;
   color: var(--text-primary);
   font-size: 13px;
 }
 
-.market-microstructure .flow-bar {
+.flow-bar {
   height: 20px;
   background: var(--bg-primary);
   border-radius: 4px;
@@ -86,45 +66,44 @@
   overflow: hidden;
 }
 
-.market-microstructure .bar-fill {
+.bar-fill {
   height: 100%;
   border-radius: 4px;
   transition: all 0.3s ease;
 }
 
-.market-microstructure .bar-fill.positive {
+.bar-fill.positive {
   background: linear-gradient(90deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.8));
 }
 
-.market-microstructure .bar-fill.negative {
+.bar-fill.negative {
   background: linear-gradient(90deg, rgba(239, 68, 68, 0.8), rgba(239, 68, 68, 0.2));
 }
 
-.market-microstructure .flow-item .zscore {
+.flow-item .zscore {
   text-align: right;
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
 }
 
-.market-microstructure .flow-item .zscore.positive {
+.flow-item .zscore.positive {
   color: var(--color-positive);
 }
 
-.market-microstructure .flow-item .zscore.negative {
+.flow-item .zscore.negative {
   color: var(--color-negative);
 }
 
 /* ---- ROTATION MATRIX STYLES --------------------------------- */
-.market-microstructure .rotation-matrix {
-  padding: var(--space-md);
+.rotation-matrix {
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.market-microstructure .matrix-header {
+.matrix-header {
   font-size: 12px;
   color: var(--text-secondary);
   margin-bottom: var(--space-md);
@@ -132,7 +111,7 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .rotation-table {
+.rotation-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 4px;
@@ -141,8 +120,8 @@
   overflow: auto;
 }
 
-.market-microstructure .rotation-table th,
-.market-microstructure .rotation-table td {
+.rotation-table th,
+.rotation-table td {
   padding: 8px;
   text-align: center;
   background: var(--bg-primary);
@@ -150,34 +129,34 @@
   font-size: 13px;
 }
 
-.market-microstructure .rotation-table th {
+.rotation-table th {
   font-weight: 600;
   color: var(--text-secondary);
   background: var(--bg-tertiary);
 }
 
-.market-microstructure .rotation-table .coin-label {
+.rotation-table .coin-label {
   font-weight: 600;
   color: var(--text-primary);
   background: var(--bg-tertiary);
 }
 
-.market-microstructure .rotation-table .diagonal {
+.rotation-table .diagonal {
   color: var(--text-dim);
   opacity: 0.5;
 }
 
-.market-microstructure .rotation-table .flow-up {
+.rotation-table .flow-up {
   color: var(--color-positive);
   font-size: 16px;
 }
 
-.market-microstructure .rotation-table .flow-down {
+.rotation-table .flow-down {
   color: var(--color-negative);
   font-size: 16px;
 }
 
-.market-microstructure .rotation-summary {
+.rotation-summary {
   margin-top: var(--space-md);
   text-align: center;
   font-size: 13px;
@@ -188,24 +167,23 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .rotation-summary .risk-on {
+.rotation-summary .risk-on {
   color: var(--color-positive);
 }
 
-.market-microstructure .rotation-summary .risk-off {
+.rotation-summary .risk-off {
   color: var(--color-negative);
 }
 
 /* ---- LIQUIDITY CONCENTRATION STYLES ------------------------- */
-.market-microstructure .liquidity-concentration {
-  padding: var(--space-md);
+.liquidity-concentration {
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.market-microstructure .concentration-header {
+.concentration-header {
   font-size: 12px;
   color: var(--text-secondary);
   margin-bottom: var(--space-md);
@@ -213,7 +191,7 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .concentration-bars {
+.concentration-bars {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
@@ -222,7 +200,7 @@
   min-height: 0;
 }
 
-.market-microstructure .concentration-item {
+.concentration-item {
   display: grid;
   grid-template-columns: 80px 1fr 50px;
   align-items: center;
@@ -230,27 +208,29 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .range-label {
+.range-label {
   font-size: 13px;
   color: var(--text-primary);
   font-weight: 500;
 }
 
-.market-microstructure .concentration-item .bar-container {
+/* frontend/src/styles/components/zscore/microstructure.css (continued) */
+
+.concentration-item .bar-container {
   height: 24px;
   background: var(--bg-primary);
   border-radius: 4px;
   overflow: hidden;
 }
 
-.market-microstructure .concentration-item .bar {
+.concentration-item .bar {
   height: 100%;
   background: linear-gradient(90deg, #3b82f6, #60a5fa);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
-.market-microstructure .concentration-item .percentage {
+.concentration-item .percentage {
   text-align: right;
   font-family: var(--font-mono);
   font-size: 13px;
@@ -259,15 +239,14 @@
 }
 
 /* ---- HOURLY SEASONALITY STYLES ------------------------------ */
-.market-microstructure .seasonality-container {
+.seasonality-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: var(--space-md);
   overflow: hidden;
 }
 
-.market-microstructure .seasonality-header {
+.seasonality-header {
   font-size: 12px;
   color: var(--text-secondary);
   margin-bottom: var(--space-sm);
@@ -275,24 +254,7 @@
   flex-shrink: 0;
 }
 
-/* Ensure chart container has explicit dimensions */
-.market-microstructure .seasonality-container .time-series-chart {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Ensure chart content respects container bounds */
-.market-microstructure .seasonality-container .time-series-chart > * {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.market-microstructure .seasonality-stats {
+.seasonality-stats {
   display: flex;
   justify-content: space-around;
   margin-top: var(--space-md);
@@ -303,26 +265,25 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .seasonality-stats .peak {
+.seasonality-stats .peak {
   color: var(--color-positive);
   font-weight: 600;
 }
 
-.market-microstructure .seasonality-stats .trough {
+.seasonality-stats .trough {
   color: var(--color-negative);
   font-weight: 600;
 }
 
 /* ---- DAY OF WEEK EFFECT STYLES ------------------------------ */
-.market-microstructure .day-effect-container {
-  padding: var(--space-md);
+.day-effect-container {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
 }
 
-.market-microstructure .day-effect-header {
+.day-effect-header {
   font-size: 12px;
   color: var(--text-secondary);
   margin-bottom: var(--space-md);
@@ -330,7 +291,7 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .day-bars {
+.day-bars {
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
@@ -341,7 +302,7 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .day-item {
+.day-item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -349,7 +310,7 @@
   max-width: 60px;
 }
 
-.market-microstructure .bar-wrapper {
+.bar-wrapper {
   height: 100px;
   display: flex;
   flex-direction: column;
@@ -359,7 +320,7 @@
 }
 
 /* Zero line indicator */
-.market-microstructure .bar-wrapper::before {
+.bar-wrapper::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -371,7 +332,7 @@
   z-index: 0;
 }
 
-.market-microstructure .day-bar {
+.day-bar {
   width: 24px;
   background: var(--bg-tertiary);
   border-radius: 4px;
@@ -381,29 +342,29 @@
   margin: 0 auto;
 }
 
-.market-microstructure .day-bar.positive {
+.day-bar.positive {
   background: linear-gradient(180deg, rgba(16, 185, 129, 0.8), rgba(16, 185, 129, 0.4));
 }
 
-.market-microstructure .day-bar.negative {
+.day-bar.negative {
   background: linear-gradient(180deg, rgba(239, 68, 68, 0.4), rgba(239, 68, 68, 0.8));
 }
 
-.market-microstructure .day-label {
+.day-label {
   margin-top: var(--space-xs);
   font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.market-microstructure .day-value {
+.day-value {
   font-size: 11px;
   color: var(--text-secondary);
   font-family: var(--font-mono);
   margin-top: 2px;
 }
 
-.market-microstructure .day-scale {
+.day-scale {
   display: flex;
   justify-content: space-between;
   padding: 0 var(--space-sm);
@@ -413,578 +374,136 @@
   flex-shrink: 0;
 }
 
-.market-microstructure .scale-zero {
+.scale-zero {
   font-weight: 600;
   color: var(--text-primary);
 }
 
 /* ---- RESPONSIVE STYLES -------------------------------------- */
-@media (max-width: 1200px) {
-  .market-microstructure .dashboard-grid {
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 320px;
-  }
-}
-
 @media (max-width: 768px) {
-  .market-microstructure .dashboard-grid {
-    grid-template-columns: 1fr;
-    gap: var(--space-sm);
-    grid-auto-rows: 280px;
-  }
-  
   /* Mobile adjustments for flow items */
-  .market-microstructure .flow-item {
+  .flow-item {
     grid-template-columns: 50px 1fr 50px;
   }
   
-  .market-microstructure .flow-item .symbol {
+  .flow-item .symbol {
     font-size: 12px;
   }
   
   /* Smaller rotation table on mobile */
-  .market-microstructure .rotation-table th,
-  .market-microstructure .rotation-table td {
+  .rotation-table th,
+  .rotation-table td {
     padding: 6px;
     font-size: 12px;
   }
   
-  .market-microstructure .rotation-table .flow-up,
-  .market-microstructure .rotation-table .flow-down {
+  .rotation-table .flow-up,
+  .rotation-table .flow-down {
     font-size: 14px;
   }
   
   /* Adjust concentration bars */
-  .market-microstructure .concentration-item {
+  .concentration-item {
     grid-template-columns: 60px 1fr 40px;
   }
   
-  .market-microstructure .range-label {
+  .range-label {
     font-size: 12px;
   }
   
   /* Smaller day bars on mobile */
-  .market-microstructure .day-bars {
+  .day-bars {
     height: 100px;
   }
   
-  .market-microstructure .bar-wrapper {
+  .bar-wrapper {
     height: 80px;
   }
   
-  .market-microstructure .day-bar {
+  .day-bar {
     width: 20px;
   }
   
-  .market-microstructure .day-label {
+  .day-label {
     font-size: 11px;
   }
 }
 
 @media (max-width: 480px) {
-  .market-microstructure .dashboard-grid {
-    grid-auto-rows: 240px;
-  }
-  
   /* Extra small devices */
-  .market-microstructure .flow-header {
+  .flow-header {
     font-size: 11px;
   }
   
-  .market-microstructure .flow-header .arrow {
+  .flow-header .arrow {
     font-size: 10px;
   }
   
   /* Stack rotation matrix values */
-  .market-microstructure .rotation-table {
+  .rotation-table {
     font-size: 11px;
   }
   
-  /* Reduce seasonality chart height */
-  .market-microstructure .seasonality-container .time-series-chart {
-    min-height: 0;
-  }
-  
   /* Further reduce day bar sizes */
-  .market-microstructure .day-bars {
+  .day-bars {
     height: 80px;
     padding: 0;
   }
   
-  .market-microstructure .bar-wrapper {
+  .bar-wrapper {
     height: 60px;
   }
   
-  .market-microstructure .day-bar {
+  .day-bar {
     width: 16px;
   }
   
-  .market-microstructure .day-item {
+  .day-item {
     max-width: 40px;
   }
 }
 
-/* ---- DARK MODE ENHANCEMENTS --------------------------------- */
-@media (prefers-color-scheme: dark) {
-  .market-microstructure .flow-bar {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  
-  .market-microstructure .rotation-table th,
-  .market-microstructure .rotation-table td {
-    background: rgba(255, 255, 255, 0.03);
-  }
-  
-  .market-microstructure .rotation-table .coin-label,
-  .market-microstructure .rotation-table th {
-    background: rgba(255, 255, 255, 0.06);
-  }
-  
-  .market-microstructure .concentration-item .bar-container {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  
-  .market-microstructure .seasonality-stats,
-  .market-microstructure .rotation-summary {
-    background: rgba(255, 255, 255, 0.03);
-  }
-}
-
-/* ---- LOADING STATES ----------------------------------------- */
-.market-microstructure .loading {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.market-microstructure .metric-card.loading::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: inherit;
-}
-
-/* ---- ANIMATION STATES --------------------------------------- */
-@keyframes microstructureFlowPulse {
-  0% { opacity: 0.8; }
-  50% { opacity: 1; }
-  100% { opacity: 0.8; }
-}
-
-/* Scoped animations to prevent conflicts */
-.market-microstructure .bar-fill {
-  animation: microstructureFlowPulse 2s ease-in-out infinite;
-  animation-play-state: paused;
-}
-
-.market-microstructure:hover .bar-fill {
-  animation-play-state: running;
-}
-
-.market-microstructure .concentration-item .bar {
-  animation: microstructureFlowPulse 3s ease-in-out infinite;
-  animation-delay: calc(var(--index) * 0.1s);
-  animation-play-state: paused;
-}
-
-.market-microstructure:hover .concentration-item .bar {
-  animation-play-state: running;
-}
-
 /* ---- HOVER STATES ------------------------------------------- */
-.market-microstructure .flow-item:hover {
+.flow-item:hover {
   background: var(--bg-primary);
   border-radius: 6px;
   padding: 0 var(--space-xs);
   margin: 0 calc(-1 * var(--space-xs));
 }
 
-.market-microstructure .rotation-table td:hover:not(.coin-label):not(.diagonal) {
+.rotation-table td:hover:not(.coin-label):not(.diagonal) {
   background: var(--bg-tertiary);
   transform: scale(1.1);
 }
 
-.market-microstructure .concentration-item:hover .bar {
+.concentration-item:hover .bar {
   filter: brightness(1.2);
 }
 
-.market-microstructure .day-item:hover .day-bar {
+.day-item:hover .day-bar {
   transform: scaleY(1.05);
   filter: brightness(1.2);
 }
 
-/* ---- PRINT STYLES ------------------------------------------- */
-@media print {
-  .market-microstructure {
-    background: white;
-    color: black;
-  }
-  
-  .market-microstructure .flow-bar,
-  .market-microstructure .concentration-item .bar-container {
-    background: #f0f0f0;
-    border: 1px solid #ccc;
-  }
-  
-  .market-microstructure .rotation-table th,
-  .market-microstructure .rotation-table td {
-    border: 1px solid #ccc;
-    background: white;
-  }
-  
-  .market-microstructure .day-bar {
-    border: 1px solid #333;
-  }
-  
-  /* Hide interactive elements */
-  .market-microstructure .header-controls {
-    display: none;
-  }
-}
-
-/* ---- HIGH CONTRAST MODE ------------------------------------- */
-@media (prefers-contrast: high) {
-  .market-microstructure .flow-bar,
-  .market-microstructure .concentration-item .bar-container {
-    border: 1px solid currentColor;
-  }
-  
-  .market-microstructure .rotation-table th,
-  .market-microstructure .rotation-table td {
-    border: 1px solid currentColor;
-  }
-  
-  .market-microstructure .day-bar {
-    border: 1px solid currentColor;
-  }
-  
-  .market-microstructure .bar-fill.positive {
-    background: var(--color-positive);
-  }
-  
-  .market-microstructure .bar-fill.negative {
-    background: var(--color-negative);
-  }
-}
-
-/* ---- ACCESSIBILITY IMPROVEMENTS ----------------------------- */
-@media (prefers-reduced-motion: reduce) {
-  .market-microstructure .bar-fill,
-  .market-microstructure .concentration-item .bar,
-  .market-microstructure .day-bar {
-    animation: none;
-    transition: none;
-  }
-}
-
-/* Focus indicators for keyboard navigation */
-.market-microstructure .flow-item:focus-within,
-.market-microstructure .concentration-item:focus-within,
-.market-microstructure .day-item:focus-within {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* ---- CUSTOM SCROLLBAR FOR FLOW LIST ------------------------- */
-.market-microstructure .flow-list {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-primary) var(--bg-primary);
-}
-
-.market-microstructure .flow-list::-webkit-scrollbar {
+/* ---- CUSTOM SCROLLBAR FOR LISTS ------------------------- */
+.flow-list::-webkit-scrollbar,
+.concentration-bars::-webkit-scrollbar {
   width: 6px;
 }
 
-.market-microstructure .flow-list::-webkit-scrollbar-track {
+.flow-list::-webkit-scrollbar-track,
+.concentration-bars::-webkit-scrollbar-track {
   background: var(--bg-primary);
   border-radius: 3px;
 }
 
-.market-microstructure .flow-list::-webkit-scrollbar-thumb {
+.flow-list::-webkit-scrollbar-thumb,
+.concentration-bars::-webkit-scrollbar-thumb {
   background: var(--border-primary);
   border-radius: 3px;
 }
 
-.market-microstructure .flow-list::-webkit-scrollbar-thumb:hover {
+.flow-list::-webkit-scrollbar-thumb:hover,
+.concentration-bars::-webkit-scrollbar-thumb:hover {
   background: var(--border-secondary);
-}
-
-/* ---- UTILITY CLASSES ---------------------------------------- */
-.market-microstructure .text-muted {
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-
-.market-microstructure .text-small {
-  font-size: 11px;
-}
-
-.market-microstructure .font-mono {
-  font-family: var(--font-mono);
-}
-
-/* ---- ERROR STATES ------------------------------------------- */
-.market-microstructure .error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: var(--color-negative);
-  font-size: 14px;
-  text-align: center;
-  padding: var(--space-lg);
-}
-
-.market-microstructure .error-state .error-icon {
-  font-size: 32px;
-  margin-bottom: var(--space-md);
-  opacity: 0.5;
-}
-
-.market-microstructure .retry-button {
-  margin-top: var(--space-md);
-  padding: 6px 16px;
-  background: var(--color-negative);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.market-microstructure .retry-button:hover {
-  background: var(--color-negative-hover);
-  transform: translateY(-1px);
-}
-
-/* ---- CHART CONTAINER FIXES ---------------------------------- */
-/* Ensure all chart containers within market microstructure have proper constraints */
-.market-microstructure .metric-card .chart-container,
-.market-microstructure .metric-card [class*="chart"] {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  contain: layout size;
-}
-
-/* Prevent SVG elements from causing resize loops */
-.market-microstructure .metric-card svg {
-  max-width: 100%;
-  max-height: 100%;
-  display: block;
-}
-
-/* Canvas elements should respect container bounds */
-.market-microstructure .metric-card canvas {
-  max-width: 100%;
-  max-height: 100%;
-  display: block;
-}
-
-/* ---- ADDITIONAL SCOPING FOR COMMON ELEMENTS ----------------- */
-/* Ensure these styles only apply within market microstructure */
-.market-microstructure .metric-header {
-  padding: var(--space-md);
-  border-bottom: 1px solid var(--border-primary);
-}
-
-.market-microstructure .metric-content {
-  padding: var(--space-md);
-  height: calc(100% - 60px); /* Account for header */
-  overflow: hidden;
-}
-
-/* ---- Z-INDEX HIERARCHY -------------------------------------- */
-.market-microstructure {
-  position: relative;
-  z-index: 1;
-}
-
-.market-microstructure .metric-card {
-  position: relative;
-  z-index: 2;
-}
-
-.market-microstructure .tooltip,
-.market-microstructure .dropdown {
-  z-index: 100;
-}
-
-.market-microstructure .modal {
-  z-index: 1000;
-}
-
-/* ---- EMPTY STATE STYLES ------------------------------------- */
-.market-microstructure .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 200px;
-  color: var(--text-secondary);
-  font-size: 14px;
-  text-align: center;
-  padding: var(--space-lg);
-}
-
-.market-microstructure .empty-state .empty-icon {
-  font-size: 48px;
-  margin-bottom: var(--space-md);
-  opacity: 0.3;
-}
-
-.market-microstructure .empty-state .empty-message {
-  margin-bottom: var(--space-sm);
-}
-
-.market-microstructure .empty-state .empty-hint {
-  font-size: 12px;
-  color: var(--text-dim);
-}
-
-/* ---- TRANSITION UTILITIES ----------------------------------- */
-.market-microstructure .fade-enter {
-  opacity: 0;
-}
-
-.market-microstructure .fade-enter-active {
-  opacity: 1;
-  transition: opacity 300ms ease-in;
-}
-
-.market-microstructure .fade-exit {
-  opacity: 1;
-}
-
-.market-microstructure .fade-exit-active {
-  opacity: 0;
-  transition: opacity 300ms ease-out;
-}
-
-/* ---- SKELETON LOADING STATES -------------------------------- */
-.market-microstructure .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--bg-primary) 25%,
-    var(--bg-secondary) 50%,
-    var(--bg-primary) 75%
-  );
-  background-size: 200% 100%;
-  animation: microstructureSkeletonLoading 1.5s ease-in-out infinite;
-  border-radius: 4px;
-}
-
-@keyframes microstructureSkeletonLoading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.market-microstructure .skeleton-text {
-  height: 16px;
-  margin-bottom: 8px;
-  border-radius: 4px;
-}
-
-.market-microstructure .skeleton-bar {
-  height: 24px;
-  margin-bottom: 12px;
-  border-radius: 4px;
-}
-
-/* ---- BADGE STYLES ------------------------------------------- */
-.market-microstructure .badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 12px;
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.market-microstructure .badge.positive {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--color-positive);
-}
-
-.market-microstructure .badge.negative {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--color-negative);
-}
-
-.market-microstructure .badge.neutral {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-}
-
-/* ---- TOOLTIP STYLES ----------------------------------------- */
-.market-microstructure .tooltip {
-  position: absolute;
-  padding: 6px 12px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 12px;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  pointer-events: none;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.market-microstructure .tooltip.visible {
-  opacity: 1;
-}
-
-.market-microstructure .tooltip::before {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: var(--bg-secondary);
-}
-
-/* ---- FINAL OVERRIDES ---------------------------------------- */
-/* Ensure nothing bleeds out of the component */
-.market-microstructure * {
-  box-sizing: border-box;
-}
-
-/* Reset any global styles that might interfere */
-.market-microstructure ul,
-.market-microstructure ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.market-microstructure p {
-  margin: 0;
-}
-
-.market-microstructure h1,
-.market-microstructure h2,
-.market-microstructure h3,
-.market-microstructure h4,
-.market-microstructure h5,
-.market-microstructure h6 {
-  margin: 0;
-  font-weight: inherit;
 }

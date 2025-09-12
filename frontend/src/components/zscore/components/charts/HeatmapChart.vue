@@ -9,8 +9,9 @@
             v-for="(label, i) in labels" 
             :key="`x-${i}`" 
             class="x-label"
+            :title="label"
           >
-            {{ label }}
+            <span>{{ label }}</span>
           </div>
         </div>
       </div>
@@ -23,26 +24,38 @@
             v-for="(label, i) in labels" 
             :key="`y-${i}`" 
             class="y-label"
+            :title="label"
           >
-            {{ label }}
+            <span>{{ label }}</span>
           </div>
         </div>
         
         <!-- Heatmap canvas -->
         <div class="heatmap-chart-container" ref="containerRef">
-          <canvas ref="chartCanvas"></canvas>
+          <canvas ref="chartCanvas" @mousemove="handleMouseMove" @mouseleave="handleMouseLeave"></canvas>
+          <!-- Tooltip -->
+          <div 
+            v-if="tooltip.show" 
+            class="heatmap-tooltip"
+            :style="{
+              left: tooltip.x + 'px',
+              top: tooltip.y + 'px'
+            }"
+          >
+            <div class="tooltip-header">{{ tooltip.rowLabel }} / {{ tooltip.colLabel }}</div>
+            <div class="tooltip-value">{{ formatValue(tooltip.value) }}</div>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="heatmap-legend" v-if="showLegend">
-      <span class="legend-min">{{ min.toFixed(2) }}</span>
-      <div class="legend-gradient" :class="colorScheme"></div>
-      <span class="legend-max">{{ max.toFixed(2) }}</span>
+      <span class="legend-min">{{ formatLegendValue(min) }}</span>
+      <div class="legend-gradient" :class="colorScheme" ref="legendRef"></div>
+      <span class="legend-max">{{ formatLegendValue(max) }}</span>
     </div>
   </div>
 </template>
-
 
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted, nextTick, computed } from 'vue'
@@ -51,12 +64,16 @@ type Matrix = number[][]
 type HeatmapInput =
   | { labels: string[]; data: Matrix }
   | { coins: string[]; matrix: Matrix }
+  | number[][] 
+
+
+  
 
 interface Props {
   data: HeatmapInput
   min?: number
   max?: number
-  colorScheme?: 'correlation' | 'beta' | 'default'
+  colorScheme?: 'correlation' | 'beta' | 'covariance' | 'default'
   showLegend?: boolean
 }
 
@@ -69,8 +86,19 @@ const props = withDefaults(defineProps<Props>(), {
 
 const chartCanvas = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
+const legendRef = ref<HTMLDivElement>()
 let animationId: number | null = null
 let resizeObserver: ResizeObserver | null = null
+
+// Tooltip state
+const tooltip = ref({
+  show: false,
+  x: 0,
+  y: 0,
+  rowLabel: '',
+  colLabel: '',
+  value: 0
+})
 
 // Unify inputs
 const labels = computed<string[]>(() => {
@@ -85,37 +113,112 @@ const matrix = computed<Matrix>(() => {
 
 // Color functions
 function getColorForValue(value: number): string {
-  const normalizedValue = (value - props.min) / (props.max - props.min)
+  const normalizedValue = Math.max(0, Math.min(1, (value - props.min) / (props.max - props.min)))
   
   if (props.colorScheme === 'correlation') {
-    // Red to yellow to green for correlation
+    // Improved correlation color scheme
     const clampedValue = Math.max(-1, Math.min(1, value))
-    const t = (clampedValue + 1) / 2 // Normalize to 0-1
+    const t = (clampedValue + 1) / 2
     
     if (t < 0.5) {
       // Red to yellow
       const localT = t * 2
-      const r = 239
-      const g = Math.round(68 + (204 - 68) * localT)
-      const b = 68
+      const r = 220
+      const g = Math.round(60 + (220 - 60) * localT)
+      const b = 60
       return `rgb(${r}, ${g}, ${b})`
     } else {
       // Yellow to green
       const localT = (t - 0.5) * 2
-      const r = Math.round(250 - (250 - 34) * localT)
-      const g = Math.round(204 - (204 - 197) * localT)
-      const b = Math.round(21 + (94 - 21) * localT)
+      const r = Math.round(220 - (220 - 34) * localT)
+      const g = Math.round(220 - (220 - 197) * localT)
+      const b = Math.round(60 + (120 - 60) * localT)
       return `rgb(${r}, ${g}, ${b})`
     }
   } else if (props.colorScheme === 'beta') {
     // Blue gradient for beta
-    const opacity = 0.2 + normalizedValue * 0.6
-    return `rgba(59, 130, 246, ${opacity})`
+    const t = normalizedValue
+    const r = Math.round(30 + (59 - 30) * t)
+    const g = Math.round(30 + (130 - 30) * t)
+    const b = Math.round(100 + (246 - 100) * t)
+    return `rgb(${r}, ${g}, ${b})`
+  } else if (props.colorScheme === 'covariance') {
+    // Purple to orange gradient for covariance
+    const t = normalizedValue
+    if (t < 0.5) {
+      const localT = t * 2
+      const r = Math.round(67 + (147 - 67) * localT)
+      const g = Math.round(56 + (51 - 56) * localT)
+      const b = Math.round(137 + (234 - 137) * localT)
+      return `rgb(${r}, ${g}, ${b})`
+    } else {
+      const localT = (t - 0.5) * 2
+      const r = Math.round(147 + (251 - 147) * localT)
+      const g = Math.round(51 + (146 - 51) * localT)
+      const b = Math.round(234 - (234 - 38) * localT)
+      return `rgb(${r}, ${g}, ${b})`
+    }
   } else {
     // Default purple gradient
-    const opacity = 0.2 + normalizedValue * 0.8
-    return `rgba(99, 102, 241, ${opacity})`
+    const t = normalizedValue
+    const r = Math.round(67 + (147 - 67) * t)
+    const g = Math.round(56 + (51 - 56) * t)
+    const b = Math.round(137 + (234 - 137) * t)
+    return `rgb(${r}, ${g}, ${b})`
   }
+}
+
+// Format value for display
+function formatValue(value: number): string {
+  if (props.colorScheme === 'covariance') {
+    // Handle very small covariance values
+    if (Math.abs(value) < 0.0001) {
+      return value.toExponential(2)
+    }
+    return value.toFixed(6)
+  }
+  return value.toFixed(3)
+}
+
+function formatLegendValue(value: number): string {
+  if (props.colorScheme === 'covariance' && Math.abs(value) < 0.001) {
+    return value.toExponential(1)
+  }
+  return value.toFixed(2)
+}
+
+// Mouse handlers
+function handleMouseMove(event: MouseEvent) {
+  const canvas = chartCanvas.value
+  const container = containerRef.value
+  if (!canvas || !container || !matrix.value.length) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+
+  const numRows = matrix.value.length
+  const numCols = matrix.value[0]?.length || 0
+  const cellWidth = rect.width / numCols
+  const cellHeight = rect.height / numRows
+
+  const col = Math.floor(x / cellWidth)
+  const row = Math.floor(y / cellHeight)
+
+  if (row >= 0 && row < numRows && col >= 0 && col < numCols) {
+    tooltip.value = {
+      show: true,
+      x: Math.min(x + 10, rect.width - 150),
+      y: Math.max(y - 40, 10),
+      rowLabel: labels.value[row] || `Row ${row}`,
+      colLabel: labels.value[col] || `Col ${col}`,
+      value: matrix.value[row][col]
+    }
+  }
+}
+
+function handleMouseLeave() {
+  tooltip.value.show = false
 }
 
 function drawHeatmap() {
@@ -142,7 +245,7 @@ function drawHeatmap() {
   // Clear canvas
   ctx.clearRect(0, 0, width, height)
 
-  // Calculate dimensions - no margins needed since labels are outside
+  // Calculate dimensions
   const numRows = matrix.value.length
   const numCols = matrix.value[0]?.length || 0
   const cellWidth = width / numCols
@@ -157,29 +260,48 @@ function drawHeatmap() {
 
       // Draw cell
       ctx.fillStyle = getColorForValue(value)
-      ctx.fillRect(x, y, cellWidth - 1, cellHeight - 1)
+      ctx.fillRect(x, y, cellWidth, cellHeight)
 
-      // Draw cell border
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
+      // Draw subtle grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'
       ctx.lineWidth = 0.5
-      ctx.strokeRect(x, y, cellWidth - 1, cellHeight - 1)
-
-      // Draw value text for small matrices
-      if (numRows <= 10 && numCols <= 10 && cellWidth > 40 && cellHeight > 30) {
-        ctx.fillStyle = Math.abs(value) > 0.5 ? '#000' : '#fff'
-        ctx.font = '11px monospace'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(value.toFixed(2), x + cellWidth / 2, y + cellHeight / 2)
-      }
+      ctx.strokeRect(x, y, cellWidth, cellHeight)
     }
   }
+}
+
+// Draw gradient legend
+function drawLegendGradient() {
+  if (!legendRef.value || !props.showLegend) return
+
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  canvas.width = 200
+  canvas.height = 16
+  
+  const gradient = ctx.createLinearGradient(0, 0, 200, 0)
+  
+  // Add color stops based on color scheme
+  for (let i = 0; i <= 10; i++) {
+    const t = i / 10
+    const value = props.min + (props.max - props.min) * t
+    gradient.addColorStop(t, getColorForValue(value))
+  }
+  
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, 200, 16)
+  
+  legendRef.value.style.background = `url(${canvas.toDataURL()})`
+  legendRef.value.style.backgroundSize = 'cover'
 }
 
 function scheduleDraw() {
   if (animationId) cancelAnimationFrame(animationId)
   animationId = requestAnimationFrame(() => {
     drawHeatmap()
+    drawLegendGradient()
     animationId = null
   })
 }
@@ -202,7 +324,7 @@ onMounted(async () => {
 })
 
 watch(
-  () => props.data,
+  () => [props.data, props.colorScheme, props.min, props.max],
   () => {
     scheduleDraw()
   },

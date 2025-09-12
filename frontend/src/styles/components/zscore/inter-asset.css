@@ -1,21 +1,4 @@
-/* Inter-Asset Z-Score Dashboard Specific Styles */
-
-.inter-asset-zscore {
-  width: 100%;
-  height: 100%;
-}
-
-.inter-asset-zscore .dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-md);
-  grid-auto-rows: minmax(400px, auto);
-}
-
-/* Full width items */
-.inter-asset-zscore .full-width {
-  grid-column: 1 / -1;
-}
+/* frontend/src/styles/components/zscore/inter-asset.css */
 
 /* Matrix containers */
 .matrix-container {
@@ -71,18 +54,6 @@
 .pair-selector select:focus {
   outline: none;
   border-color: var(--color-accent);
-}
-
-.vs {
-  font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.divergence-chart {
-  flex: 1;
-  min-height: 300px;
-  position: relative;
 }
 
 .divergence-stats {
@@ -246,6 +217,8 @@
   margin-top: var(--space-xs);
 }
 
+/* frontend/src/styles/components/zscore/inter-asset.css (continued) */
+
 .score-label {
   font-size: 11px;
   color: var(--text-secondary);
@@ -261,10 +234,6 @@
 
 /* Responsive */
 @media (max-width: 1200px) {
-  .inter-asset-zscore .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-  
   .relationships-grid {
     grid-template-columns: 1fr;
   }

@@ -42,9 +42,24 @@
       
       <!-- Dashboard 9: Market Regime -->
       <MarketRegime v-if="currentDashboard === 8" />
+
+      <!-- Dashboard 10:  TradesAnalysis -->
+      <TradesAnalysis v-if="currentDashboard === 9 " />
+
+      <!-- Dashboard 10:  TradesAnalysis -->
+      <VolatilityDynamics v-if="currentDashboard === 10 " />
+
+      
+      <!-- Dashboard 10:  TradesAnalysis -->
+      <MarketSeasonality v-if="currentDashboard === 11 " />
+
+
     </div>
   </div>
 </template>
+
+
+
 
 <script setup lang="ts">
 import { ref, provide } from 'vue'
@@ -58,17 +73,27 @@ import MarketMicrostructure from './dashboards/MarketMicrostructure.vue'
 import RelativeStrength from './dashboards/RelativeStrength.vue'
 import MarketRegime from './dashboards/MarketRegime.vue'
 
+import TradesAnalysis from './dashboards/TradesAnalysis.vue'
+import VolatilityDynamics from './dashboards/VolatilityDynamics.vue'
+import MarketSeasonality from './dashboards/MarketSeasonality.vue'
+
+
 const dashboards = [
   { name: 'Z-Score Overview' },
-  { name: 'Volatility Analysis' },
+  { name: 'Volatility Analysis' },    
   { name: 'Cross-Asset Matrix' },
   { name: 'Volatility & Liquidity' },
   { name: 'Inter-Asset Z-Score' },
   { name: 'Leaders & Laggards' },
   { name: 'Market Microstructure' },
   { name: 'Relative Strength' },
-  { name: 'Market Regime' }
+  { name: 'Market Regime' },
+  { name: 'Trades Analysis' },     
+  { name: 'Volatility Dynamics' }, 
+  { name: 'Market Seasonality' },       
+
 ];
+
 
 // Current dashboard state
 const currentDashboard = ref(0)

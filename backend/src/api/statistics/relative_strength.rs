@@ -9,6 +9,10 @@ use super::{
     zscore_series, Tf,
 };
 
+// ---- task-pool infra ----
+use crate::infra::task_pools::{EndpointPool, threads_from_env};
+use std::sync::OnceLock;
+
 fn default_market_type() -> String { "spot".to_string() }
 fn default_timeframe() -> String { "1h".to_string() }
 fn default_window() -> usize { 48 }                   // 2 days @1h
@@ -111,12 +115,34 @@ fn beta_r2(x: &[f64], f: &[f64]) -> (f64, f64) {
     (finite(beta), finite(r2))
 }
 
-/* ---------- handler ---------- */
+/* ---------- task pool wiring ---------- */
+
+struct Job { pool: PgPool, q: RelativeStrengthRequest }
+
+static RS_POOL: OnceLock<EndpointPool<Job, RelativeStrengthResponse>> = OnceLock::new();
+
+fn rs_pool() -> &'static EndpointPool<Job, RelativeStrengthResponse> {
+    RS_POOL.get_or_init(|| {
+        let n = threads_from_env("RELATIVE_STRENGTH_THREADS", 2);
+        EndpointPool::start("relative-strength", n, |job: Job| async move {
+            compute_relative_strength(job.pool, job.q).await
+        })
+    })
+}
+
+/* ---------- handler (thin) ---------- */
 
 pub async fn get_relative_strength(
-    State(pool): State<PgPool>,
+    State(db): State<PgPool>,
     Query(q): Query<RelativeStrengthRequest>,
 ) -> Json<RelativeStrengthResponse> {
+    let res = rs_pool().run(Job { pool: db.clone(), q }).await;
+    Json(res)
+}
+
+/* ---------- heavy compute ---------- */
+
+async fn compute_relative_strength(pool: PgPool, q: RelativeStrengthRequest) -> RelativeStrengthResponse {
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
     let since_unix = (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
@@ -165,14 +191,14 @@ pub async fn get_relative_strength(
         }
     }
     if series.len() < 2 {
-        return Json(RelativeStrengthResponse {
+        return RelativeStrengthResponse {
             base,
             rs_rankings: vec![],
             persistence: vec![],
             momentum_factor_loadings: vec![],
             rs_series: vec![],
             pair_divergence: vec![],
-        });
+        };
     }
 
     // align on common timestamps
@@ -187,60 +213,126 @@ pub async fn get_relative_strength(
         common = inter;
     }
     if common.len() < q.window + 6 {
-        return Json(RelativeStrengthResponse {
+        return RelativeStrengthResponse {
             base,
             rs_rankings: vec![],
             persistence: vec![],
             momentum_factor_loadings: vec![],
             rs_series: vec![],
             pair_divergence: vec![],
-        });
+        };
     }
 
-    // map symbol -> aligned closes
+    // map symbol -> aligned closes (aligned on common timestamps)
     let mut aligned: BTreeMap<String, Vec<f64>> = BTreeMap::new();
     for s in &series {
         let mut v = Vec::with_capacity(common.len());
-        let mut i=0usize; let mut j=0usize;
-        while i<s.ts.len() && j<common.len() {
-            if s.ts[i]==common[j] { v.push(s.close[i]); j+=1; }
-            i+=1;
+        let (mut i, mut j) = (0usize, 0usize);
+        while i < s.ts.len() && j < common.len() {
+            if s.ts[i] == common[j] {
+                v.push(s.close[i]);
+                j += 1;
+            }
+            i += 1;
         }
-        if v.len()==common.len() { aligned.insert(s.sym.clone(), v); }
+        if v.len() == common.len() {
+            aligned.insert(s.sym.clone(), v);
+        }
     }
 
-    // compute RS z for each symbol vs base
+    // make sure base is present
+    if !aligned.contains_key(&base) {
+        return RelativeStrengthResponse {
+            base,
+            rs_rankings: vec![],
+            persistence: vec![],
+            momentum_factor_loadings: vec![],
+            rs_series: vec![],
+            pair_divergence: vec![],
+        };
+    }
+
+    // build a mask of indices where **all** symbols have a valid (>0, finite) close
+    let mut keep_idx: Vec<usize> = Vec::with_capacity(common.len());
+    'outer: for i in 0..common.len() {
+        for v in aligned.values() {
+            let x = v[i];
+            if !(x.is_finite() && x > 0.0) {
+                continue 'outer;
+            }
+        }
+        keep_idx.push(i);
+    }
+
+    // if after filtering we don't have enough data, bail
+    if keep_idx.len() < q.window + 6 {
+        return RelativeStrengthResponse {
+            base,
+            rs_rankings: vec![],
+            persistence: vec![],
+            momentum_factor_loadings: vec![],
+            rs_series: vec![],
+            pair_divergence: vec![],
+        };
+    }
+
+    // apply mask to common ts and to every symbol's close vector
+    let common: Vec<i64> = keep_idx.iter().map(|&i| common[i]).collect();
+    let mut aligned: BTreeMap<String, Vec<f64>> = aligned
+        .into_iter()
+        .map(|(sym, v)| {
+            let nv = keep_idx.iter().map(|&i| v[i]).collect::<Vec<f64>>();
+            (sym, nv)
+        })
+        .collect();
+
+    // compute RS z using log prices; now all values are >0 and finite
     let base_close = aligned.get(&base).cloned().unwrap();
-    let base_ln: Vec<f64> = base_close.iter().map(|p| p.ln()).collect();
+    let base_ln: Vec<f64> = base_close.iter().map(|&p| p.ln()).collect();
 
     let mut rs_series = Vec::new();
     for (sym, close) in &aligned {
         if *sym == base { continue; }
-        let ln: Vec<f64> = close.iter().map(|p| p.ln()).collect();
-        let rel: Vec<f64> = ln.iter().zip(base_ln.iter()).map(|(a,b)| finite(a-b)).collect();
+        let ln: Vec<f64> = close.iter().map(|&p| p.ln()).collect();
+        let rel: Vec<f64> = ln.iter().zip(base_ln.iter()).map(|(a, b)| a - b).collect();
         let z = zscore_series(&rel, q.window);
+
         // only keep mature part
         let start = z.iter().position(|v| v.is_finite()).unwrap_or(z.len());
         if start >= z.len() { continue; }
+
         rs_series.push(RsSeries {
             symbol: sym.clone(),
             ts: common[start..].to_vec(),
             z:  z[start..].iter().map(|&v| finite(v)).collect(),
         });
     }
+
     if rs_series.is_empty() {
-        return Json(RelativeStrengthResponse {
+        return RelativeStrengthResponse {
             base,
             rs_rankings: vec![],
             persistence: vec![],
             momentum_factor_loadings: vec![],
             rs_series: vec![],
             pair_divergence: vec![],
-        });
+        };
     }
+
+
 
     // align RS series to same length (min)
     let min_len = rs_series.iter().map(|s| s.z.len()).min().unwrap_or(0);
+    if min_len == 0 {
+        return RelativeStrengthResponse {
+            base,
+            rs_rankings: vec![],
+            persistence: vec![],
+            momentum_factor_loadings: vec![],
+            rs_series: vec![],
+            pair_divergence: vec![],
+        };
+    }
     for s in &mut rs_series {
         if s.z.len() > min_len {
             let off = s.z.len() - min_len;
@@ -251,7 +343,7 @@ pub async fn get_relative_strength(
 
     // rankings by last z
     let mut ranks: Vec<RsRank> = rs_series.iter()
-        .map(|s| RsRank { pair: format!("{}/{}", s.symbol, base), last_z: s.z[min_len-1] })
+        .map(|s| RsRank { pair: format!("{}/{}", s.symbol, base), last_z: finite(s.z[min_len-1]) })
         .collect();
     ranks.sort_by(|a,b| b.last_z.total_cmp(&a.last_z));
 
@@ -294,12 +386,12 @@ pub async fn get_relative_strength(
     pair_divs.sort_by(|a,b| b.2.total_cmp(&a.2));
     let pair_divergence = pair_divs.into_iter().take(5).map(|(p, rows, _)| PairDiv { pair: p, time_series: rows }).collect();
 
-    Json(RelativeStrengthResponse {
+    RelativeStrengthResponse {
         base,
         rs_rankings: ranks,
         persistence,
         momentum_factor_loadings: loadings,
         rs_series,
         pair_divergence,
-    })
+    }
 }

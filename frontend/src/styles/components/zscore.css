@@ -1,20 +1,28 @@
 /* Z-Score Dashboard Layout */
+
 .zscore-dashboard {
   display: flex;
   height: calc(100vh - var(--nav-height));
   background: var(--bg-primary);
   position: relative;
+  width: 100%;
 }
 
-/* Dashboard Navigation Sidebar - Fixed */
+
+
 .dashboard-nav {
-  width: clamp(160px, 15vw, 260px); /* Responsive between 160-220px */
+  width: clamp(160px, 12vw, 220px); /* Adjusted for better scaling */
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-primary);
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  position: sticky;
+  left: 0;
+  z-index: 10;
 }
+
+
 
 .nav-items {
   padding: var(--space-md) 0;
@@ -86,42 +94,55 @@
   text-overflow: ellipsis;
 }
 
-/* Dashboard Content Area */
+/* Dashboard Content Area - UPDATED */
 .dashboard-content {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto; /* Changed from hidden */
   background: var(--bg-primary);
+  min-width: 0; /* Allow shrinking */
+  position: relative;
 }
-
-/* Inner content wrapper - UPDATED FOR FULL WIDTH */
 .dashboard-content > * {
   padding: var(--space-lg);
-  /* REMOVED: max-width: 1600px; */
-  /* REMOVED: margin: 0 auto; */
   width: 100%;
+  min-width: fit-content; /* Prevent content from being cut off */
 }
 
-/* Add responsive padding for wider screens */
-@media (min-width: 1920px) {
-  .dashboard-content > * {
-    padding: var(--space-lg) var(--space-xl);
+/* Dashboard Grid Layout - ENHANCED */
+.dashboard-grid {
+  display: grid;
+  gap: var(--space-md);
+  grid-auto-rows: minmax(320px, auto);
+  width: 100%;
+  min-width: fit-content; /* Allow grid to expand as needed */
+}
+
+/* Enhanced responsive grid */
+@media (max-width: 1199px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(600px, 1fr); /* Minimum width for content */
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1919px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  }
+}
+
+@media (min-width: 1920px) and (max-width: 2559px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
   }
 }
 
 @media (min-width: 2560px) {
-  .dashboard-content > * {
-    padding: var(--space-xl) var(--space-2xl);
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   }
 }
 
-/* Optional: Add max-width only for ultra-wide screens */
-@media (min-width: 3440px) {
-  .dashboard-content > * {
-    max-width: 3200px;
-    margin: 0 auto;
-  }
-}
 
 /* Dashboard Header - Consistent across all dashboards */
 .dashboard-header {
@@ -227,7 +248,6 @@
   }
 }
 
-/* Metric Cards - Consistent styling */
 .metric-card {
   background: var(--bg-secondary);
   border-radius: 8px;
@@ -237,7 +257,9 @@
   flex-direction: column;
   min-height: 320px;
   transition: all 0.2s ease;
+  container-type: inline-size; /* Enable container queries */
 }
+
 
 .metric-card:hover {
   border-color: var(--border-secondary);
@@ -285,13 +307,67 @@
   flex-direction: column;
 }
 
-/* Chart Containers */
+
 .chart-container {
   flex: 1;
   position: relative;
   min-height: 240px;
-  max-height: 400px;
+  max-height: 600px; /* Increased from 400px */
+  width: 100%;
+  container-type: size; /* Enable container queries */
 }
+
+/* Wide content handling */
+.wide-content {
+  min-width: 1200px; /* Minimum width for wide content */
+  width: 100%;
+}
+
+.scrollable-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 calc(-1 * var(--space-md)); /* Negative margin to full width */
+  padding: 0 var(--space-md);
+}
+
+.scrollable-table table {
+  min-width: 100%;
+  width: max-content;
+}
+
+
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .dashboard-nav {
+    width: 100%;
+    height: auto;
+    position: sticky;
+    top: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--border-primary);
+  }
+  
+  .nav-items {
+    display: flex;
+    flex-direction: row;
+    padding: var(--space-sm);
+    overflow-x: auto;
+    gap: var(--space-sm);
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .dashboard-content {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: minmax(320px, 1fr);
+    padding-bottom: var(--space-xl); /* Extra padding for mobile scroll */
+  }
+}
+
 
 /* Responsive breakpoints */
 @media (max-width: 1200px) {
@@ -406,4 +482,37 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+
+/* Container query support for cards */
+@container (min-width: 600px) {
+  .metric-card {
+    padding: var(--space-lg);
+  }
+  
+  .chart-container {
+    min-height: 320px;
+  }
+}
+
+@container (min-width: 800px) {
+  .chart-container {
+    min-height: 360px;
+  }
+}
+
+/* Utility classes for scroll behavior */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.no-scroll {
+  overflow: hidden;
 }

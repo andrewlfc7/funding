@@ -1,11 +1,11 @@
 <template>
-  <div class="time-series-chart-container">
+  <div class="time-series-chart-container" :style="{ height: `${height}px` }">
     <canvas ref="chartCanvas"></canvas>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed, nextTick } from 'vue'
 import { ChartJS } from '@/utils/chartSetup'
 import type { ChartConfiguration } from 'chart.js'
 
@@ -62,71 +62,97 @@ const colors = [
   'rgba(245, 158, 11, 1)'
 ]
 
-// Process data for dual y-axis
+// ---------- Data shaping (pure/computed) ----------
+
+// Primary/secondary series from flat data
 const processedData = computed(() => {
-  if (!props.data || props.data.length === 0) return { primary: [], secondary: [] }
-  
-  const primary = props.data.map(d => ({
-    timestamp: d.timestamp,
-    value: props.yField ? (d[props.yField] as number) : 0
-  }))
-  
-  const secondary = props.secondaryYField 
-    ? props.data.map(d => ({
-        timestamp: d.timestamp,
-        value: d[props.secondaryYField] as number
-      }))
+  if (!props.data || props.data.length === 0) return { primary: [] as Array<{timestamp:number; value:number}>, secondary: [] as Array<{timestamp:number; value:number}> }
+
+  const primary = props.yField
+    ? props.data.map(d => ({ timestamp: d.timestamp, value: Number(d[props.yField!]) || 0 }))
     : []
-  
+
+  const secondary = props.secondaryYField
+    ? props.data.map(d => ({ timestamp: d.timestamp, value: Number(d[props.secondaryYField!]) || 0 }))
+    : []
+
   return { primary, secondary }
 })
 
-// Process data into series (for multi-line without secondary axis)
+// Multi-line series (either passed directly, or grouped from flat data)
 const processedSeries = computed(() => {
-  // If series prop is provided, use it directly
   if (props.series && props.series.length > 0) {
+    // Use as-is (assumed immutable from caller)
     return props.series
   }
-  
-  // If groupBy is specified, group the flat data
   if (props.data && props.groupBy && props.yField && !props.secondaryYField) {
-    const grouped = new Map<string, Array<{timestamp: number, value: number}>>()
-    
-    props.data.forEach(item => {
+    const grouped = new Map<string, Array<{ timestamp: number; value: number }>>()
+    for (const item of props.data) {
       const key = String(item[props.groupBy!])
-      if (!grouped.has(key)) {
-        grouped.set(key, [])
+      let arr = grouped.get(key)
+      if (!arr) {
+        arr = []
+        grouped.set(key, arr)
       }
-      grouped.get(key)!.push({
-        timestamp: item.timestamp,
-        value: item[props.yField!] as number
-      })
-    })
-    
+      arr.push({ timestamp: item.timestamp, value: Number(item[props.yField!]) || 0 })
+    }
     return Array.from(grouped.entries()).map(([symbol, data]) => ({
       symbol,
       data: data.sort((a, b) => a.timestamp - b.timestamp)
     }))
   }
-  
-  return []
+  return [] as Array<{ symbol: string; data: Array<{ timestamp: number; value: number }> }>
 })
 
-function createChart() {
-  if (!chartCanvas.value) return
+// ---------- Small helpers (PURE; no reactive writes) ----------
 
+function getTimeRangeSafe(): [number, number] | null {
+  // Avoid Math.min(...bigArray)/max which can overflow the call stack
+  let min = Number.POSITIVE_INFINITY
+  let max = Number.NEGATIVE_INFINITY
+
+  if (processedData.value.primary.length > 0) {
+    for (const d of processedData.value.primary) {
+      const t = d.timestamp
+      if (Number.isFinite(t)) {
+        if (t < min) min = t
+        if (t > max) max = t
+      }
+    }
+  } else if (processedSeries.value.length > 0) {
+    for (const s of processedSeries.value) {
+      for (const d of s.data) {
+        const t = d.timestamp
+        if (Number.isFinite(t)) {
+          if (t < min) min = t
+          if (t > max) max = t
+        }
+      }
+    }
+  } else {
+    return null
+  }
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return null
+  return [min, max]
+}
+
+function getThresholdColor(threshold: number): string {
+  if (threshold === 0) return 'rgba(255, 255, 255, 0.4)'
+  if (Math.abs(threshold) >= 2) return 'rgba(239, 68, 68, 0.5)'
+  if (Math.abs(threshold) >= 1) return 'rgba(251, 146, 60, 0.5)'
+  return 'rgba(255, 255, 255, 0.2)'
+}
+
+// Build datasets (pure; doesn’t mutate props or refs)
+function buildDatasets() {
   const datasets: any[] = []
-  const useSecondaryAxis = props.secondaryYField && processedData.value.secondary.length > 0
+  const useSecondaryAxis = !!(props.secondaryYField && processedData.value.secondary.length > 0)
 
   if (useSecondaryAxis) {
-    // Dual y-axis mode
-    // Primary dataset
     datasets.push({
       label: props.label || props.yField || 'Value',
-      data: processedData.value.primary.map(d => ({
-        x: d.timestamp,
-        y: d.value
-      })),
+      data: processedData.value.primary.map(d => ({ x: d.timestamp, y: d.value })),
       borderColor: colors[0],
       backgroundColor: colors[0].replace('1)', '0.1)'),
       borderWidth: 2,
@@ -135,14 +161,9 @@ function createChart() {
       fill: false,
       yAxisID: 'y'
     })
-    
-    // Secondary dataset
     datasets.push({
       label: props.secondaryLabel || props.secondaryYField,
-      data: processedData.value.secondary.map(d => ({
-        x: d.timestamp,
-        y: d.value
-      })),
+      data: processedData.value.secondary.map(d => ({ x: d.timestamp, y: d.value })),
       borderColor: colors[1],
       backgroundColor: colors[1].replace('1)', '0.1)'),
       borderWidth: 2,
@@ -152,14 +173,10 @@ function createChart() {
       yAxisID: 'y1'
     })
   } else if (processedSeries.value.length > 0) {
-    // Multi-series mode (single y-axis)
     processedSeries.value.forEach((series, index) => {
       datasets.push({
         label: series.symbol,
-        data: series.data.map(d => ({
-          x: d.timestamp,
-          y: d.value
-        })),
+        data: series.data.map(d => ({ x: d.timestamp, y: d.value })),
         borderColor: colors[index % colors.length],
         backgroundColor: colors[index % colors.length].replace('1)', '0.1)'),
         borderWidth: 2,
@@ -169,13 +186,9 @@ function createChart() {
       })
     })
   } else if (processedData.value.primary.length > 0) {
-    // Single series mode
     datasets.push({
       label: props.label || props.yField || 'Value',
-      data: processedData.value.primary.map(d => ({
-        x: d.timestamp,
-        y: d.value
-      })),
+      data: processedData.value.primary.map(d => ({ x: d.timestamp, y: d.value })),
       borderColor: colors[0],
       backgroundColor: colors[0].replace('1)', '0.1)'),
       borderWidth: 2,
@@ -185,26 +198,39 @@ function createChart() {
     })
   }
 
-  // Add threshold lines
-  if (props.showThresholdLines && props.thresholds && datasets.length > 0) {
-    const timeRange = getTimeRange()
-    props.thresholds.forEach((threshold, index) => {
-      datasets.push({
-        label: props.thresholdLabels?.[index] || `${threshold}σ`,
-        data: timeRange.map(timestamp => ({
-          x: timestamp,
-          y: threshold
-        })),
-        borderColor: getThresholdColor(threshold),
-        borderWidth: threshold === 0 ? 2 : 1,
-        borderDash: [5, 5],
-        pointRadius: 0,
-        fill: false,
-        showLine: true,
-        yAxisID: 'y'
-      })
-    })
+  // Threshold lines (two points: [minTs, maxTs])
+  if (props.showThresholdLines && props.thresholds && props.thresholds.length > 0) {
+    const range = getTimeRangeSafe()
+    if (range) {
+      const [tmin, tmax] = range
+      for (let i = 0; i < props.thresholds.length; i++) {
+        const threshold = props.thresholds[i]
+        datasets.push({
+          label: props.thresholdLabels?.[i] || `${threshold}σ`,
+          data: [
+            { x: tmin, y: threshold },
+            { x: tmax, y: threshold }
+          ],
+          borderColor: getThresholdColor(threshold),
+          borderWidth: threshold === 0 ? 2 : 1,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false,
+          yAxisID: 'y'
+        })
+      }
     }
+  }
+
+  return { datasets, useSecondaryAxis }
+}
+
+// ---------- Chart lifecycle ----------
+
+function createChart() {
+  if (!chartCanvas.value) return
+
+  const { datasets, useSecondaryAxis } = buildDatasets()
 
   const config: ChartConfiguration<'line'> = {
     type: 'line',
@@ -212,6 +238,9 @@ function createChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      spanGaps: true,        // perf: skip nulls without segmenting
+      animation: false,      // perf: disable animations for large data
+      parsing: false,        // perf: we already feed {x,y}
       interaction: {
         mode: 'index',
         intersect: false
@@ -223,14 +252,10 @@ function createChart() {
           labels: {
             usePointStyle: true,
             padding: 10,
-            font: {
-              size: 12
-            },
+            font: { size: 12 },
             filter: (item) => {
               // Hide threshold lines from legend if too many series
-              if (item.text?.includes('σ') && datasets.length > 5) {
-                return false
-              }
+              if (item.text?.includes('σ') && datasets.length > 5) return false
               return true
             }
           }
@@ -240,22 +265,16 @@ function createChart() {
           intersect: false,
           callbacks: {
             label: (context) => {
-              // Don't show tooltip for threshold lines
-              if (context.dataset.borderDash) return ''
-              
+              // Skip tooltips for dashed (threshold) series
+              if ((context.dataset as any).borderDash) return ''
               const label = context.dataset.label || ''
-              let value = context.parsed.y
-              
-              // Format based on y-axis
+              const y = Number(context.parsed.y)
               if (context.dataset.yAxisID === 'y' && props.yFormat) {
-                value = props.yFormat(value)
+                return `${label}: ${props.yFormat(y)}`
               } else if (context.dataset.yAxisID === 'y1' && props.secondaryYFormat) {
-                value = props.secondaryYFormat(value)
-              } else {
-                value = value.toFixed(3)
+                return `${label}: ${props.secondaryYFormat(y)}`
               }
-              
-              return `${label}: ${value}`
+              return `${label}: ${y.toFixed(3)}`
             }
           }
         }
@@ -264,15 +283,14 @@ function createChart() {
         x: {
           type: 'time',
           time: {
+            // Heuristic default; Chart.js will choose nice ticks for wide ranges
             unit: 'hour',
             displayFormats: {
               hour: 'HH:mm',
               day: 'MMM dd'
             }
           },
-          grid: {
-            color: 'rgba(255, 255, 255, 0.05)'
-          },
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
           ticks: {
             color: 'rgba(255, 255, 255, 0.6)',
             maxRotation: 0
@@ -280,16 +298,12 @@ function createChart() {
         },
         y: {
           position: 'left',
-          grid: {
-            color: 'rgba(255, 255, 255, 0.05)'
-          },
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
           ticks: {
             color: 'rgba(255, 255, 255, 0.6)',
-            callback: function(value) {
-              if (props.yFormat) {
-                return props.yFormat(value as number)
-              }
-              return value
+            callback(value) {
+              if (props.yFormat) return props.yFormat(Number(value))
+              return String(value)
             }
           },
           title: {
@@ -298,28 +312,26 @@ function createChart() {
             color: 'rgba(255, 255, 255, 0.8)'
           }
         },
-        ...(useSecondaryAxis ? {
-          y1: {
-            position: 'right',
-            grid: {
-              drawOnChartArea: false
-            },
-            ticks: {
-              color: 'rgba(255, 255, 255, 0.6)',
-              callback: function(value) {
-                if (props.secondaryYFormat) {
-                  return props.secondaryYFormat(value as number)
+        ...(useSecondaryAxis
+          ? {
+              y1: {
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                ticks: {
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  callback(value) {
+                    if (props.secondaryYFormat) return props.secondaryYFormat(Number(value))
+                    return String(value)
+                  }
+                },
+                title: {
+                  display: !!props.secondaryLabel,
+                  text: props.secondaryLabel,
+                  color: 'rgba(255, 255, 255, 0.8)'
                 }
-                return value
               }
-            },
-            title: {
-              display: !!props.secondaryLabel,
-              text: props.secondaryLabel,
-              color: 'rgba(255, 255, 255, 0.8)'
             }
-          }
-        } : {})
+          : {})
       }
     }
   }
@@ -327,44 +339,48 @@ function createChart() {
   chart = new ChartJS(chartCanvas.value.getContext('2d')!, config)
 }
 
-function getTimeRange(): number[] {
-  if (processedData.value.primary.length > 0) {
-    const timestamps = processedData.value.primary.map(d => d.timestamp)
-    return [Math.min(...timestamps), Math.max(...timestamps)]
-  }
-  if (processedSeries.value.length > 0) {
-    const allTimestamps = processedSeries.value.flatMap(s => s.data.map(d => d.timestamp))
-    return [Math.min(...allTimestamps), Math.max(...allTimestamps)]
-  }
-  return []
-}
-
-function getThresholdColor(threshold: number): string {
-  if (threshold === 0) return 'rgba(255, 255, 255, 0.4)'
-  if (Math.abs(threshold) >= 2) return 'rgba(239, 68, 68, 0.5)'
-  if (Math.abs(threshold) >= 1) return 'rgba(251, 146, 60, 0.5)'
-  return 'rgba(255, 255, 255, 0.2)'
-}
-
 function updateChart() {
-  if (!chart) return
+  if (!chart) {
+    createChart()
+    return
+  }
+  const { datasets, useSecondaryAxis } = buildDatasets()
 
-  // Destroy and recreate for significant changes
-  chart.destroy()
-  createChart()
+  // Replace datasets & (conditionally) the secondary axis
+  chart.data.datasets = datasets as any
+
+  // Ensure axis definitions are in sync
+  if (useSecondaryAxis) {
+    chart.options.scales!.y1 = chart.options.scales!.y1 || {
+      position: 'right',
+      grid: { drawOnChartArea: false }
+    }
+  } else {
+    if (chart.options.scales && chart.options.scales.y1) {
+      delete chart.options.scales.y1
+    }
+  }
+
+  chart.update('none') // perf: no animation
 }
 
-onMounted(() => {
+// ---------- Mount / Watch / Unmount ----------
+
+onMounted(async () => {
+  await nextTick()
   createChart()
 })
 
-watch(() => [props.data, props.series, props.yField, props.secondaryYField, props.groupBy], () => {
-  if (chart) {
+// Important: no deep watch — assume callers replace arrays immutably.
+// This avoids noisy reactivity and accidental loops.
+watch(
+  () => [props.data, props.series, props.yField, props.secondaryYField, props.groupBy, props.showThresholdLines, props.thresholds],
+  async () => {
+    await nextTick()
     updateChart()
-  } else {
-    createChart()
-  }
-}, { deep: true })
+  },
+  { deep: false }
+)
 
 onUnmounted(() => {
   if (chart) {
@@ -378,7 +394,6 @@ onUnmounted(() => {
 .time-series-chart-container {
   position: relative;
   width: 100%;
-  height: 100%;
 }
 
 .time-series-chart-container canvas {

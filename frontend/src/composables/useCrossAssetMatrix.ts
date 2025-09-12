@@ -9,26 +9,65 @@ export function useCrossAssetMatrix() {
   const error = ref<string | null>(null)
   const matrixData = ref<CrossAssetMatrixResponse | null>(null)
 
-  // Computed values
-  const correlationRankings = computed(() => {
-    if (!matrixData.value) return { top: [], bottom: [] }
-    
-    const coins = matrixData.value.betaMatrix.coins
-    const betas = matrixData.value.betaMatrix.betas
-    const corrMatrix = matrixData.value.correlationMatrix.matrix
-    
-    // Get correlations with index (first column)
-    const rankings = coins
-      .map((coin, i) => ({
+const correlationRankings = computed(() => {
+  if (!matrixData.value) return { top: [], bottom: [] }
+  
+  const { betaMatrix, fullCorrelationMatrix } = matrixData.value
+  
+  const indexPosition = fullCorrelationMatrix.coins.findIndex(coin => coin === matrixData.value!.index)
+  
+  // Get correlations with index from the full matrix
+  const rankings = fullCorrelationMatrix.coins
+    .map((coin, i) => {
+      // Skip the index coin itself
+      if (coin === matrixData.value!.index) return null
+      
+      // Find the corresponding beta value
+      const betaIndex = betaMatrix.coins.findIndex(c => c === coin)
+      const beta = betaIndex !== -1 ? betaMatrix.betas[betaIndex] : 0
+      
+      return {
         symbol: coin,
-        correlation: corrMatrix[i]?.[0] || 0,
-        beta: betas[i]
-      }))
-      .sort((a, b) => b.correlation - a.correlation)
+        correlation: fullCorrelationMatrix.matrix[i][indexPosition] || 0,
+        beta: beta
+      }
+    })
+    .filter(item => item !== null)
+    .sort((a, b) => b!.correlation - a!.correlation)
+  
+  return {
+    top: rankings.slice(0, 5).map((item, i) => ({ ...item!, rank: i + 1 })),
+    bottom: rankings.slice(-5).reverse().map((item, i) => ({ ...item!, rank: i + 1 }))
+  }
+})
+
+
+  const fullCovarianceMatrix = computed(() => {
+    if (!matrixData.value || !matrixData.value.fullCovarianceMatrix) return null
     
     return {
-      top: rankings.slice(0, 5).map((item, i) => ({ ...item, rank: i + 1 })),
-      bottom: rankings.slice(-5).reverse().map((item, i) => ({ ...item, rank: i + 1 }))
+      labels: matrixData.value.fullCovarianceMatrix.coins,
+      data: matrixData.value.fullCovarianceMatrix.matrix
+    }
+  })
+
+
+  const covarianceStats = computed(() => {
+    if (!matrixData.value || !matrixData.value.fullCovarianceMatrix) {
+      return {
+        meanCov: 0,
+        maxCov: 0,
+        minCov: 0
+      }
+    }
+
+    const matrix = matrixData.value.fullCovarianceMatrix.matrix
+    const values = matrix.flat()
+    
+    return {
+      meanCov: calculateMean(values),
+      maxCov: Math.max(...values),
+      minCov: Math.min(...values)
     }
   })
 
@@ -201,6 +240,8 @@ export function useCrossAssetMatrix() {
     stats,                  // Stats excluding index
     fullCorrelationMatrix,  // Full matrix including index from API
     fullBetaMatrix,         // Beta matrix for heatmap visualization
+    fullCovarianceMatrix,
+    covarianceStats,
     load 
   }
 }

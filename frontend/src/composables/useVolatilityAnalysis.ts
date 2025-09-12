@@ -1,4 +1,4 @@
-// frontend/src/composables/useVolatilityData.ts
+// frontend/src/composables/useVolatilityAnalysis.ts
 import { ref, computed } from 'vue'
 import { 
   fetchVolatilityAnalysis,
@@ -118,20 +118,34 @@ export function useVolatilityData() {
     }))
   })
   
-  // Volume Z-Score vs Returns
-  const volumeZScoreVsReturns = computed(() => {
-    if (!rawData.value?.volVsReturns) return []
+
+const volumeZScoreVsReturns = computed(() => {
+  if (!rawData.value?.volVsReturns) return []
+  
+  const symbolMap = new Map<string, VolatilityDataPoint>()
+  latestBySymbol.value.forEach((point, symbol) => {
+    symbolMap.set(symbol, point)
+  })
+  
+  return rawData.value.volVsReturns.map(d => {
+    // Find the corresponding symbol data
+    const symbolData = Array.from(latestBySymbol.value.entries()).find(
+      ([symbol, point]) => point.returns === d.returns && point.volume === d.volume
+    )
     
-    // Use the volVsReturns data from API, but calculate volume z-scores
-    return rawData.value.volVsReturns.map(d => ({
-      symbol: 'BTC', // Default symbol, update if API provides it
+    return {
+      symbol: symbolData?.[0] || 'Unknown', // Use actual symbol or fallback
       returns: d.returns * 100,
       volumeZScore: calculateVolumeZScore(d.volume),
       volatilityZScore: d.volZScore,
       volume: d.volume
-    }))
-  })
-  
+    }
+  }).filter(d => d.symbol !== 'Unknown') // Filter out unknown symbols
+})
+
+
+
+
   // High volatility coins (Z > 1.5)
   const highVolCoins = computed(() => {
     return annualizedVolatilityData.value

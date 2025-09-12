@@ -1,7 +1,7 @@
 /* Page Layout */
 .page {
   width: 100%;
-  height: calc(100vh - 60px); /* Account for top nav */
+  height: calc(100vh - 60px);
   overflow: hidden;
   background: var(--bg-primary);
 }
@@ -13,11 +13,39 @@
   display: flex;
   width: 100%;
   height: 100%;
+  overflow: hidden; /* Keep this to prevent double scrollbars */
 }
 
-/* Main content scrolling */
+/* Main content scrolling - UPDATED */
 .page-content {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto; /* Changed from hidden to auto */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Add horizontal scroll container class */
+.horizontal-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--border-tertiary);
 }

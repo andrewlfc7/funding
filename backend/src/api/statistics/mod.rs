@@ -5,14 +5,16 @@ use time::{Duration, OffsetDateTime};
 // submodules
 pub mod zscore_overview;
 pub mod volatility_analysis;
-pub mod cross_asset_matrix;
+pub mod cross_asset;
 pub mod leaders_laggards;
 pub mod inter_asset_zscore;
 pub mod vol_liquidity;
 pub mod microstructure_flow;
 pub mod relative_strength;
 pub mod regime_momentum;
-
+pub mod market_seasonality;
+pub mod volatility_dynamics;
+pub mod trades_analysis;
 
 // -------- Timeframe + period parsing --------
 #[derive(Clone, Copy, Debug)]
@@ -196,12 +198,46 @@ pub fn pct_returns(xs: &[f64]) -> Vec<f64> {
     for w in xs.windows(2) { let (p0,p1)=(w[0],w[1]); out.push(if p0!=0.0 {(p1/p0)-1.0} else {0.0}); }
     out
 }
+
+/// Log returns with 1%/99% winsorization of the computed series (excluding the seed 0.0).
+/// Non-finite values are set to 0.0 for safety.
 pub fn log_returns(xs: &[f64]) -> Vec<f64> {
-    let mut out = Vec::with_capacity(xs.len()); if xs.is_empty() { return out; }
+    if xs.is_empty() { return vec![]; }
+
+    // 1) Compute raw log returns (seed first element with 0.0)
+    let mut out = Vec::with_capacity(xs.len());
     out.push(0.0);
-    for w in xs.windows(2) { let (p0,p1)=(w[0],w[1]); out.push(if p0>0.0 && p1>0.0 {(p1/p0).ln()} else {0.0}); }
+    for w in xs.windows(2) {
+        let (p0, p1) = (w[0], w[1]);
+        let r = if p0 > 0.0 && p1 > 0.0 { (p1 / p0).ln() } else { 0.0 };
+        out.push(r);
+    }
+
+    // 2) Winsorize the returns in-place at the 1% and 99% percentiles (ignore the seed out[0])
+    let slice = &mut out[1..];
+    // Collect finite values to compute thresholds
+    let mut vals: Vec<f64> = slice.iter().copied().filter(|v| v.is_finite()).collect();
+    if !vals.is_empty() {
+        vals.sort_by(|a, b| a.total_cmp(b));
+        let n = vals.len() as f64;
+        let idx = |p: f64| -> usize { ((n - 1.0) * p.clamp(0.0, 1.0)).round() as usize };
+        let lo = vals[idx(0.05)];
+        let hi = vals[idx(0.95)];
+
+        for v in slice.iter_mut() {
+            if v.is_finite() {
+                if *v < lo { *v = lo; }
+                else if *v > hi { *v = hi; }
+            } else {
+                *v = 0.0; // keep series clean
+            }
+        }
+    }
+
     out
 }
+
+
 pub fn ewma_alpha(values: &[f64], alpha: f64) -> Vec<f64> {
     assert!((0.0..=1.0).contains(&alpha) && alpha>0.0);
     if values.is_empty() { return vec![]; }

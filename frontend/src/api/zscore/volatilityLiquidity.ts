@@ -49,28 +49,6 @@ export interface VolumeSummarySeries {
   series: VolumeSummaryPoint[]
 }
 
-
-export async function fetchVolatilityLiquidity(params: {
-  coin: string
-  period: string
-  exchange: string
-  marketType: string
-}): Promise<VolatilityLiquidityResponse> {
-  try {
-    const url = `${API_BASE_URL}/api/statistics/volatility/liquidity`
-    const { data } = await axios.get<VolatilityLiquidityResponse>(url, { params })
-    return data
-  } catch (error) {
-    handleApiError(error)
-    throw error
-  }
-}
-
-
-
-
-// src/api/zscore/volatilityLiquidity.ts
-// Add these new interfaces
 export interface SpreadSummaryPoint {
   timestamp: number
   spread1h: number
@@ -86,12 +64,72 @@ export interface SpreadSummarySeries {
   series: SpreadSummaryPoint[]
 }
 
-// Update the main response interface
 export interface VolatilityLiquidityResponse {
   volZScoreTimeSeries: VolZScorePoint[]
   volZScoreVsReturns: VolZScoreVsReturn[]
   volumeDistribution: VolumeDistribution
   volumeSummaries: VolumeSummary[]
   volumeSummarySeries: VolumeSummarySeries[]
-  spreadSummarySeries?: SpreadSummarySeries[]  // Add this
+  spreadSummarySeries?: SpreadSummarySeries[]
+}
+
+export async function fetchVolatilityLiquidity(params: {
+  coin: string  // This should be a specific coin like 'BTC', 'ETH', etc.
+  period: string
+  exchange: string
+  timeframe: string
+  marketType: string
+}): Promise<VolatilityLiquidityResponse> {
+  try {
+    const url = `${API_BASE_URL}/api/statistics/volatility/liquidity`
+    
+    // Ensure we're querying for a specific coin, not all coins
+    const apiParams = {
+      ...params,
+      // Make sure coin is specified and not empty/undefined
+      coin: params.coin || 'BTC' // Default to BTC if no coin specified
+    }
+    
+    console.log('Fetching volatility data for single coin:', apiParams)
+    
+    const { data } = await axios.get<VolatilityLiquidityResponse>(url, { 
+      params: apiParams 
+    })
+    
+    console.log(`API returned ${data.volZScoreTimeSeries?.length || 0} data points for ${params.coin}`)
+    
+    return data
+  } catch (error) {
+    console.error('Error fetching volatility liquidity data:', error)
+    handleApiError(error)
+    throw error
+  }
+}
+
+// New helper function to fetch data for multiple coins if needed
+export async function fetchVolatilityLiquidityMultiple(params: {
+  coins: string[]  // Array of specific coins
+  period: string
+  exchange: string
+  timeframe: string
+  marketType: string
+}): Promise<Record<string, VolatilityLiquidityResponse>> {
+  try {
+    const promises = params.coins.map(coin =>
+      fetchVolatilityLiquidity({
+        ...params,
+        coin
+      }).then(data => ({ coin, data }))
+    )
+    
+    const results = await Promise.all(promises)
+    
+    return results.reduce((acc, { coin, data }) => {
+      acc[coin] = data
+      return acc
+    }, {} as Record<string, VolatilityLiquidityResponse>)
+  } catch (error) {
+    console.error('Error fetching multiple volatility liquidity data:', error)
+    throw error
+  }
 }

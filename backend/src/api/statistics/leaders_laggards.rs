@@ -1,6 +1,9 @@
 use axum::{extract::{Query, State}, Json};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::sync::OnceLock;
+
+use crate::infra::task_pools::{EndpointPool, threads_from_env};
 
 use super::{
     fetch_multi_hourly_ohlcv, histogram_counts, log_returns, parse_period_days,
@@ -12,7 +15,7 @@ fn default_timeframe() -> String { "1h".to_string() }
 fn default_xsec() -> String { "24h".to_string() }
 #[inline] fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct LeadersLaggardsRequest {
     pub exchange: String,
     pub period: String,                       // data lookback, e.g. "30d"
@@ -35,7 +38,7 @@ pub struct LeadersLaggardsResponse {
     pub leadLagMatrix: LeadLagMatrix,
 }
 
-#[derive(Debug, Serialize, Clone)]   // ← add Clone
+#[derive(Debug, Serialize, Clone)]
 pub struct XRow {
     pub symbol: String,
     pub zscore: f64,
@@ -43,7 +46,6 @@ pub struct XRow {
     pub volume: f64,
     pub rank: usize,
 }
-
 
 #[derive(Debug, Serialize)]
 pub struct VolSpike {
@@ -91,8 +93,8 @@ fn pearson(x: &[f64], y: &[f64]) -> f64 {
     if vx<=0.0 || vy<=0.0 { 0.0 } else { finite(cov/(vx.sqrt()*vy.sqrt())) }
 }
 
+// corr( x_t , y_{t+lag} ), positive lag = y leads
 fn shift_corr(x: &[f64], y: &[f64], lag: isize) -> f64 {
-    // corr( x_t , y_{t+lag} ), sign convention: positive lag = y leads
     if x.is_empty() || y.is_empty() { return 0.0; }
     let (mut a, mut b) = (Vec::new(), Vec::new());
     if lag > 0 {
@@ -110,10 +112,38 @@ fn shift_corr(x: &[f64], y: &[f64], lag: isize) -> f64 {
     pearson(&a, &b)
 }
 
+// ---------- Task pool plumbing ----------
+
+#[derive(Clone)]
+struct Job { pool: PgPool, q: LeadersLaggardsRequest }
+
+static LL_POOL: OnceLock<EndpointPool<Job, LeadersLaggardsResponse>> = OnceLock::new();
+
+fn pool() -> &'static EndpointPool<Job, LeadersLaggardsResponse> {
+    LL_POOL.get_or_init(|| {
+        let n = threads_from_env("LEADERS_LAGGARDS_THREADS", 2);
+        EndpointPool::start("leaders-laggards", n, |job: Job| async move {
+            compute_leaders_laggards(job.pool, job.q).await
+        })
+    })
+}
+
+// ---------- Handler (dispatches to pool) ----------
+
 pub async fn get_leaders_laggards(
-    State(pool): State<PgPool>,
+    State(pool_state): State<PgPool>,
     Query(q): Query<LeadersLaggardsRequest>,
 ) -> Json<LeadersLaggardsResponse> {
+    let res = pool().run(Job { pool: pool_state.clone(), q }).await;
+    Json(res)
+}
+
+// ---------- Heavy computation (runs inside pool runtime) ----------
+
+async fn compute_leaders_laggards(
+    pool: PgPool,
+    q: LeadersLaggardsRequest,
+) -> LeadersLaggardsResponse {
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
     let since_unix = (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
@@ -124,10 +154,10 @@ pub async fn get_leaders_laggards(
         .await
         .unwrap_or_default();
     if top.is_empty() {
-        return Json(LeadersLaggardsResponse {
+        return LeadersLaggardsResponse {
             leaders: vec![], laggards: vec![], volumeSpikes: vec![],
             decorrelated: vec![], leadLagMatrix: LeadLagMatrix { coins: vec![], lags: vec![], matrix: vec![] },
-        });
+        };
     }
 
     let mids: Vec<i32> = top.iter().map(|(_, mid, _)| *mid).collect();
@@ -194,10 +224,10 @@ pub async fn get_leaders_laggards(
     }
 
     if coins.is_empty() {
-        return Json(LeadersLaggardsResponse {
+        return LeadersLaggardsResponse {
             leaders: vec![], laggards: vec![], volumeSpikes: vec![],
             decorrelated: vec![], leadLagMatrix: LeadLagMatrix { coins: vec![], lags: vec![], matrix: vec![] },
-        });
+        };
     }
 
     // Leaders/Laggards by last z
@@ -276,11 +306,11 @@ pub async fn get_leaders_laggards(
         matrix.push(m);
     }
 
-    Json(LeadersLaggardsResponse {
+    LeadersLaggardsResponse {
         leaders,
         laggards,
         volumeSpikes: spikes,
         decorrelated: decor,
         leadLagMatrix: LeadLagMatrix { coins: top_syms, lags, matrix },
-    })
+    }
 }

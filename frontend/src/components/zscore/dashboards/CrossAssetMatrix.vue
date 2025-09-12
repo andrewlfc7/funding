@@ -1,58 +1,56 @@
 <template>
-  <div class="cross-asset-matrix">
-    <div class="dashboard-header">
-      <h2>Cross-Asset Matrix ({{ indexCoin }} as Index)</h2>
-      <div class="header-controls">
-        <select v-model="indexCoin" @change="fetchData">
-          <option value="BTC">BTC</option>
-          <option value="ETH">ETH</option>
-          <option value="SOL">SOL</option>
-        </select>
-        <select v-model="topN" @change="fetchData">
-          <option :value="5">Top 5</option>
-          <option :value="10">Top 10</option>
-          <option :value="20">Top 20</option>
-          <option :value="30">Top 30</option>
-          <option :value="50">Top 50</option>
-        </select>
-        <select v-model="period" @change="fetchData">
-          <option value="24h">24 Hours</option>
-          <option value="7d">7 Days</option>
-          <option value="30d">30 Days</option>
-          <option value="90d">90 Days</option>
-          <option value="120d">120 Days</option>
-        </select>
-        <select v-model="window" @change="fetchData">
-          <option :value="20">20 Period</option>
-          <option :value="30">30 Period</option>
-          <option :value="60">60 Period</option>
-          <option :value="90">90 Period</option>
-        </select>
-        <select v-model="timeframe" @change="fetchData">
-          <option value="15m">15 Minutes</option>
-          <option value="1h">1 Hour</option>
-          <option value="4h">4 Hours</option>
-          <option value="1d">1 Day</option>
-        </select>
-        <button @click="fetchData" class="update-btn" :disabled="loading">
-          {{ loading ? 'Loading...' : 'Update' }}
-        </button>
+  <!-- Remove wrapper div -->
+  <div class="dashboard-header">
+    <h2>Cross-Asset Analytics</h2>
+    <div class="header-controls">
+      <select v-model="indexCoin" @change="fetchData">
+        <option value="BTC">BTC</option>
+        <option value="ETH">ETH</option>
+        <option value="SOL">SOL</option>
+      </select>
+      <select v-model="topN" @change="fetchData">
+        <option :value="5">Top 5</option>
+        <option :value="10">Top 10</option>
+        <option :value="20">Top 20</option>
+        <option :value="30">Top 30</option>
+        <option :value="50">Top 50</option>
+      </select>
+      <select v-model="period" @change="fetchData">
+        <option value="24h">24 Hours</option>
+        <option value="7d">7 Days</option>
+        <option value="30d">30 Days</option>
+        <option value="90d">90 Days</option>
+        <option value="120d">120 Days</option>
+      </select>
+      <select v-model="window" @change="fetchData">
+        <option :value="20">20 Period</option>
+        <option :value="30">30 Period</option>
+        <option :value="60">60 Period</option>
+        <option :value="90">90 Period</option>
+      </select>
+      <select v-model="timeframe" @change="fetchData">
+        <option value="15m">15 Minutes</option>
+        <option value="1h">1 Hour</option>
+        <option value="4h">4 Hours</option>
+        <option value="1d">1 Day</option>
+      </select>
+      <button @click="fetchData" class="update-btn" :disabled="loading">
+        {{ loading ? 'Loading...' : 'Update' }}
+      </button>
+    </div>
+  </div>
+
+  <div v-if="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Correlation Time Series -->
+    <div class="metric-card full-width">
+      <div class="card-header">
+        <h3>Correlation Time Series vs {{ indexCoin }}</h3>
       </div>
-    </div>
-
-    <div v-if="error" class="error-message">
-      {{ error }}
-    </div>
-
-    <div class="dashboard-grid">
-      <!-- Correlation Time Series -->
-      <MetricCard 
-        :title="`Correlation Time Series vs ${indexCoin}`"
-        class="full-width"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+      <div class="card-content">
         <div class="chart-container">
           <TimeSeriesChart
             v-if="timeSeriesData.correlations && timeSeriesData.correlations.length > 0"
@@ -65,31 +63,30 @@
           <div v-else-if="!loading" class="no-data">
             No correlation data available
           </div>
-          <div class="stats-panel" v-if="stats.meanCorr !== 0">
-            <div class="stat-item">
-              <span class="label">Current Mean</span>
-              <span class="value">{{ formatNumber(stats.meanCorr) }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="label">Current Median</span>
-              <span class="value">{{ formatNumber(stats.medianCorr) }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="label">Std Dev</span>
-              <span class="value">{{ formatNumber(stats.stdCorr) }}</span>
-            </div>
+        </div>
+        <div class="stats-panel" v-if="stats.meanCorr !== 0">
+          <div class="stat-item">
+            <span class="label">Current Mean</span>
+            <span class="value">{{ formatNumber(stats.meanCorr) }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="label">Current Median</span>
+            <span class="value">{{ formatNumber(stats.medianCorr) }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="label">Std Dev</span>
+            <span class="value">{{ formatNumber(stats.stdCorr) }}</span>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Beta Time Series -->
-      <MetricCard 
-        :title="`Beta Time Series vs ${indexCoin}`"
-        class="full-width"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Beta Time Series -->
+    <div class="metric-card full-width">
+      <div class="card-header">
+        <h3>Beta Time Series vs {{ indexCoin }}</h3>
+      </div>
+      <div class="card-content">
         <div class="chart-container">
           <TimeSeriesChart
             v-if="timeSeriesData.betas && timeSeriesData.betas.length > 0"
@@ -102,30 +99,30 @@
           <div v-else-if="!loading" class="no-data">
             No beta data available
           </div>
-          <div class="stats-panel" v-if="stats.meanBeta !== 0">
-            <div class="stat-item">
-              <span class="label">Current Mean</span>
-              <span class="value">{{ formatNumber(stats.meanBeta) }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="label">Current Median</span>
-              <span class="value">{{ formatNumber(stats.medianBeta) }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="label">&gt; 1.0</span>
-              <span class="value">{{ stats.highBetaCount }} coins</span>
-            </div>
+        </div>
+        <div class="stats-panel" v-if="stats.meanBeta !== 0">
+          <div class="stat-item">
+            <span class="label">Current Mean</span>
+            <span class="value">{{ formatNumber(stats.meanBeta) }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="label">Current Median</span>
+            <span class="value">{{ formatNumber(stats.medianBeta) }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="label">&gt; 1.0</span>
+            <span class="value">{{ stats.highBetaCount }} coins</span>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Current Correlation Matrix -->
-      <MetricCard 
-        title="Current Correlation Matrix"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Current Correlation Matrix -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Current Correlation Matrix</h3>
+      </div>
+      <div class="card-content">
         <div class="matrix-container">
           <HeatmapChart
             v-if="correlationMatrix && correlationMatrix.data.length > 0"
@@ -139,38 +136,41 @@
             No correlation matrix data available
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Current Beta Matrix -->
-      <MetricCard 
-        title="Current Beta Matrix"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
-        <div class="matrix-container">
-          <HeatmapChart
-            v-if="betaMatrix && betaMatrix.data.length > 0"
-            :data="betaMatrix"
-            :min="0"
-            :max="2"
-            color-scheme="beta"
-            :show-legend="true"
-          />
-          <div v-else-if="!loading" class="no-data">
-            No beta matrix data available
+      <!-- Current Covariance Matrix -->
+      <div class="metric-card">
+        <div class="card-header">
+          <h3>Current Covariance Matrix</h3>
+        </div>
+        <div class="card-content">
+          <div class="matrix-container">
+            <HeatmapChart
+              v-if="covarianceMatrix && covarianceMatrix.data.length > 0"
+              :data="covarianceMatrix"
+              :min="0"
+              :max="covarianceStats.maxCov"
+              color-scheme="covariance"
+              :show-legend="true"
+            />
+            <div v-else-if="!loading" class="no-data">
+              No covariance matrix data available
+            </div>
           </div>
         </div>
-      </MetricCard>
+      </div>
 
-      <!-- Top Correlations Table -->
-      <MetricCard 
-        :title="`Current Rankings: Highest & Lowest Correlations with ${indexCoin}`"
-        class="full-width"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+
+
+
+
+    <!-- Top Correlations Table -->
+    <div class="metric-card full-width">
+      <div class="card-header">
+        <h3>Current Rankings: Highest & Lowest Correlations with {{ indexCoin }}</h3>
+      </div>
+      <div class="card-content">
         <div class="correlations-table" v-if="correlationRankings.top.length > 0">
           <div class="table-section">
             <h4>Highest Correlations</h4>
@@ -211,15 +211,15 @@
         <div v-else-if="!loading" class="no-data">
           No ranking data available
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Beta Distribution - Moved to last -->
-      <MetricCard 
-        :title="`Beta Distribution vs ${indexCoin}`"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Beta Distribution -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Beta Distribution vs {{ indexCoin }}</h3>
+      </div>
+      <div class="card-content">
         <div class="chart-container">
           <HistogramChart
             v-if="betaHistogram"
@@ -231,10 +231,11 @@
             No beta distribution available
           </div>
         </div>
-      </MetricCard>
+      </div>
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
@@ -261,6 +262,8 @@ const {
   betaHighlights,
   fullCorrelationMatrix,
   fullBetaMatrix,
+  fullCovarianceMatrix, // Add this
+  covarianceStats, // Add this
   stats,
   load 
 } = useCrossAssetMatrix()
@@ -274,12 +277,23 @@ const betaMatrix = computed(() => {
   return fullBetaMatrix.value
 })
 
+const covarianceMatrix = computed(() => {
+  return fullCovarianceMatrix.value
+})
+
+function formatCovariance(value: number): string {
+  if (Math.abs(value) < 0.001) {
+    return value.toExponential(2)
+  }
+  return value.toFixed(6)
+}
+
+
 const betaHistogram = computed(() => {
   if (!data.value || !data.value.betaHistogram) return null
   return data.value.betaHistogram
 })
 
-// Formatting functions
 function formatNumber(value: number): string {
   return value.toFixed(3)
 }

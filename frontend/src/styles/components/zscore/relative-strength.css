@@ -1,17 +1,26 @@
+/* frontend/src/styles/components/zscore/relative-strength.css */
+
+/* Card header subtitles */
+.card-header .subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: normal;
+  margin-left: 0.5rem;
+}
+
 /* ---- RS RANKINGS STYLES ------------------------------------- */
-.relative-strength .rs-rankings {
+.rs-rankings {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.relative-strength .rankings-list {
+.rankings-list {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-sm);
 }
 
-.relative-strength .ranking-item {
+.ranking-item {
   display: grid;
   grid-template-columns: 40px minmax(80px, 1fr) 60px minmax(100px, 2fr);
   align-items: center;
@@ -23,19 +32,19 @@
   transition: all 0.2s ease;
 }
 
-.relative-strength .ranking-item:hover {
+.ranking-item:hover {
   background: var(--bg-tertiary);
   transform: translateX(2px);
 }
 
-.relative-strength .ranking-item .rank {
+.ranking-item .rank {
   font-weight: 600;
   color: var(--text-secondary);
   font-size: 13px;
   text-align: left;
 }
 
-.relative-strength .ranking-item .pair {
+.ranking-item .pair {
   font-weight: 600;
   color: var(--text-primary);
   font-family: var(--font-mono);
@@ -43,7 +52,7 @@
   white-space: nowrap;
 }
 
-.relative-strength .ranking-item .zscore {
+.ranking-item .zscore {
   text-align: right;
   font-weight: 700;
   font-family: var(--font-mono);
@@ -51,21 +60,21 @@
   min-width: 45px;
 }
 
-.relative-strength .ranking-item .zscore.positive {
+.ranking-item .zscore.positive {
   color: var(--color-positive);
 }
 
-.relative-strength .ranking-item .zscore.negative {
+.ranking-item .zscore.negative {
   color: var(--color-negative);
 }
 
-.relative-strength .ranking-item .zscore.neutral {
+.ranking-item .zscore.neutral {
   color: var(--text-secondary);
   font-style: italic;
   font-size: 12px;
 }
 
-.relative-strength .ranking-item .bar-container {
+.ranking-item .bar-container {
   height: 16px;
   background: var(--bg-secondary);
   border-radius: 4px;
@@ -74,22 +83,22 @@
   min-width: 100px;
 }
 
-.relative-strength .ranking-item .bar {
+.ranking-item .bar {
   height: 100%;
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
-.relative-strength .ranking-item .bar.positive {
+.ranking-item .bar.positive {
   background: linear-gradient(90deg, rgba(16, 185, 129, 0.4), rgba(16, 185, 129, 0.8));
 }
 
-.relative-strength .ranking-item .bar.negative {
+.ranking-item .bar.negative {
   background: linear-gradient(90deg, rgba(239, 68, 68, 0.4), rgba(239, 68, 68, 0.8));
   float: right;
 }
 
-.relative-strength .ranking-separator {
+.ranking-separator {
   text-align: center;
   padding: var(--space-xs) 0;
   color: var(--text-secondary);
@@ -98,74 +107,120 @@
 }
 
 /* ---- PAIR DIVERGENCE STYLES --------------------------------- */
-.relative-strength .pair-divergence {
+.pair-divergence {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: var(--space-sm);
+  gap: var(--space-sm);
 }
 
-.relative-strength .divergence-detail {
+.divergence-detail {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
 }
 
-.relative-strength .pair-header {
+.pair-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--space-xs);
 }
 
-.relative-strength .pair-header h4 {
+.pair-header h4 {
   margin: 0;
   font-size: 14px;
   color: var(--text-primary);
 }
 
-.relative-strength .z-value {
+.z-value {
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 600;
 }
 
+.z-value.extreme {
+  color: #ef4444;
+}
+
+.z-value.high {
+  color: #f59e0b;
+}
+
+.z-value.moderate {
+  color: #3b82f6;
+}
+
+.z-value.normal {
+  color: var(--text-secondary);
+}
+
+.divergence-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: var(--space-sm);
+}
+
+.reversion-note {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.pair-selector {
+  margin-top: var(--space-sm);
+}
+
+/* frontend/src/styles/components/zscore/relative-strength.css (continued) */
+
+.pair-selector select {
+  width: 100%;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
 /* ---- MOMENTUM PERSISTENCE STYLES ---------------------------- */
-.relative-strength .momentum-persistence {
-  padding: var(--space-sm);
+.momentum-persistence {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
   height: 100%;
 }
 
-.relative-strength .persistence-category {
+.persistence-category {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
 }
 
-.relative-strength .category-header {
+.category-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--space-xs);
 }
 
-.relative-strength .category-header .label {
+.category-header .label {
   font-weight: 600;
   font-size: 13px;
   color: var(--text-primary);
 }
 
-.relative-strength .category-header .description {
+.category-header .description {
   font-size: 12px;
   color: var(--text-secondary);
   font-family: var(--font-mono);
 }
 
-.relative-strength .bar-wrapper {
+.bar-wrapper {
   height: 20px;
   background: var(--bg-primary);
   border-radius: 4px;
@@ -173,25 +228,25 @@
   width: 100%;
 }
 
-.relative-strength .persistence-bar {
+.persistence-bar {
   height: 100%;
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
-.relative-strength .persistence-bar.strong {
+.persistence-bar.strong {
   background: linear-gradient(90deg, #10b981, #059669);
 }
 
-.relative-strength .persistence-bar.medium {
+.persistence-bar.medium {
   background: linear-gradient(90deg, #3b82f6, #2563eb);
 }
 
-.relative-strength .persistence-bar.weak {
+.persistence-bar.weak {
   background: linear-gradient(90deg, #6b7280, #4b5563);
 }
 
-.relative-strength .coin-list {
+.coin-list {
   font-size: 11px;
   color: var(--text-secondary);
   margin-top: var(--space-xs);
@@ -200,29 +255,28 @@
 }
 
 /* ---- MOMENTUM FACTORS STYLES -------------------------------- */
-.relative-strength .momentum-factors {
-  padding: var(--space-sm);
+.momentum-factors {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.relative-strength .factor-header {
+.factor-header {
   margin-bottom: var(--space-sm);
 }
 
-.relative-strength .factor-header h4 {
+.factor-header h4 {
   margin: 0 0 var(--space-xs) 0;
   font-size: 14px;
   color: var(--text-primary);
 }
 
-.relative-strength .factor-header .subtitle {
+.factor-header .subtitle {
   font-size: 12px;
   color: var(--text-secondary);
 }
 
-.relative-strength .factor-list {
+.factor-list {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -230,7 +284,7 @@
   overflow-y: auto;
 }
 
-.relative-strength .factor-item {
+.factor-item {
   display: grid;
   grid-template-columns: minmax(50px, 1fr) minmax(120px, 2fr) minmax(100px, 2fr);
   align-items: center;
@@ -240,26 +294,26 @@
   border-radius: 6px;
 }
 
-.relative-strength .factor-item .symbol {
+.factor-item .symbol {
   font-weight: 600;
   color: var(--text-primary);
   font-size: 13px;
 }
 
-.relative-strength .factor-item .beta {
+.factor-item .beta {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
-.relative-strength .factor-item .beta .r2 {
+.factor-item .beta .r2 {
   font-size: 11px;
   color: var(--text-secondary);
   margin-left: 4px;
 }
 
-.relative-strength .loading-bar {
+.loading-bar {
   height: 10px;
   background: var(--bg-secondary);
   border-radius: 4px;
@@ -268,7 +322,7 @@
   width: 100%;
 }
 
-.relative-strength .loading-bar .bar {
+.loading-bar .bar {
   position: absolute;
   top: 0;
   height: 100%;
@@ -277,18 +331,18 @@
   max-width: 100%;
 }
 
-.relative-strength .loading-bar .bar.positive {
+.loading-bar .bar.positive {
   left: 0;
   background: var(--color-positive);
 }
 
-.relative-strength .loading-bar .bar.negative {
+.loading-bar .bar.negative {
   right: 0;
   background: var(--color-negative);
 }
 
 /* ---- EMPTY STATES ------------------------------------------- */
-.relative-strength .empty-state {
+.empty-state {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,46 +356,77 @@
   border: 1px dashed var(--border-primary);
 }
 
-/* ---- RESPONSIVE GRID ADJUSTMENTS ---------------------------- */
-/* Use flexible grids that expand to fill available space */
+/* ---- RESPONSIVE ADJUSTMENTS --------------------------------- */
 @media (min-width: 1400px) {
-  .relative-strength .ranking-item {
+  .ranking-item {
     grid-template-columns: 40px minmax(100px, 1fr) 70px minmax(150px, 3fr);
   }
   
-  .relative-strength .factor-item {
+  .factor-item {
     grid-template-columns: minmax(60px, 1fr) minmax(140px, 2fr) minmax(120px, 3fr);
   }
 }
 
 @media (min-width: 1920px) {
-  .relative-strength .ranking-item {
+  .ranking-item {
     grid-template-columns: 50px minmax(120px, 1fr) 80px minmax(200px, 4fr);
     gap: var(--space-lg);
   }
   
-  .relative-strength .factor-item {
+  .factor-item {
     grid-template-columns: minmax(80px, 1fr) minmax(160px, 2fr) minmax(150px, 4fr);
     gap: var(--space-md);
   }
 }
 
-/* ---- MOBILE ADJUSTMENTS ------------------------------------- */
 @media (max-width: 768px) {
-  .relative-strength .ranking-item {
+  .ranking-item {
     grid-template-columns: 30px 70px 50px 1fr;
     font-size: 12px;
     padding: var(--space-xs);
     gap: var(--space-xs);
   }
   
-  .relative-strength .factor-item {
+  .ranking-item .bar-container {
+    min-width: 60px;
+  }
+  
+  .factor-item {
     grid-template-columns: 50px 80px 1fr;
     padding: var(--space-xs);
     gap: var(--space-xs);
   }
   
-  .relative-strength .ranking-item .bar-container {
-    min-width: 60px;
+  .persistence-category {
+    gap: var(--space-xs);
+  }
+  
+  .category-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 }
+
+/* ---- SCROLLBAR STYLING -------------------------------------- */
+.rankings-list::-webkit-scrollbar,
+.factor-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rankings-list::-webkit-scrollbar-track,
+.factor-list::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  border-radius: 3px;
+}
+
+.rankings-list::-webkit-scrollbar-thumb,
+.factor-list::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+.rankings-list::-webkit-scrollbar-thumb:hover,
+.factor-list::-webkit-scrollbar-thumb:hover {
+  background: var(--border-secondary);
+}to

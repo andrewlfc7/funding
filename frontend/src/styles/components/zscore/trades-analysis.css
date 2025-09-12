@@ -1,0 +1,458 @@
+/* src/styles/components/zscore/trades-analysis.css */
+
+/* ---- INTERVAL TOGGLE ----------------------------------------- */
+.interval-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-primary);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--border-primary);
+}
+
+.interval-btn {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.interval-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.interval-btn.active {
+  background: var(--color-accent);
+  color: white;
+  font-weight: 600;
+}
+
+/* ---- NOTIONAL RANKINGS --------------------------------------- */
+.notional-rankings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.notional-item {
+  display: grid;
+  grid-template-columns: 32px 80px 100px 1fr;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+  transition: all 0.2s ease;
+}
+
+.notional-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+  transform: translateX(2px);
+}
+
+.notional-item .rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.notional-item:nth-child(1) .rank {
+  background: rgba(255, 215, 0, 0.15);
+  color: #FFD700;
+}
+
+.notional-item:nth-child(2) .rank {
+  background: rgba(192, 192, 192, 0.15);
+  color: #C0C0C0;
+}
+
+.notional-item:nth-child(3) .rank {
+  background: rgba(205, 127, 50, 0.15);
+  color: #CD7F32;
+}
+
+.notional-item .symbol {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.avg-size {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.size-bar {
+  position: relative;
+  height: 10px;
+  background: var(--bg-tertiary);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.size-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+  border-radius: 5px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.size-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2));
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ---- WHALE TRADES -------------------------------------------- */
+.whale-trades {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: var(--space-sm);
+}
+
+.whale-threshold {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-style: italic;
+  font-weight: 500;
+}
+
+.no-whales {
+  text-align: center;
+  color: var(--text-tertiary);
+  padding: var(--space-2xl);
+  font-style: italic;
+}
+
+.whale-item {
+  padding: var(--space-md);
+  border-radius: 8px;
+  border: 1px solid;
+  background: var(--bg-primary);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.whale-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.whale-item.buy {
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.whale-item.buy::before {
+  background: var(--color-positive);
+}
+
+.whale-item.sell {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.whale-item.sell::before {
+  background: var(--color-negative);
+}
+
+.whale-item:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.whale-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
+.whale-symbol {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+
+.whale-time {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.whale-details {
+  display: flex;
+  gap: var(--space-lg);
+  font-size: 13px;
+  align-items: center;
+}
+
+.whale-size {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.whale-side {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.whale-item.buy .whale-side {
+  color: var(--color-positive);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.whale-item.sell .whale-side {
+  color: var(--color-negative);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.whale-price {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+/* ---- Z-SCORE ANALYSIS ---------------------------------------- */
+.zscore-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.zscore-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+}
+
+.zscore-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metric-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.zscore-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.zscore-value.extreme {
+  color: var(--color-negative);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.zscore-value.elevated {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.zscore-value.normal {
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+}
+
+.zscore-bar {
+  position: relative;
+  height: 32px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  overflow: visible;
+  border: 1px solid var(--border-primary);
+}
+
+.zscore-baseline {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-secondary);
+  z-index: 1;
+}
+
+.zscore-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+  transition: left 0.3s ease;
+}
+
+.zscore-indicator.extreme {
+  background: var(--color-negative);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.zscore-indicator.elevated {
+  background: var(--color-warning);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.zscore-context {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding: 0 var(--space-xs);
+}
+
+.zscore-context span {
+  font-family: var(--font-mono);
+}
+
+/* ---- MICROSTRUCTURE STATS ------------------------------------ */
+.microstructure-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+  transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+  border-color: var(--border-secondary);
+  transform: translateY(-1px);
+}
+
+.stat-name {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-xs);
+  font-weight: 600;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+/* ---- SCROLLBAR STYLING --------------------------------------- */
+.whale-trades::-webkit-scrollbar {
+  width: 4px;
+}
+
+.whale-trades::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  border-radius: 2px;
+}
+
+.whale-trades::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 2px;
+}
+
+.whale-trades::-webkit-scrollbar-thumb:hover {
+  background: var(--border-secondary);
+}
+
+/* ---- RESPONSIVE ADJUSTMENTS ---------------------------------- */
+@media (max-width: 1200px) {
+  .metric-card.span-2 {
+    grid-column: span 1;
+  }
+  
+  .microstructure-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .interval-toggle {
+    width: 100%;
+  }
+  
+  .interval-btn {
+    flex: 1;
+  }
+  
+  .notional-item {
+    grid-template-columns: 25px 60px 80px 1fr;
+    font-size: 12px;
+    padding: var(--space-sm);
+  }
+  
+  .whale-details {
+    font-size: 12px;
+    gap: var(--space-sm);
+  }
+  
+  .zscore-header {
+    font-size: 13px;
+  }
+  
+  .zscore-value {
+    font-size: 14px;
+  }
+  
+  .stat-value {
+    font-size: 16px;
+  }
+}

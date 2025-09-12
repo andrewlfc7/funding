@@ -45,6 +45,7 @@ export function useMarketRegime() {
   })
   
   // Z-Score momentum heatmap data
+  
   const momentumHeatmap = computed<ZScoreMomentum[]>(() => {
     if (!rawData.value?.heatmap) return []
     
@@ -53,25 +54,30 @@ export function useMarketRegime() {
     return coins.map((symbol, coinIndex) => {
       const timeframeData: Record<string, number> = {}
       let totalVelocity = 0
+      let validTimeframes = 0
       
-      timeframes.forEach((tf, tfIndex) => {
-        const value = matrix[coinIndex]?.[tfIndex] || 0
+      timeframes?.forEach((tf, tfIndex) => {
+        const value = matrix?.[coinIndex]?.[tfIndex] || 0
         timeframeData[tf] = value
         totalVelocity += value
+        validTimeframes++
       })
       
-      const velocity = totalVelocity / timeframes.length
+      const velocity = validTimeframes > 0 ? totalVelocity / validTimeframes : 0
       
       // Get acceleration from velocitySeries if available
       const velocitySeries = rawData.value?.velocitySeries?.find(v => v.symbol === symbol)
-      const acceleration = velocitySeries?.series?.length > 1 
-        ? velocitySeries.series[velocitySeries.series.length - 1].velocity - velocitySeries.series[0].velocity
-        : 0
       
+      const acceleration = velocitySeries?.series && velocitySeries.series.length > 1
+        ? (velocitySeries.series[velocitySeries.series.length - 1]?.velocity || 0) - 
+          (velocitySeries.series[0]?.velocity || 0)
+        : 0
+        
       return { symbol, timeframes: timeframeData, velocity, acceleration }
     })
   })
-  
+
+
   // Regime transition matrix
   const transitionMatrix = computed<RegimeTransition[]>(() => {
     if (!rawData.value?.transitionMatrix) return []

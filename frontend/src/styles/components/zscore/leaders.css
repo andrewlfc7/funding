@@ -1,66 +1,4 @@
-/* Leaders & Laggards Dashboard Styles */
-.leaders-laggards {
-  padding: 0;
-  background: var(--bg-primary);
-  min-height: 100vh;
-}
-
-/* Dashboard Header */
-.leaders-laggards .dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding: 16px 20px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-}
-
-.leaders-laggards .dashboard-header h2 {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.header-controls {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.header-controls select {
-  padding: 8px 12px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.update-btn {
-  padding: 8px 16px;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.update-btn:hover:not(:disabled) {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
-}
-
-.update-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* frontend/src/styles/components/zscore/leaders.css */
 
 /* Error Message */
 .error-message {
@@ -73,23 +11,11 @@
   margin-bottom: 20px;
 }
 
-/* Dashboard Grid */
-.leaders-laggards .dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-.leaders-laggards .dashboard-grid .full-width {
-  grid-column: 1 / -1;
-}
-
 /* Market Stats */
 .market-stats {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 16px;
-  padding: 16px;
 }
 
 .market-stats .stat-item {
@@ -114,15 +40,15 @@
   font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
-  font-family: 'Monaco', 'Consolas', monospace;
+  font-family: var(--font-mono);
 }
 
 .market-stats .stat-item .value.positive {
-  color: #22c55e;
+  color: var(--color-positive);
 }
 
 .market-stats .stat-item .value.negative {
-  color: #ef4444;
+  color: var(--color-negative);
 }
 
 /* Ranking List */
@@ -130,9 +56,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 500px;
+  height: 100%;
   overflow-y: auto;
-  padding: 16px;
 }
 
 .ranking-item {
@@ -152,6 +77,8 @@
   border-color: var(--primary-color);
   transform: translateX(4px);
 }
+
+/* frontend/src/styles/components/zscore/leaders.css (continued) */
 
 .ranking-item .rank {
   display: flex;
@@ -193,20 +120,22 @@
 .ranking-item .metric .value {
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Monaco', 'Consolas', monospace;
+  font-family: var(--font-mono);
 }
 
 .ranking-item .metric .value.positive {
-  color: #22c55e;
+  color: var(--color-positive);
 }
 
 .ranking-item .metric .value.negative {
-  color: #ef4444;
+  color: var(--color-negative);
 }
 
 /* Volume Spikes */
 .volume-spikes {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .spike-threshold {
@@ -233,7 +162,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 350px;
+  flex: 1;
   overflow-y: auto;
 }
 
@@ -254,7 +183,7 @@
 }
 
 .spike-item .zscore {
-  font-family: 'Monaco', 'Consolas', monospace;
+  font-family: var(--font-mono);
   font-weight: 500;
 }
 
@@ -271,16 +200,18 @@
 }
 
 .spike-item .change.positive {
-  color: #22c55e;
+  color: var(--color-positive);
 }
 
 .spike-item .change.negative {
-  color: #ef4444;
+  color: var(--color-negative);
 }
 
 /* Decorrelation Analysis */
 .decorrelation-container {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .correlation-threshold {
@@ -307,7 +238,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 350px;
+  flex: 1;
   overflow-y: auto;
 }
 
@@ -347,7 +278,7 @@
 .corr-item .value {
   font-size: 14px;
   font-weight: 500;
-  font-family: 'Monaco', 'Consolas', monospace;
+  font-family: var(--font-mono);
   color: var(--text-primary);
 }
 
@@ -376,7 +307,7 @@
 
 .status-badge.normal {
   background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  color: var(--color-positive);
 }
 
 .alert-item.critical {
@@ -396,7 +327,9 @@
 
 /* Lead-Lag Analysis */
 .lead-lag-container {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .matrix-controls {
@@ -425,19 +358,20 @@
 }
 
 .lead-lag-chart {
+  flex: 1;
   margin-bottom: 16px;
 }
 
 .lead-lag-chart canvas {
   width: 100% !important;
-  height: 300px !important;
+  height: 100% !important;
+  max-height: 300px;
 }
 
 .lead-lag-info {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  margin-top: 16px;
   padding: 16px;
   background: var(--bg-tertiary);
   border-radius: 8px;
@@ -478,36 +412,12 @@
 
 /* Responsive Design */
 @media (max-width: 1400px) {
-  .leaders-laggards .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-  
   .market-stats {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .leaders-laggards {
-    padding: 12px;
-  }
-  
-  .dashboard-header {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-  }
-  
-  .header-controls {
-    flex-wrap: wrap;
-  }
-  
-  .header-controls select,
-  .update-btn {
-    flex: 1;
-    min-width: 120px;
-  }
-  
   .market-stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -523,6 +433,19 @@
   
   .lead-lag-info {
     grid-template-columns: 1fr;
+  }
+  
+  .correlation-values {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .alert-item {
+    grid-template-columns: 80px 1fr;
+  }
+  
+  .status-badge {
+    display: none;
   }
 }
 

@@ -6,9 +6,7 @@
         <select v-model="selectedCoin" @change="updateData">
           <option value="BTC">BTC</option>
           <option value="ETH">ETH</option>
-          <option value="SOL">SOL</option>
-          <option value="AVAX">AVAX</option>
-          <option value="MATIC">MATIC</option>
+  
         </select>
         <select v-model="period" @change="updateData">
           <option value="7d">7 Days</option>
@@ -37,6 +35,7 @@
         class="full-width"
         :loading="loading"
         :error="error"
+        
         @retry="updateData"
       >
         <div class="vol-zscore-container">

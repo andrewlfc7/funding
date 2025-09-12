@@ -1,3 +1,6 @@
+use crate::infra::task_pools::{EndpointPool, threads_from_env};
+use std::sync::OnceLock;
+
 use axum::{extract::{Query, State}, Json};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -10,23 +13,18 @@ use super::{
 fn default_market_type() -> String { "spot".to_string() }
 #[inline] fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
 
-
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct VolatilityAnalysisRequest {
     #[serde(default)]
-    pub coin: Option<String>,     // <-- optional now
-
+    pub coin: Option<String>,     // optional (single-coin mode if present)
     pub timeframe: String,        // "1h"|"4h"|"1d"
     pub period: String,           // "7d"|"30d"|"90d"|"120d"
     pub exchange: String,         // cex_exchanges.name
-
     #[serde(default = "default_market_type")]
     pub marketType: String,       // "spot" | "perps"
-
     #[serde(default)]
-    pub topN: Option<i64>,        // universe mode
+    pub topN: Option<i64>,        // universe mode if set
 }
-
 
 #[derive(Debug, Serialize)]
 pub struct VolatilityAnalysisResponse {
@@ -58,10 +56,26 @@ pub struct VolVsReturns {
     pub volume: f64,             // USD notional
 }
 
-pub async fn get_volatility_analysis(
-    State(pool): State<PgPool>,
-    Query(q): Query<VolatilityAnalysisRequest>,
-) -> Json<VolatilityAnalysisResponse> {
+#[derive(Clone)]
+struct Job { pool: PgPool, q: VolatilityAnalysisRequest }
+
+static VOL_POOL: OnceLock<EndpointPool<Job, VolatilityAnalysisResponse>> = OnceLock::new();
+
+fn vol_pool() -> &'static EndpointPool<Job, VolatilityAnalysisResponse> {
+    VOL_POOL.get_or_init(|| {
+        let n = threads_from_env("VOL_ANALYSIS_THREADS", 2);
+        EndpointPool::start("vol-analysis", n, |job: Job| async move {
+            compute_volatility(job.pool, job.q).await
+        })
+    })
+}
+
+// ========= NEW: compute_volatility (moved heavy logic here) =========
+
+pub async fn compute_volatility(
+    pool: PgPool,
+    q: VolatilityAnalysisRequest,
+) -> VolatilityAnalysisResponse {
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
 
@@ -72,11 +86,11 @@ pub async fn get_volatility_analysis(
             Ok(v) => v, Err(_) => Vec::new(),
         };
         if top.is_empty() {
-            return Json(VolatilityAnalysisResponse {
+            return VolatilityAnalysisResponse {
                 volatilityTimeSeries: vec![],
                 rangeDistribution: Distribution { buckets: vec![], counts: vec![] },
                 volVsReturns: vec![],
-            });
+            };
         }
         let mids: Vec<i32> = top.iter().map(|(_,mid,_)| *mid).collect();
         let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix).await.unwrap_or_default();
@@ -95,7 +109,6 @@ pub async fn get_volatility_analysis(
                 let high: Vec<f64> = series.iter().map(|r| r.high).collect();
                 let low:  Vec<f64> = series.iter().map(|r| r.low).collect();
                 let base: Vec<f64> = series.iter().map(|r| r.volume).collect();
-                // USD notional per bar
                 let usd_vol: Vec<f64> = close.iter().zip(base.iter()).map(|(p,&v)| finite(p * v)).collect();
 
                 let lr = log_returns(&close);
@@ -137,27 +150,24 @@ pub async fn get_volatility_analysis(
             }
         }
 
-        // Aggregate histogram across all
         let mut buckets = Vec::new(); let mut x = 0.0;
         while x <= 0.20 + 1e-9 { buckets.push(x); x += 0.025; }
         let counts = histogram_counts(&all_ranges, &buckets);
 
-        return Json(VolatilityAnalysisResponse {
+        return VolatilityAnalysisResponse {
             volatilityTimeSeries: rows_all,
             rangeDistribution: Distribution { buckets, counts },
             volVsReturns: scatter,
-        });
+        };
     }
-
 
     // -------- Single-coin mode --------
     let Some(coin) = q.coin.as_deref() else {
-        // No coin and no topN → return empty-but-valid payload
-        return Json(VolatilityAnalysisResponse {
+        return VolatilityAnalysisResponse {
             volatilityTimeSeries: vec![],
             rangeDistribution: Distribution { buckets: vec![], counts: vec![] },
             volVsReturns: vec![],
-        });
+        };
     };
 
     let ohlcv = match get_ohlcv_resampled(&pool, &q.exchange, coin, &q.marketType, tf, days).await {
@@ -165,11 +175,11 @@ pub async fn get_volatility_analysis(
         Err(_) => Vec::new(),
     };
     if ohlcv.is_empty() {
-        return Json(VolatilityAnalysisResponse {
+        return VolatilityAnalysisResponse {
             volatilityTimeSeries: vec![],
             rangeDistribution: Distribution { buckets: vec![], counts: vec![] },
             volVsReturns: vec![],
-        });
+        };
     }
 
     let n = ohlcv.len();
@@ -194,18 +204,16 @@ pub async fn get_volatility_analysis(
     let start_vz = vol_z.iter().position(|v| v.is_finite()).unwrap_or(n);
     let start = start_s.max(start_vz);
     if start >= n {
-        return Json(VolatilityAnalysisResponse {
+        return VolatilityAnalysisResponse {
             volatilityTimeSeries: vec![],
             rangeDistribution: Distribution { buckets: vec![], counts: vec![] },
             volVsReturns: vec![],
-        });
+        };
     }
 
-    // Range = (high - low) / low
     let mut range = vec![0.0; n];
     for i in 0..n { range[i] = if low[i] != 0.0 { (high[i] - low[i]) / low[i] } else { 0.0 }; }
 
-    // Histogram for range (0..20% by 2.5%), matured only
     let mut buckets = Vec::new(); let mut x = 0.0;
     while x <= 0.20 + 1e-9 { buckets.push(x); x += 0.025; }
     let counts = histogram_counts(&range[start..], &buckets);
@@ -224,7 +232,7 @@ pub async fn get_volatility_analysis(
             high: finite(high[i]),
             low: finite(low[i]),
             range: finite(range[i]),
-            symbol: coin.to_string(),   // <-- use the &str we unwrapped
+            symbol: coin.to_string(),
             volume: vol,
         });
         if vz.is_finite() && ret.is_finite() {
@@ -232,11 +240,19 @@ pub async fn get_volatility_analysis(
         }
     }
 
-    Json(VolatilityAnalysisResponse {
+    VolatilityAnalysisResponse {
         volatilityTimeSeries: vrows,
         rangeDistribution: Distribution { buckets, counts },
         volVsReturns: scatter,
-    })
+    }
+}
 
+// ========= Handler: only posts to the pool =========
 
+pub async fn get_volatility_analysis(
+    State(pool): State<PgPool>,
+    Query(q): Query<VolatilityAnalysisRequest>,
+) -> Json<VolatilityAnalysisResponse> {
+    let res = vol_pool().run(Job { pool: pool.clone(), q }).await;
+    Json(res)
 }

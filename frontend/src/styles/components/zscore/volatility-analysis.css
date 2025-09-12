@@ -112,7 +112,6 @@
   color: var(--text-secondary);
 }
 
-/* frontend/src/styles/components/zscore/volatility-analysis.css (continued) */
 .gradient-bar {
   width: 200px;
   height: 20px;
@@ -120,8 +119,8 @@
   border-radius: 4px;
 }
 
-/* Rankings table styles */
-.vol-rankings-table {
+/* Rankings table styles - Updated to match Vue template */
+.vol-rankings-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
@@ -133,13 +132,29 @@
   font-weight: 600;
 }
 
+/* Keep the working table structure but use original styling */
 .rankings-table {
-  width: 100%;
-  border-collapse: collapse;
+  width: 100% !important;
+  display: table !important;
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+}
+
+.rankings-table thead {
+  display: table-header-group !important;
+}
+
+.rankings-table tbody {
+  display: table-row-group !important;
+}
+
+.rankings-table tr {
+  display: table-row !important;
 }
 
 .rankings-table th,
 .rankings-table td {
+  display: table-cell !important;
   padding: 0.75rem;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
@@ -176,6 +191,19 @@
   color: #ff4444;
 }
 
+/* Table alignment - restore original */
+.rankings-table th:nth-child(2),
+.rankings-table td:nth-child(2) { text-align: right; } /* Ann. Vol */
+
+.rankings-table th:nth-child(3),
+.rankings-table td:nth-child(3) { text-align: right; } /* Vol Z-Score */
+
+.rankings-table th:nth-child(4),
+.rankings-table td:nth-child(4) { text-align: right; } /* Volume Z-Score */
+
+.rankings-table th:nth-child(5),
+.rankings-table td:nth-child(5) { text-align: right; } /* Returns */
+
 /* Dual scatter plot container */
 .dual-scatter {
   display: grid;
@@ -204,7 +232,7 @@
     grid-template-columns: 1fr;
   }
   
-  .vol-rankings-table {
+  .vol-rankings-container {
     grid-template-columns: 1fr;
   }
   

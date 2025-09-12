@@ -1,7 +1,9 @@
 use axum::{extract::{Query, State}, Json};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use std::collections::HashMap;
+use std::{collections::{BTreeSet, BTreeMap, HashMap}, sync::OnceLock};
+
+use crate::infra::task_pools::{EndpointPool, threads_from_env};
 
 use super::{
     parse_period_days, top_markets_by_usd_volume_live, Tf,
@@ -13,7 +15,7 @@ fn default_timeframe() -> String { "1h".to_string() }
 fn default_period() -> String { "7d".to_string() }
 #[inline] fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct MicrostructureRequest {
     #[serde(default = "default_timeframe")]
     pub timeframe: String,            // "1h" ONLY
@@ -63,18 +65,40 @@ pub struct LiqGroup {
     pub countShare: f64,
 }
 
+// ---------- task-pool wiring ----------
+#[derive(Clone)]
+struct Job { pool: PgPool, q: MicrostructureRequest }
+
+static MICRO_POOL: OnceLock<EndpointPool<Job, MicrostructureResponse>> = OnceLock::new();
+
+fn pool() -> &'static EndpointPool<Job, MicrostructureResponse> {
+    MICRO_POOL.get_or_init(|| {
+        let n = threads_from_env("MICROSTRUCTURE_THREADS", 2);
+        EndpointPool::start("microstructure-flow", n, |job: Job| async move {
+            compute_microstructure_flow(job.pool, job.q).await
+        })
+    })
+}
+
 pub async fn get_microstructure_flow(
-    State(pool): State<PgPool>,
+    State(db): State<PgPool>,
     Query(q): Query<MicrostructureRequest>,
 ) -> Json<MicrostructureResponse> {
+    let res = pool().run(Job { pool: db.clone(), q }).await;
+    Json(res)
+}
+
+
+// ---------- heavy compute ----------
+async fn compute_microstructure_flow(pool: PgPool, q: MicrostructureRequest) -> MicrostructureResponse {
     // enforce 1h
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     if !matches!(tf, Tf::H1) {
-        return Json(MicrostructureResponse {
+        return MicrostructureResponse {
             volumeFlows: vec![],
             rotationMatrix: RotationMatrix { coins: vec![], flows: vec![] },
             liquidityConcentration: LiquidityConcentration { groups: vec![] },
-        });
+        };
     }
 
     let days = parse_period_days(&q.period);
@@ -87,17 +111,14 @@ pub async fn get_microstructure_flow(
         .unwrap_or_default();
 
     if universe.is_empty() {
-        return Json(MicrostructureResponse {
+        return MicrostructureResponse {
             volumeFlows: vec![],
             rotationMatrix: RotationMatrix { coins: vec![], flows: vec![] },
             liquidityConcentration: LiquidityConcentration { groups: vec![] },
-        });
+        };
     }
 
-    // Ensure market ids exist (some helper expects data; fall back to resolver)
-    // The original code tried to dereference `mid` which was a value, not a reference.
-    // By destructuring `&mut universe`, we get mutable references to the tuple's elements,
-    // allowing us to correctly dereference and update the `mid` value.
+    // ensure market ids are valid
     for (sym, mid, _) in &mut universe {
         if *mid == 0 {
             if let Ok(new_mid) = resolve_market_id_with_data(&pool, &q.exchange, sym, &q.marketType, since_unix).await {
@@ -106,9 +127,7 @@ pub async fn get_microstructure_flow(
         }
     }
 
-
-    // Pull hourly aggregated trades per coin
-    // We'll query per market_id to avoid ARRAY param hassles
+    // hourly aggregated trades per coin
     #[derive(sqlx::FromRow, Debug)]
     struct AggRow { ts: time::OffsetDateTime, buy_usd: Option<f64>, sell_usd: Option<f64> }
 
@@ -144,7 +163,7 @@ pub async fn get_microstructure_flow(
     }
 
     // z-score of netFlow across universe
-    let mut nets: Vec<f64> = totals.iter().map(|t| t.3).collect();
+    let nets: Vec<f64> = totals.iter().map(|t| t.3).collect();
     let mean = if nets.is_empty() { 0.0 } else { nets.iter().sum::<f64>() / (nets.len() as f64) };
     let var = if nets.is_empty() { 0.0 } else {
         let mut ss = 0.0; for &x in &nets { ss += (x - mean)*(x - mean); } ss / (nets.len() as f64)
@@ -172,7 +191,6 @@ pub async fn get_microstructure_flow(
     let mut idx: HashMap<String, usize> = HashMap::new();
     for (i, s) in coins.iter().enumerate() { idx.insert(s.clone(), i); }
 
-    // Create per-hour net per coin
     // First, gather all hours union
     use std::collections::BTreeSet;
     let mut all_hours: BTreeSet<i64> = BTreeSet::new();
@@ -180,6 +198,14 @@ pub async fn get_microstructure_flow(
         if let Some(v) = hourly.get(s) {
             for &(t,_,_) in v { all_hours.insert(t); }
         }
+    }
+
+    // Build a quick per-symbol time→(buy,sell) map to avoid O(n^2) scans
+    let mut by_time: HashMap<String, HashMap<i64, (f64,f64)>> = HashMap::new();
+    for (s, v) in &hourly {
+        let mut m = HashMap::new();
+        for &(t, bu, se) in v { m.insert(t, (bu, se)); }
+        by_time.insert(s.clone(), m);
     }
 
     let mut flow = vec![vec![0.0; keep]; keep]; // i -> j
@@ -191,12 +217,8 @@ pub async fn get_microstructure_flow(
 
         for s in &coins {
             let i = idx[s];
-            let mut net = 0.0;
-            if let Some(v) = hourly.get(s) {
-                if let Some(&(_, bu, se)) = v.iter().find(|(ts,_,_)| *ts == t) {
-                    net = bu - se;
-                }
-            }
+            let (bu, se) = by_time.get(s).and_then(|m| m.get(&t)).copied().unwrap_or((0.0,0.0));
+            let net = bu - se;
             if net > 0.0 { sum_pos += net; pos.push((i, net)); }
             else if net < 0.0 { sum_abs_neg += -net; neg.push((i, -net)); }
         }
@@ -204,7 +226,6 @@ pub async fn get_microstructure_flow(
         if sum_pos > 0.0 && sum_abs_neg > 0.0 {
             for &(i, p) in &pos {
                 for &(j, nabs) in &neg {
-                    // allocate p across negatives prop to their size
                     let amt = p * (nabs / sum_abs_neg);
                     flow[i][j] += finite(amt);
                 }
@@ -236,7 +257,6 @@ pub async fn get_microstructure_flow(
             countShare: finite((slice.len() as f64) / n_coins),
         });
     }
-    // remaining
     if vol_pairs.len() > 20 {
         let slice = &vol_pairs[20..];
         let share = if total_vol>0.0 { slice.iter().map(|x| x.1).sum::<f64>() / total_vol } else { 0.0 };
@@ -247,9 +267,9 @@ pub async fn get_microstructure_flow(
         });
     }
 
-    Json(MicrostructureResponse {
+    MicrostructureResponse {
         volumeFlows: volume_flows,
         rotationMatrix: RotationMatrix { coins, flows: flow },
         liquidityConcentration: LiquidityConcentration { groups },
-    })
+    }
 }

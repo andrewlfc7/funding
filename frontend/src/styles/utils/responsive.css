@@ -219,3 +219,95 @@
     grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
   }
 }
+
+
+
+/* Add to existing responsive.css */
+
+/* Responsive scroll utilities */
+.scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive width utilities */
+.w-full {
+  width: 100%;
+}
+
+.w-screen {
+  width: 100vw;
+}
+
+.w-fit {
+  width: fit-content;
+}
+
+.min-w-full {
+  min-width: 100%;
+}
+
+.min-w-fit {
+  min-width: fit-content;
+}
+
+/* Responsive flex utilities */
+.flex-auto {
+  flex: 1 1 auto;
+}
+
+.flex-initial {
+  flex: 0 1 auto;
+}
+
+.flex-none {
+  flex: none;
+}
+
+/* Grid responsive utilities */
+@media (min-width: 1920px) {
+  .grid-cols-auto-fill-lg {
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  }
+}
+
+@media (min-width: 2560px) {
+  .grid-cols-auto-fill-xl {
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  }
+}
+
+/* Aspect ratio utilities for charts */
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+.aspect-chart {
+  aspect-ratio: 4 / 3;
+}
+
+/* Responsive container widths */
+.container-responsive {
+  width: 100%;
+  padding-left: var(--space-lg);
+  padding-right: var(--space-lg);
+}
+
+@media (min-width: 1920px) {
+  .container-responsive {
+    padding-left: var(--space-xl);
+    padding-right: var(--space-xl);
+  }
+}
+
+@media (min-width: 2560px) {
+  .container-responsive {
+    padding-left: var(--space-2xl);
+    padding-right: var(--space-2xl);
+  }
+}

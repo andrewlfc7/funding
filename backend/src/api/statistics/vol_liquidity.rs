@@ -267,9 +267,15 @@ pub async fn get_vol_liquidity(
             let (mean_fast, std_fast) = rolling_mean_std(&spread1h, win_fast);
             let (mean_slow, std_slow) = rolling_mean_std(&spread1h, win_slow);
 
-            // mature so both fast & slow windows are valid
+
+
             let start_spread = start.max(win_slow.saturating_sub(1));
-            let mut s_series = Vec::with_capacity(n - start_spread);
+            let capacity = n.saturating_sub(start_spread);
+            if capacity == 0 {
+                continue;
+            }
+
+            let mut s_series = Vec::with_capacity(capacity);
 
             for i in start_spread..n {
                 let m1 = mean_fast[i];

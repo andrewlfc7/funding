@@ -1,33 +1,31 @@
 <template>
-  <div class="relative-strength">
-    <div class="dashboard-header">
-      <h2>Relative Strength Analysis</h2>
-      <div class="header-controls">
-        <select v-model="baseCoin" @change="fetchData">
-          <option value="BTC">BTC</option>
-          <option value="ETH">ETH</option>
-          <option value="USDT">USDT</option>
-        </select>
-        <select v-model="period" @change="fetchData">
-          <option value="24h">24H</option>
-          <option value="7d">7D</option>
-          <option value="30d">30D</option>
-        </select>
-        <button @click="fetchData" class="update-btn" :disabled="loading">
-          {{ loading ? 'Loading...' : 'Update' }}
-        </button>
-      </div>
+  <!-- Remove wrapper div -->
+  <div class="dashboard-header">
+    <h2>Relative Strength Analysis</h2>
+    <div class="header-controls">
+      <select v-model="baseCoin" @change="fetchData">
+        <option value="BTC">BTC</option>
+        <option value="ETH">ETH</option>
+        <option value="USDT">USDT</option>
+      </select>
+      <select v-model="period" @change="fetchData">
+        <option value="24h">24H</option>
+        <option value="7d">7D</option>
+        <option value="30d">30D</option>
+      </select>
+      <button @click="fetchData" class="update-btn" :disabled="loading">
+        {{ loading ? 'Loading...' : 'Update' }}
+      </button>
     </div>
+  </div>
 
-    <div class="dashboard-grid">
-      <!-- RS Z-Score Rankings -->
-      <MetricCard 
-        title="RS Z-Score Rankings"
-        :subtitle="`vs ${baseCoin}`"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+  <div class="dashboard-grid">
+    <!-- RS Z-Score Rankings -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>RS Z-Score Rankings <span class="subtitle">vs {{ baseCoin }}</span></h3>
+      </div>
+      <div class="card-content">
         <div class="rs-rankings">
           <div class="rankings-list">
             <!-- Top performers -->
@@ -75,16 +73,15 @@
             </div>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Pair Z-Score Divergence -->
-      <MetricCard 
-        title="Pair Z-Score Divergence"
-        subtitle="Spread trading opportunities"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Pair Z-Score Divergence -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Pair Z-Score Divergence <span class="subtitle">Spread trading opportunities</span></h3>
+      </div>
+      <div class="card-content">
         <div class="pair-divergence">
           <div v-if="pairDivergences.length === 0" class="empty-state">
             <p>No significant pair divergences detected</p>
@@ -98,13 +95,15 @@
               </span>
             </div>
             
-            <TimeSeriesChart
-              v-if="divergenceTimeSeries.length > 0"
-              :data="divergenceTimeSeries"
-              y-field="spread"
-              :show-zero-line="true"
-              :height="200"
-            />
+            <div class="chart-container">
+              <TimeSeriesChart
+                v-if="divergenceTimeSeries.length > 0"
+                :data="divergenceTimeSeries"
+                y-field="spread"
+                :show-zero-line="true"
+                :height="200"
+              />
+            </div>
             
             <div class="divergence-info">
               <span>Historical range: ±{{ historicalRange }}σ</span>
@@ -126,16 +125,15 @@
             </select>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Momentum Persistence -->
-      <MetricCard 
-        title="Momentum Persistence"
-        subtitle="Z-score autocorrelation"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Momentum Persistence -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Momentum Persistence <span class="subtitle">Z-score autocorrelation</span></h3>
+      </div>
+      <div class="card-content">
         <div class="momentum-persistence">
           <div 
             v-for="category in momentumPersistence" 
@@ -161,16 +159,15 @@
             <p>Calculating momentum persistence...</p>
           </div>
         </div>
-      </MetricCard>
+      </div>
+    </div>
 
-      <!-- Cross-Sectional Momentum -->
-      <MetricCard 
-        title="Cross-Sectional Momentum"
-        subtitle="Factor Exposure"
-        :loading="loading"
-        :error="error"
-        @retry="fetchData"
-      >
+    <!-- Cross-Sectional Momentum -->
+    <div class="metric-card">
+      <div class="card-header">
+        <h3>Cross-Sectional Momentum <span class="subtitle">Factor Exposure</span></h3>
+      </div>
+      <div class="card-content">
         <div class="momentum-factors">
           <div class="factor-header">
             <h4>Mom Factor Loading</h4>
@@ -202,7 +199,7 @@
             <p>No high beta coins found</p>
           </div>
         </div>
-      </MetricCard>
+      </div>
     </div>
   </div>
 </template>
@@ -310,3 +307,6 @@ onMounted(() => {
   fetchData()
 })
 </script>
+
+
+

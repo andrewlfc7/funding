@@ -1,6 +1,4 @@
-<!-- frontend/src/components/zscore/dashboards/VolatilityAnalysis.vue -->
 <template>
-  <!-- Remove any wrapper div, the content goes directly here -->
   <div class="dashboard-header">
     <h2>Volatility Rankings</h2>
     <div class="header-controls">
@@ -195,7 +193,7 @@
 </template>
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useVolatilityData } from '@/composables/useVolatilityData'
+import { useVolatilityData } from '@/composables/useVolatilityAnalysis'
 import { useMetaData } from '@/composables/useMetaData'
 import MetricCard from '../components/common/MetricCard.vue'
 import ScatterChart from '../components/charts/ScatterChart.vue'
