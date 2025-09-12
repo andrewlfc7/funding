@@ -11,7 +11,7 @@ export function useInterAssetZScore() {
   const marketType = ref<'spot' | 'perps'>('spot')
   const topN = ref(20)
   const window = ref(20)
-  const timeframe = ref<'1h' | '4h' | '1d'>('1d')
+  const timeframe = ref<'1h' | '4h' | '1d'>('1h')
   const indexCoin = ref('BTC')
   
   // Response data

@@ -12,7 +12,6 @@ export function formatTimestamp(ts: string): string {
   return new Date(ts).toLocaleString()
 }
 
-
 export function formatRate(rate: number, displayMode: DisplayMode, unit: SpreadUnit = 'percentage'): string {
   let value: number;
   
@@ -28,7 +27,6 @@ export function formatRate(rate: number, displayMode: DisplayMode, unit: SpreadU
     return (value * 10000).toFixed(0) + ' bps'
   }
 }
-
 
 export function formatSpread(spreadValue: number, spreadUnit: SpreadUnit): string {
   if (spreadUnit === 'percentage') {
@@ -68,11 +66,15 @@ export function formatArbOpportunity(arb: {
   return `L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
 }
 
-
 export function formatVolumeForChart(value: number): string {
   if (!value || value === 0) return '$0'
   if (value >= 1e9) return '$' + (value / 1e9).toFixed(1) + 'B'
   if (value >= 1e6) return '$' + (value / 1e6).toFixed(1) + 'M'
   if (value >= 1e3) return '$' + (value / 1e3).toFixed(1) + 'K'
   return '$' + value.toFixed(0)
+}
+
+
+export function formatPercentile(value: number): string {
+  return value.toFixed(1);
 }

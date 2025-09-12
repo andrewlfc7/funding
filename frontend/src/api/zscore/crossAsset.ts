@@ -19,7 +19,7 @@ export interface CrossAssetMatrixAPIResponse {
     matrix: number[][]
     timestamp: number
   }
-  betaMatrix: {
+  coinBetas: {
     coins: string[]
     betas: number[]  // Flat array of beta values
   }
@@ -48,12 +48,20 @@ export interface CrossAssetMatrixResponse {
     correlations: { [coin: string]: number[] }
     betas: { [coin: string]: number[] }
   }
-  // Add full correlation matrix that includes the index
+
   fullCorrelationMatrix: {
     coins: string[]
     matrix: number[][]
   }
+
+  // ADDED this property to resolve the TS2339 error
+  fullCovarianceMatrix: {
+    coins: string[]
+    matrix: number[][]
+  }
+  
 }
+
 
 function createBetaHistogram(betas: number[], numBuckets: number = 10): { buckets: number[], counts: number[] } {
   if (betas.length === 0) {
@@ -139,13 +147,19 @@ function transformMatrixResponse(data: CrossAssetMatrixAPIResponse): CrossAssetM
     throw new Error('Invalid API response: data is null or undefined')
   }
   
-  const { index, correlationMatrix, betaMatrix, rollingCorr, rollingBeta } = data
+  const { index, correlationMatrix, coinBetas, rollingCorr, rollingBeta } = data
   
   // Find index of the index coin
   const indexCoinIndex = correlationMatrix.coins.findIndex(coin => coin === index)
   
   // Keep the full correlation matrix for the heatmap
   const fullCorrelationMatrix = {
+    coins: [...correlationMatrix.coins],
+    matrix: correlationMatrix.matrix.map(row => [...row])
+  }
+
+  // Placeholder for the full covariance matrix
+  const fullCovarianceMatrix = {
     coins: [...correlationMatrix.coins],
     matrix: correlationMatrix.matrix.map(row => [...row])
   }
@@ -157,7 +171,7 @@ function transformMatrixResponse(data: CrossAssetMatrixAPIResponse): CrossAssetM
     .map(row => row.filter((_, j) => j !== indexCoinIndex))  // Remove index coin column
   
   // Filter betas (exclude index coin)
-  const filteredBetas = betaMatrix.betas.filter((_, i) => betaMatrix.coins[i] !== index)
+  const filteredBetas = coinBetas.betas.filter((_, i) => coinBetas.coins[i] !== index)
   
   // Create beta histogram (already filtered)
   const betaHistogram = createBetaHistogram(filteredBetas)
@@ -172,7 +186,7 @@ function transformMatrixResponse(data: CrossAssetMatrixAPIResponse): CrossAssetM
   const correlations: { [coin: string]: number[] } = {}
   const betas: { [coin: string]: number[] } = {}
   
-  betaMatrix.coins.forEach((coin, i) => {
+  coinBetas.coins.forEach((coin, i) => {
     if (coin !== index && rollingCorr && rollingBeta && i < rollingCorr.length && i < rollingBeta.length) {
       correlations[coin] = rollingCorr[i] || []
       betas[coin] = rollingBeta[i] || []
@@ -196,6 +210,7 @@ function transformMatrixResponse(data: CrossAssetMatrixAPIResponse): CrossAssetM
       correlations,
       betas
     },
-    fullCorrelationMatrix // Add the full matrix including index
+    fullCorrelationMatrix,
+    fullCovarianceMatrix
   }
 }

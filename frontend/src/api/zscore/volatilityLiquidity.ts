@@ -83,11 +83,9 @@ export async function fetchVolatilityLiquidity(params: {
   try {
     const url = `${API_BASE_URL}/api/statistics/volatility/liquidity`
     
-    // Ensure we're querying for a specific coin, not all coins
     const apiParams = {
       ...params,
-      // Make sure coin is specified and not empty/undefined
-      coin: params.coin || 'BTC' // Default to BTC if no coin specified
+      coin: params.coin || 'BTC'
     }
     
     console.log('Fetching volatility data for single coin:', apiParams)

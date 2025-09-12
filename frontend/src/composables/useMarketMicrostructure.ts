@@ -1,5 +1,3 @@
-
-
 // frontend/src/composables/useMarketMicrostructure.ts
 import { ref, computed } from 'vue'
 import { getMarketMicrostructureFlow } from '@/api/zscore/marketMicroStructure'
@@ -10,7 +8,7 @@ export interface VolumeFlowData {
   volumeIn: number
   volumeOut: number
   netFlow: number
-  netFlowZScore: number
+  netVolumeZScore: number // Changed from netFlowZScore to match Vue component
 }
 
 export interface RotationMatrixData {
@@ -24,6 +22,7 @@ export interface LiquidityConcentration {
   range: string
   volumeShare: number
   countShare: number
+  percentage: number // Added to match Vue component usage
 }
 
 export function useMarketMicrostructure() {
@@ -51,10 +50,10 @@ export function useMarketMicrostructure() {
         volumeIn: flow.volumeIn,
         volumeOut: flow.volumeOut,
         netFlow: flow.netFlow,
-        netFlowZScore: flow.netFlowZScore
+        netVolumeZScore: flow.netFlowZScore // Map netFlowZScore to netVolumeZScore
       }))
       .sort((a: VolumeFlowData, b: VolumeFlowData) => 
-        Math.abs(b.netFlowZScore) - Math.abs(a.netFlowZScore)
+        Math.abs(b.netVolumeZScore) - Math.abs(a.netVolumeZScore)
       )
   })
 
@@ -89,7 +88,8 @@ export function useMarketMicrostructure() {
       .map((group: any) => ({
         range: group.range,
         volumeShare: group.volumeShare * 100, // Convert to percentage
-        countShare: group.countShare * 100    // Convert to percentage
+        countShare: group.countShare * 100,   // Convert to percentage
+        percentage: group.volumeShare * 100   // Add percentage field for Vue component
       }))
   })
 
@@ -151,4 +151,3 @@ export function useMarketMicrostructure() {
     fetchData
   }
 }
-

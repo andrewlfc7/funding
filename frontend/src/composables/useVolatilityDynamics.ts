@@ -1,4 +1,3 @@
-// src/composables/useVolatilityDynamics.ts
 import { ref, computed } from 'vue'
 import { 
   fetchVolatilityDynamics,
@@ -13,6 +12,7 @@ import {
   type VolDistribution,
   type DistributionStat
 } from '@/api/zscore/volatilityDynamics'
+import { formatPercentile } from '@/utils/formatters'
 
 export function useVolatilityDynamics() {
   const loading = ref(false)
@@ -29,7 +29,12 @@ export function useVolatilityDynamics() {
   const regimeClassification = computed(() => data.value?.regimeClassification || [])
   const instabilityRankings = computed(() => data.value?.instabilityRankings || [])
   const flowVolBeta = computed(() => data.value?.flowVolBeta || [])
-  const volStatsSummary = computed(() => data.value?.volStatsSummary || [])
+  const volStatsSummary = computed(() => 
+    data.value?.volStatsSummary.map(stat => ({
+      ...stat,
+      percentile: formatPercentile(stat.percentile)
+    })) || []
+  )
   
   // Enhanced computed properties with sorting and filtering
   const topInstabilityRankings = computed(() => {

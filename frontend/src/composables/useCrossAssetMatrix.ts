@@ -152,7 +152,6 @@ const correlationRankings = computed(() => {
     }
   })
 
-  // Full beta matrix for heatmap - ADD THIS
   const fullBetaMatrix = computed(() => {
     if (!matrixData.value || !matrixData.value.betaMatrix) return null
     

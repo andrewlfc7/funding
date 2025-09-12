@@ -6,7 +6,11 @@
         <select v-model="selectedCoin" @change="updateData">
           <option value="BTC">BTC</option>
           <option value="ETH">ETH</option>
-  
+        </select>
+        <select v-model="timeframe" @change="updateData">
+          <option value="1h">1H</option>
+          <option value="4h">4H</option>
+          <option value="1d">1D</option>
         </select>
         <select v-model="period" @change="updateData">
           <option value="7d">7 Days</option>
@@ -35,7 +39,6 @@
         class="full-width"
         :loading="loading"
         :error="error"
-        
         @retry="updateData"
       >
         <div class="vol-zscore-container">
@@ -260,9 +263,7 @@ import HistogramChart from '../components/charts/HistogramChart.vue'
 import TimeSeriesChart from '../components/charts/TimeSeriesChart.vue'
 import ScatterChart from '../components/charts/ScatterChart.vue'
 
-
 import { formatVolumeForChart } from '@/utils/formatters'
-
 
 // Composable
 const {
@@ -288,13 +289,10 @@ const {
 
 // Component state
 const selectedCoin = ref('BTC')
+const timeframe = ref('1h') // Added missing timeframe parameter
 const period = ref('120d')
 const exchange = ref('binance')
 const marketType = ref('spot')
-
-
-
-
 
 const volumeSpreadData = computed(() => {
   if (!volumeTimeSeries.value.length) return []
@@ -308,9 +306,6 @@ const volumeSpreadData = computed(() => {
     label: new Date(point.timestamp).toLocaleString()
   }))
 })
-
-
-
 
 const currentSpread = computed(() => {
   if (!spreadTimeSeries.value.length) return 0
@@ -367,7 +362,6 @@ const spreadVolumeCorrelation = computed(() => {
   
   return isNaN(correlation) ? 0 : correlation
 })
-
 
 // Computed values
 const currentVolClass = computed(() => {
@@ -435,19 +429,18 @@ function getVolumeRatioClass(ratio: number): string {
 async function updateData() {
   await fetchData({
     coin: selectedCoin.value,
+    timeframe: timeframe.value, // Added missing timeframe parameter
     period: period.value,
     exchange: exchange.value,
     marketType: marketType.value
   })
 }
 
-
 // Lifecycle
 onMounted(() => {
   updateData()
 })
 
-// Auto-refresh every 30 seconds
 let refreshInterval: number | null = null
 
 onMounted(() => {

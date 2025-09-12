@@ -1,5 +1,30 @@
 /* src/styles/components/zscore/market-seasonality.css */
 
+/* ---- ASSET SELECT -------------------------------------------- */
+.asset-select {
+  margin-left: auto;
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.asset-select:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+}
+
+.asset-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
 /* ---- PATTERN TABS -------------------------------------------- */
 .pattern-tabs {
   display: flex;
@@ -376,6 +401,182 @@
   border-bottom: 2px solid var(--border-primary);
 }
 
+/* ---- INSIGHT LIST STYLES ------------------------------------- */
+.insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.insight-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.insight-item:last-child {
+  border-bottom: none;
+}
+
+.pattern-name,
+.cluster-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pattern-strength {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.cluster-assets {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* ---- WEEKEND STATS ------------------------------------------- */
+.weekend-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-row .asset {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.stat-row .effect {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.effect.positive {
+  color: var(--color-positive);
+}
+
+.effect.negative {
+  color: var(--color-negative);
+}
+
+/* ---- TIMEZONE LIST ------------------------------------------- */
+.timezone-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.timezone-item {
+  display: grid;
+  grid-template-columns: 80px 100px 1fr;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.timezone-item:last-child {
+  border-bottom: none;
+}
+
+.timezone-item .zone {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.timezone-item .active-hours {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.timezone-item .impact {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* ---- CHART CONTAINERS ---------------------------------------- */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  min-height: 200px;
+}
+
+.metric-card.full-width .chart-container {
+  height: 400px;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ---- NO DATA STATE ------------------------------------------- */
+.no-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--bg-primary);
+  border: 2px dashed var(--border-primary);
+  border-radius: 8px;
+}
+
+/* ---- INFO TOOLTIP -------------------------------------------- */
+.info-tooltip {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  cursor: help;
+  transition: color 0.2s ease;
+}
+
+.info-tooltip:hover {
+  color: var(--color-accent);
+}
+
+/* ---- LOADING SPINNER ----------------------------------------- */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-primary);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ---- RESPONSIVE ADJUSTMENTS ---------------------------------- */
 @media (max-width: 1200px) {
   .anomaly-grid {
@@ -389,6 +590,14 @@
   
   .insights-grid {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
+  
+  .metric-card.full-width .chart-container {
+    height: 350px;
   }
 }
 
@@ -407,6 +616,7 @@
     font-size: 11px;
     grid-template-columns: 60px repeat(3, 50px) 1fr;
     gap: var(--space-sm);
+    padding: var(--space-sm);
   }
   
   .anomaly-grid {
@@ -416,5 +626,198 @@
   .timezone-item {
     font-size: 11px;
     grid-template-columns: 60px 80px 1fr;
+    gap: var(--space-sm);
+  }
+  
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .anomaly-symbol {
+    font-size: 16px;
+  }
+  
+  .anomaly-zscore {
+    font-size: 18px;
+  }
+  
+  .activity-item {
+    padding: var(--space-sm);
+  }
+  
+  .period-info .asset {
+    font-size: 13px;
+  }
+  
+  .metrics {
+    font-size: 12px;
+    gap: var(--space-md);
+  }
+  
+  .chart-container {
+    height: 200px;
+  }
+  
+  .metric-card.full-width .chart-container {
+    height: 300px;
+  }
+}
+
+/* ---- DARK MODE ADJUSTMENTS ----------------------------------- */
+@media (prefers-color-scheme: dark) {
+  .anomaly-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .anomaly-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  .activity-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .insight-card:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* ---- UTILITY CLASSES ----------------------------------------- */
+.span-2 {
+  grid-column: span 2;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ---- ANIMATION CLASSES --------------------------------------- */
+.anomaly-card,
+.persistence-item,
+.activity-item,
+.insight-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- CUSTOM SCROLLBAR ---------------------------------------- */
+.activity-list,
+.persistence-rankings,
+.insight-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+}
+
+.activity-list::-webkit-scrollbar,
+.persistence-rankings::-webkit-scrollbar,
+.insight-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.activity-list::-webkit-scrollbar-track,
+.persistence-rankings::-webkit-scrollbar-track,
+.insight-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.activity-list::-webkit-scrollbar-thumb,
+.persistence-rankings::-webkit-scrollbar-thumb,
+.insight-list::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+.activity-list::-webkit-scrollbar-thumb:hover,
+.persistence-rankings::-webkit-scrollbar-thumb:hover,
+.insight-list::-webkit-scrollbar-thumb:hover {
+  background: var(--border-secondary);
+}
+
+/* ---- METRIC CARD OVERRIDES ----------------------------------- */
+.metric-card {
+  min-height: 400px;
+}
+
+.metric-card.span-2 {
+  min-height: 450px;
+}
+
+.metric-card.full-width {
+  min-height: auto;
+}
+
+/* ---- HEADER CONTROLS ALIGNMENT ------------------------------- */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+}
+
+.card-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* ---- FIX FOR EMPTY STATES ------------------------------------ */
+.anomaly-grid:empty::after,
+.activity-list:empty::after,
+.insight-list:empty::after {
+  content: 'No data available';
+  display: block;
+  text-align: center;
+  color: var(--text-tertiary);
+  padding: var(--space-xl);
+  font-size: 14px;
+}
+
+/* ---- HOVER STATES FOR INTERACTIVE ELEMENTS ------------------ */
+select:hover,
+button:hover:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Z-INDEX MANAGEMENT -------------------------------------- */
+.pattern-tabs {
+  position: relative;
+  z-index: 1;
+}
+
+.info-tooltip {
+  position: relative;
+  z-index: 2;
+}
+
+/* ---- PRINT STYLES -------------------------------------------- */
+@media print {
+  .header-controls,
+  .pattern-tabs,
+  .asset-select {
+    display: none;
+  }
+  
+  .metric-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  .chart-container {
+    height: 250px !important;
   }
 }

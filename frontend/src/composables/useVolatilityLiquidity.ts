@@ -1,4 +1,5 @@
-// src/composables/useVolatilityLiquidity.ts
+
+
 import { ref, computed } from 'vue'
 import { 
   fetchVolatilityLiquidity, 
@@ -174,21 +175,19 @@ export function useVolatilityLiquidity() {
     return 0.03 // Low volume = wide spread
   }
   
-
-
-
   // Fetch data
   async function fetchData(params: {
     coin: string
     period: string
     exchange: string
     marketType: string
+    timeframe: string 
   }) {
     loading.value = true
     error.value = null
     
     try {
-      const response = await fetchVolatilityLiquidity(params)
+      const response = await fetchVolatilityLiquidity(params) // Now `params` has timeframe
       data.value = response
       
       // Debug logging

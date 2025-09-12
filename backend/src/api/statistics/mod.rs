@@ -199,8 +199,7 @@ pub fn pct_returns(xs: &[f64]) -> Vec<f64> {
     out
 }
 
-/// Log returns with 1%/99% winsorization of the computed series (excluding the seed 0.0).
-/// Non-finite values are set to 0.0 for safety.
+
 pub fn log_returns(xs: &[f64]) -> Vec<f64> {
     if xs.is_empty() { return vec![]; }
 
@@ -213,9 +212,7 @@ pub fn log_returns(xs: &[f64]) -> Vec<f64> {
         out.push(r);
     }
 
-    // 2) Winsorize the returns in-place at the 1% and 99% percentiles (ignore the seed out[0])
     let slice = &mut out[1..];
-    // Collect finite values to compute thresholds
     let mut vals: Vec<f64> = slice.iter().copied().filter(|v| v.is_finite()).collect();
     if !vals.is_empty() {
         vals.sort_by(|a, b| a.total_cmp(b));

@@ -161,23 +161,32 @@ const volumeZScoreVsReturns = computed(() => {
       .slice(0, 10)
   })
   
-  // Color scale for volatility heatmap
+
   function getVolatilityHeatmapColor(annualizedVol: number): string {
-    // Scale: 0% (blue) -> 50% (yellow) -> 100%+ (red)
-    const clampedVol = Math.min(Math.max(annualizedVol, 0), 100)
-    const ratio = clampedVol / 100
-    
+    const clampedVol = Math.min(Math.max(annualizedVol, 0), 100);
+    const ratio = clampedVol / 100;
+
     if (ratio < 0.5) {
-      // Blue to Yellow
-      const intensity = ratio * 2
-      return `rgb(${Math.floor(255 * intensity)}, ${Math.floor(255 * intensity)}, ${Math.floor(255 * (1 - intensity))})`
+      // Green to Gray
+      const intensity = ratio * 2;
+      // interpolate between #319755 and #5a504d
+      const r = Math.floor(0x31 + (0x5a - 0x31) * intensity);
+      const g = Math.floor(0x97 + (0x50 - 0x97) * intensity);
+      const b = Math.floor(0x55 + (0x4d - 0x55) * intensity);
+      return `rgb(${r}, ${g}, ${b})`;
     } else {
-      // Yellow to Red
-      const intensity = (ratio - 0.5) * 2
-      return `rgb(255, ${Math.floor(255 * (1 - intensity))}, 0)`
+      // Gray to Red
+      const intensity = (ratio - 0.5) * 2;
+      // interpolate between #5a504d and #8d1b1b
+      const r = Math.floor(0x5a + (0x8d - 0x5a) * intensity);
+      const g = Math.floor(0x50 + (0x1b - 0x50) * intensity);
+      const b = Math.floor(0x4d + (0x1b - 0x4d) * intensity);
+      return `rgb(${r}, ${g}, ${b})`;
     }
   }
-  
+
+
+
   // Fetch data
   async function fetchData(params: {
     timeframe: string

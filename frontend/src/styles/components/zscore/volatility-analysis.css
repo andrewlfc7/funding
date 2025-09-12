@@ -115,7 +115,7 @@
 .gradient-bar {
   width: 200px;
   height: 20px;
-  background: linear-gradient(to right, #0000ff, #ffff00, #ff0000);
+  background: linear-gradient(to right, #319755, #5a504d, #8d1b1b);
   border-radius: 4px;
 }
 

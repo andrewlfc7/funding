@@ -45,7 +45,9 @@
             v-if="vovTimeSeries.length > 0"
             :series="vovTimeSeries"
             :y-label="'VoV (σ)'"
-            :height="350"
+            :height="400"
+            :show-grid="false"
+
           />
           <div v-else class="no-data">No VoV data available</div>
         </div>
@@ -65,6 +67,8 @@
             :series="skewnessTimeSeries"
             :y-label="'Skewness'"
             :height="300"
+            :show-grid="false"
+
           />
           <div v-else class="no-data">No skewness data available</div>
         </div>
@@ -100,11 +104,6 @@
     <div class="metric-card">
       <div class="card-header">
         <h3>Volatility Distribution</h3>
-        <select v-model="selectedDistAsset" @change="fetchData" class="asset-select">
-          <option v-for="asset in availableAssets" :key="asset" :value="asset">
-            {{ asset }}
-          </option>
-        </select>
       </div>
       <div class="card-content">
         <div class="chart-container">
@@ -242,7 +241,7 @@
               {{ stat.current_vol.toFixed(1) }}%
             </span>
             <span class="avg-vol">{{ stat.avg_vol.toFixed(1) }}%</span>
-            <span class="percentile" :class="getPercentileClass(stat.percentile)">
+            <span class="percentile" :class="getPercentileClass(Number(stat.percentile))">
               {{ stat.percentile }}th
             </span>
             <span class="skewness" :class="getSkewClass(stat.skewness)">
@@ -477,5 +476,3 @@ onMounted(async () => {
 })
 
 </script>
-
-
