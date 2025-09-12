@@ -10,8 +10,11 @@ pub async fn create_pool() -> PgPool {
 
 pub async fn create_pool_with_url(db_url: &str) -> PgPool {
     let pool = PgPoolOptions::new()
-        .max_connections(10)
-        .acquire_timeout(Duration::from_secs(5))
+        .max_connections(30) 
+        .min_connections(5)
+        .acquire_timeout(Duration::from_secs(30)) 
+        .idle_timeout(Duration::from_secs(360)) 
+        .test_before_acquire(true) 
         .connect(db_url)
         .await
         .expect("Failed to connect to the database");
@@ -25,3 +28,4 @@ pub async fn create_pool_with_url(db_url: &str) -> PgPool {
 
     pool
 }
+

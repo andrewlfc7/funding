@@ -50,7 +50,6 @@ async fn main() -> Result<()> {
             let spec: TimeSpec = time_spec.to_time_spec()?;
             let market_type: CexMarketType = market_type.into();
 
-            // selected_quote is optional now (None = all quotes)
             let selected_quote = if all_quotes {
                 None
             } else {

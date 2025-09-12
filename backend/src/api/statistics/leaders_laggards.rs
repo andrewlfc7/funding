@@ -254,34 +254,90 @@ async fn compute_leaders_laggards(
     spikes.sort_by(|a,b| b.volumeZScore.total_cmp(&a.volumeZScore));
     spikes.truncate(15);
 
-    // Market (equal-weight) return series alignment
-    let min_len = coins.iter().map(|c| c.lr.len()).min().unwrap_or(0);
-    let mut market: Vec<f64> = vec![0.0; min_len];
-    for c in &coins {
-        for i in 0..min_len { market[i] += c.lr[c.lr.len() - min_len + i]; }
-    }
-    let k = coins.len() as f64;
-    if k > 0.0 { for v in &mut market { *v /= k; } }
+    // Market Index: custom weighted index of BTC, ETH, and SOL.
+    // Weights are 50% BTC (overweight), 30% ETH, and 20% SOL (underweight).
+    const BTC_W: f64 = 0.50;
+    const ETH_W: f64 = 0.30;
+    const SOL_W: f64 = 0.20;
+
+    let btc_coin = coins.iter().find(|c| c.sym.starts_with("btc"));
+    let eth_coin = coins.iter().find(|c| c.sym.starts_with("eth"));
+    let sol_coin = coins.iter().find(|c| c.sym.starts_with("sol"));
+
+    let market: Vec<f64> = if let (Some(btc), Some(eth), Some(sol)) = (btc_coin, eth_coin, sol_coin) {
+        let min_len_idx = btc.lr.len().min(eth.lr.len()).min(sol.lr.len());
+        if min_len_idx > 0 {
+            let btc_lr = &btc.lr[btc.lr.len() - min_len_idx..];
+            let eth_lr = &eth.lr[eth.lr.len() - min_len_idx..];
+            let sol_lr = &sol.lr[sol.lr.len() - min_len_idx..];
+
+            // Calculate the weighted average return for each period.
+            (0..min_len_idx)
+                .map(|i| BTC_W * btc_lr[i] + ETH_W * eth_lr[i] + SOL_W * sol_lr[i])
+                .collect()
+        } else {
+            vec![] // Not enough data from one of the index constituents.
+        }
+    } else {
+        // Fallback to equal-weight if custom index coins are not in the universe.
+        let min_len_all = coins.iter().map(|c| c.lr.len()).min().unwrap_or(0);
+        if min_len_all > 0 {
+            let mut market_returns = vec![0.0; min_len_all];
+            for c in &coins {
+                let lr = &c.lr[c.lr.len() - min_len_all..];
+                for i in 0..min_len_all {
+                    market_returns[i] += lr[i];
+                }
+            }
+            let k = coins.len() as f64;
+            if k > 0.0 {
+                market_returns.iter_mut().for_each(|v| *v /= k);
+            }
+            market_returns
+        } else {
+            vec![]
+        }
+    };
 
     // Decorrelated list
     let mut decor: Vec<DecorRow> = Vec::new();
     for c in &coins {
-        // align
-        let lr = &c.lr[c.lr.len()-min_len..];
-        let corr_mkt = pearson(lr, &market);
-        // avg corr vs others
-        let mut sum = 0.0; let mut cnt = 0;
+        // Correlate coin `c` with the calculated market index.
+        // This requires aligning the two time series to their common length.
+        let common_len_mkt = c.lr.len().min(market.len());
+        let corr_mkt = if common_len_mkt > 0 {
+            let lr_c_mkt = &c.lr[c.lr.len() - common_len_mkt..];
+            let market_aligned = &market[market.len() - common_len_mkt..];
+            pearson(lr_c_mkt, market_aligned)
+        } else {
+            0.0
+        };
+
+        // Calculate average correlation of coin `c` with all other coins in the universe.
+        // This also uses pairwise alignment for robustness.
+        let mut sum_corr = 0.0;
+        let mut count = 0;
         for d in &coins {
-            if std::ptr::eq(c, d) { continue; }
-            let lr2 = &d.lr[d.lr.len()-min_len..];
-            let v = pearson(lr, lr2);
-            sum += v; cnt += 1;
+            if std::ptr::eq(c, d) { continue; } // Skip self-correlation
+            let common_len_pair = c.lr.len().min(d.lr.len());
+            if common_len_pair > 0 {
+                let lr_c_pair = &c.lr[c.lr.len() - common_len_pair..];
+                let lr_d_pair = &d.lr[d.lr.len() - common_len_pair..];
+                sum_corr += pearson(lr_c_pair, lr_d_pair);
+                count += 1;
+            }
         }
-        let avgc = if cnt>0 { sum/(cnt as f64) } else { 0.0 };
-        decor.push(DecorRow{ symbol: c.sym.clone(), correlationWithMarket: finite(corr_mkt), avgCorrelation: finite(avgc) });
+        let avg_corr = if count > 0 { sum_corr / (count as f64) } else { 0.0 };
+
+        decor.push(DecorRow {
+            symbol: c.sym.clone(),
+            correlationWithMarket: finite(corr_mkt),
+            avgCorrelation: finite(avg_corr),
+        });
     }
-    decor.sort_by(|a,b| a.correlationWithMarket.total_cmp(&b.correlationWithMarket));
+    decor.sort_by(|a, b| a.correlationWithMarket.total_cmp(&a.correlationWithMarket));
     decor.truncate(15);
+
 
     // Lead-lag matrix (limit to 10 coins)
     let mut top_syms: Vec<String> = rows.iter().map(|r| r.symbol.clone()).collect();

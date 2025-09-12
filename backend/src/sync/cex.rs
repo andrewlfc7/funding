@@ -9,7 +9,6 @@ use crate::cex::markets::refresh_cex_markets;
 pub enum CexSyncTask {
     RefreshMarkets {
         exchange: String,
-        /// None = include ALL quotes; Some("USDT") = filter to that quote only
         selected_quote: Option<String>,
         market_type: CexMarketType,
     },
@@ -29,7 +28,6 @@ pub enum CexSyncTask {
 pub async fn run_cex_sync(pool: &PgPool, task: CexSyncTask) -> Result<()> {
     match task {
         CexSyncTask::RefreshMarkets { exchange, selected_quote, market_type } => {
-            // Adjusted signature: pass Option<&str>
             let quote_opt = selected_quote.as_deref();
             refresh_cex_markets(pool, &exchange, quote_opt, market_type).await?;
         }

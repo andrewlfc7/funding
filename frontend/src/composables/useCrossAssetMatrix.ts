@@ -9,38 +9,37 @@ export function useCrossAssetMatrix() {
   const error = ref<string | null>(null)
   const matrixData = ref<CrossAssetMatrixResponse | null>(null)
 
-const correlationRankings = computed(() => {
-  if (!matrixData.value) return { top: [], bottom: [] }
-  
-  const { betaMatrix, fullCorrelationMatrix } = matrixData.value
-  
-  const indexPosition = fullCorrelationMatrix.coins.findIndex(coin => coin === matrixData.value!.index)
-  
-  // Get correlations with index from the full matrix
-  const rankings = fullCorrelationMatrix.coins
-    .map((coin, i) => {
-      // Skip the index coin itself
-      if (coin === matrixData.value!.index) return null
-      
-      // Find the corresponding beta value
-      const betaIndex = betaMatrix.coins.findIndex(c => c === coin)
-      const beta = betaIndex !== -1 ? betaMatrix.betas[betaIndex] : 0
-      
-      return {
-        symbol: coin,
-        correlation: fullCorrelationMatrix.matrix[i][indexPosition] || 0,
-        beta: beta
-      }
-    })
-    .filter(item => item !== null)
-    .sort((a, b) => b!.correlation - a!.correlation)
-  
-  return {
-    top: rankings.slice(0, 5).map((item, i) => ({ ...item!, rank: i + 1 })),
-    bottom: rankings.slice(-5).reverse().map((item, i) => ({ ...item!, rank: i + 1 }))
-  }
-})
-
+  const correlationRankings = computed(() => {
+    if (!matrixData.value) return { top: [], bottom: [] }
+    
+    const { betaMatrix, fullCorrelationMatrix } = matrixData.value
+    
+    const indexPosition = fullCorrelationMatrix.coins.findIndex(coin => coin === matrixData.value!.index)
+    
+    // Get correlations with index from the full matrix
+    const rankings = fullCorrelationMatrix.coins
+      .map((coin, i) => {
+        // Skip the index coin itself
+        if (coin === matrixData.value!.index) return null
+        
+        // Find the corresponding beta value
+        const betaIndex = betaMatrix.coins.findIndex(c => c === coin)
+        const beta = betaIndex !== -1 ? betaMatrix.betas[betaIndex] : 0
+        
+        return {
+          symbol: coin,
+          correlation: fullCorrelationMatrix.matrix[i][indexPosition] || 0,
+          beta: beta
+        }
+      })
+      .filter(item => item !== null)
+      .sort((a, b) => b!.correlation - a!.correlation)
+    
+    return {
+      top: rankings.slice(0, 5).map((item, i) => ({ ...item!, rank: i + 1 })),
+      bottom: rankings.slice(-5).reverse().map((item, i) => ({ ...item!, rank: i + 1 }))
+    }
+  })
 
   const fullCovarianceMatrix = computed(() => {
     if (!matrixData.value || !matrixData.value.fullCovarianceMatrix) return null
@@ -50,7 +49,6 @@ const correlationRankings = computed(() => {
       data: matrixData.value.fullCovarianceMatrix.matrix
     }
   })
-
 
   const covarianceStats = computed(() => {
     if (!matrixData.value || !matrixData.value.fullCovarianceMatrix) {
@@ -116,8 +114,9 @@ const correlationRankings = computed(() => {
     
     const { timestamps, correlations, betas } = matrixData.value.timeSeriesData
     
-    // Format for TimeSeriesChart component
+    // Format for TimeSeriesChart component, excluding the index coin
     const correlationSeries = Object.entries(correlations)
+      .filter(([coin]) => coin !== matrixData.value!.index) // Exclude index coin
       .map(([coin, values]) => ({
         symbol: coin,
         data: values.map((value, i) => ({
@@ -127,6 +126,7 @@ const correlationRankings = computed(() => {
       }))
     
     const betaSeries = Object.entries(betas)
+      .filter(([coin]) => coin !== matrixData.value!.index) // Exclude index coin
       .map(([coin, values]) => ({
         symbol: coin,
         data: values.map((value, i) => ({
@@ -145,7 +145,6 @@ const correlationRankings = computed(() => {
   const fullCorrelationMatrix = computed(() => {
     if (!matrixData.value || !matrixData.value.fullCorrelationMatrix) return null
     
-    // Return the full matrix from the API including the index coin
     return {
       labels: matrixData.value.fullCorrelationMatrix.coins,
       data: matrixData.value.fullCorrelationMatrix.matrix
@@ -158,33 +157,11 @@ const correlationRankings = computed(() => {
     const coins = matrixData.value.betaMatrix.coins
     const betas = matrixData.value.betaMatrix.betas
     
-    // Create a matrix where each row represents a coin and contains its beta values
-    // For a beta matrix, we typically show beta of each coin vs others
-    // Since beta is typically calculated vs an index, we'll create a diagonal matrix
-    // or show betas vs the index coin
     const n = coins.length
-    const matrix: number[][] = []
-    
-    // Create a matrix where each row i shows the beta of coin i
-    // Since betas array contains beta vs index, we'll replicate this across columns
-    for (let i = 0; i < n; i++) {
-      const row = new Array(n).fill(0)
-      // Set diagonal to the beta value
-      row[i] = betas[i]
-      // Or you could set all values in the row to the same beta
-      // for (let j = 0; j < n; j++) {
-      //   row[j] = betas[i]
-      // }
-      matrix.push(row)
-    }
-    
-    // Alternative: If you want to show betas as a single column repeated
-    // This might be more appropriate for visualization
     const betaMatrix: number[][] = []
     for (let i = 0; i < n; i++) {
       const row = []
       for (let j = 0; j < n; j++) {
-        // Each cell shows the beta of coin i
         row.push(betas[i])
       }
       betaMatrix.push(row)
@@ -216,7 +193,7 @@ const correlationRankings = computed(() => {
         period: params.period,
         window: params.window,
         timeframe: params.timeframe || '1h',
-        topN: params.topN || 10
+        topN: params.topN || 20
       }
       
       matrixData.value = await fetchCrossAssetMatrix(requestParams)
@@ -229,7 +206,6 @@ const correlationRankings = computed(() => {
   }
   
   return { 
-
     loading, 
     error, 
     data: matrixData,

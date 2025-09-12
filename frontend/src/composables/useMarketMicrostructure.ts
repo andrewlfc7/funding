@@ -105,7 +105,7 @@ export function useMarketMicrostructure() {
 
     try {
       // Fetch meta data first
-      const metaResponse = await fetchMetaData(marketType.value, 'USDT')
+      const metaResponse = await fetchMetaData(marketType.value, 'usdc')
       metaData.value = metaResponse
 
       // Fetch microstructure data

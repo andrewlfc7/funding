@@ -251,6 +251,9 @@ async fn compute_market_seasonality(
     }
     if sym_mid.is_empty() { return empty_response(); }
 
+    // *** FIX: Create a definitive list of symbols for which we have data. ***
+    let syms_with_data: Vec<String> = sym_mid.iter().map(|(s, _)| s.clone()).collect();
+
     let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix).await.unwrap_or_default();
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
 
@@ -465,7 +468,8 @@ async fn compute_market_seasonality(
         }
         // crude volume anomaly vs weekday avg
         if let (Some(dw), Some(hh)) = (dow_of(*ts), hour_of(*ts)) {
-            let idx = syms.iter().position(|s| s == sym).unwrap_or(0);
+            // *** FIX: Use syms_with_data to find the correct index. ***
+            let idx = syms_with_data.iter().position(|s| s == sym).unwrap_or(0);
             if let Some(wrow) = weekday_volume.get(idx) {
                 let hist = wrow[dw as usize];
                 if hist > 0.0 {
@@ -492,7 +496,8 @@ async fn compute_market_seasonality(
 
     // 7) Volume persistence (lag1/4/24)
     let mut volume_persistence: Vec<VolumePersistence> = Vec::new();
-    for sym in &syms {
+    // *** FIX: Iterate over syms_with_data. ***
+    for sym in &syms_with_data {
         if let Some(acf) = vol_acf.get(sym) {
             let l1  = acf.get(0).copied().unwrap_or(0.0);
             let l4  = acf.get(3).copied().unwrap_or(0.0);
@@ -510,10 +515,10 @@ async fn compute_market_seasonality(
         }
     }
 
-    // 8) Build weekday aggregate vectors are already done above; use them to create most/least active
     let mut most_active_periods: Vec<ActivePeriod> = Vec::new();
     let mut least_active_periods: Vec<ActivePeriod> = Vec::new();
-    for (i, sym) in syms.iter().enumerate() {
+    // *** FIX: Iterate over syms_with_data. ***
+    for (i, sym) in syms_with_data.iter().enumerate() {
         let wv = &weekday_volatility[i];
         let wvu = &weekday_volume[i];
 
@@ -580,10 +585,11 @@ async fn compute_market_seasonality(
         for (i, row) in intraday_heatmap.iter().enumerate() {
             let thr = percentile(row, 75.0);
             for h in 0..24 {
-                if row[h] > thr { above[h] += 1; assets_above[h].push(syms[i].clone()); }
+                // *** FIX: Use syms_with_data to get the correct symbol. ***
+                if row[h] > thr { above[h] += 1; assets_above[h].push(syms_with_data[i].clone()); }
             }
         }
-        let k = ((syms.len() as f64) * 0.4).ceil() as usize;
+        let k = ((syms_with_data.len() as f64) * 0.4).ceil() as usize;
         let mut h=0;
         while h<24 {
             if above[h] >= k {
@@ -605,7 +611,8 @@ async fn compute_market_seasonality(
 
     // 11) Weekend effect
     let mut weekend_effect = Vec::new();
-    for (i, sym) in syms.iter().enumerate() {
+    // *** FIX: Iterate over syms_with_data. ***
+    for (i, sym) in syms_with_data.iter().enumerate() {
         let wk = 0.5 * (weekday_volatility[i][5] + weekday_volatility[i][6]);
         let wd = (0..5).map(|d| weekday_volatility[i][d]).sum::<f64>() / 5.0;
         let eff = if wd>0.0 { (wk - wd)/wd * 100.0 } else { 0.0 };
@@ -694,13 +701,17 @@ fn percentile(v: &[f64], p: f64) -> f64 {
     let mut a = v.to_vec();
     a.sort_by(|x,y| x.total_cmp(y));
     let idx = ((p/100.0) * ((a.len()-1) as f64)).round() as usize;
-    a[idx]
+    if idx < a.len() {
+        a[idx]
+    } else {
+        a.last().copied().unwrap_or(0.0)
+    }
 }
 
 fn avg_range(row: &[f64], s: usize, e: usize) -> f64 {
     if s<=e {
         let mut sum=0.0; let mut c=0.0;
-        for h in s..=e { sum+=row[h]; c+=1.0; }
+        for h in s..=e { if h < row.len() { sum+=row[h]; c+=1.0; } }
         if c>0.0 { sum/c } else { 0.0 }
     } else { 0.0 }
 }
@@ -716,8 +727,8 @@ fn parse_hours(win: &str) -> (usize, usize, bool) {
 fn avg_range_wrap(row: &[f64], s: usize, e: usize, wrap: bool) -> f64 {
     if !wrap { return avg_range(row, s, e); }
     let mut vals = Vec::new();
-    for h in s..24 { vals.push(row[h]); }
-    for h in 0..=e { vals.push(row[h]); }
+    for h in s..24 { if h < row.len() { vals.push(row[h]); } }
+    for h in 0..=e { if h < row.len() { vals.push(row[h]); } }
     if vals.is_empty() { 0.0 } else { vals.iter().sum::<f64>() / vals.len() as f64 }
 }
 

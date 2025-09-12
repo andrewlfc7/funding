@@ -26,7 +26,7 @@ export function useLeadersLaggards() {
     // Get unique coins from leaders
     const coins = new Set<string>()
     data.value.leaders.forEach(l => coins.add(l.symbol))
-    return Array.from(coins).slice(0, 20)
+    return Array.from(coins).slice(0, 30)
   })
 
   const marketStats = computed(() => {
@@ -42,18 +42,16 @@ export function useLeadersLaggards() {
       }
     }
 
-    // Combine all coins (leaders are sorted by z-score desc, laggards by z-score asc)
     const allCoins = [...data.value.leaders]
     const bullish = allCoins.filter(r => r.zscore > 1).length
     const bearish = allCoins.filter(r => r.zscore < -1).length
     const neutral = allCoins.length - bullish - bearish
 
-    // Calculate mean and std
     const zscores = allCoins.map(r => r.zscore)
     const mean = zscores.reduce((a, b) => a + b, 0) / zscores.length
     const variance = zscores.reduce((sum, z) => sum + Math.pow(z - mean, 2), 0) / zscores.length
     const std = Math.sqrt(variance)
-
+    
     return {
       totalCoins: allCoins.length,
       meanZScore: mean,
@@ -61,7 +59,7 @@ export function useLeadersLaggards() {
       bullishCount: bullish,
       bearishCount: bearish,
       neutralCount: neutral,
-      marketBreadth: ((bullish - bearish) / allCoins.length) * 100
+      marketBreadth: (mean / std) 
     }
   })
 

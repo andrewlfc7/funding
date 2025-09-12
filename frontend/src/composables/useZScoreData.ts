@@ -28,14 +28,11 @@ export function useZScoreData() {
   // Chart data (seconds -> ms conversion handled in zrowToSeries)
   const chartData = computed(() => zrowToSeries(rawData.value))
 
-  // ---------- Dashboard: Z-Score Overview ----------
-
-  // 1) Z-Score vs 1D Returns
   const zscoreVsReturns1d = computed(() =>
     latestEntries.value.map(([symbol, d]) => ({
       symbol,
       zscore: d.zscore,
-      returns: d.returns1d * 100, // %
+      returns: d.returns1d, 
     }))
   )
 
@@ -48,14 +45,12 @@ export function useZScoreData() {
     }))
   )
 
-  // 3) Z-Score vs Rolling Volume (USD, in millions)
   const zscoreVsRollingVolume = computed(() =>
     latestEntries.value.map(([symbol, d]) => ({
       symbol,
       zscore: d.zscore,
       rollingVolume:
         ((d.rollingDollarVolume ??
-          // (older payload fallback—safe to keep)
           (d as any).rollingVolume ??
           0) as number) / 1e6,
     }))
@@ -66,7 +61,7 @@ export function useZScoreData() {
     const allZ = latestEntries.value.map(([, d]) => d.zscore)
     if (!allZ.length) return null
 
-    const edges = [-3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3]
+    const edges = [-2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5]
     const counts = Array(edges.length - 1).fill(0)
 
     for (const z of allZ) {
@@ -150,7 +145,7 @@ export function useZScoreData() {
         timeframe: params.timeframe,
         period: params.period,
         baseCoin: params.baseCoin, // if omitted => universe mode
-        topN: params.topN ?? 50,
+        topN: params.topN ?? 30,
       })
       rawData.value = response.zscoreTimeSeries ?? []
     } catch (e: any) {

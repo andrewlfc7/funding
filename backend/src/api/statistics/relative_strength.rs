@@ -384,7 +384,7 @@ async fn compute_relative_strength(pool: PgPool, q: RelativeStrengthRequest) -> 
         }
     }
     pair_divs.sort_by(|a,b| b.2.total_cmp(&a.2));
-    let pair_divergence = pair_divs.into_iter().take(5).map(|(p, rows, _)| PairDiv { pair: p, time_series: rows }).collect();
+    let pair_divergence = pair_divs.into_iter().take(20).map(|(p, rows, _)| PairDiv { pair: p, time_series: rows }).collect();
 
     RelativeStrengthResponse {
         base,

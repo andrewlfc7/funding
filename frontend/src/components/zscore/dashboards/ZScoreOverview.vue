@@ -1,5 +1,4 @@
 <template>
-  <!-- Remove the wrapper div -->
   <div class="dashboard-header">
     <h2>Z-Score Overview</h2>
     <div class="header-controls">
@@ -86,7 +85,7 @@
             y-field="rollingVolume"
             label-field="symbol"
             x-label="Z-Score"
-            y-label="20-MA Volume (M USD)"
+            y-label="20 EMA Volume (M USD)"
             :show-labels="true"
           />
         </div>
@@ -183,14 +182,13 @@ import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 const { exchanges, defaultExchange, loading: metaLoading, loadMetaData } = useMetaData()
 
 
-// Controls
 const topN = ref(50)
 const period = ref('30d')
 const timeframe = ref<'1h' | '4h' | '1d'>('1h') 
 
 const exchange = ref('')
 
-// Use the Z-score composable with multi-coin support
+
 const { 
   data: chartData,
   loading, 
