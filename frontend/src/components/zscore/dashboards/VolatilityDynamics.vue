@@ -46,9 +46,12 @@
             :series="vovTimeSeries"
             :y-label="'VoV (σ)'"
             :height="400"
-            :show-grid="false"
-
+            :show-grid="true"
+            :max-series="15"
+            :show-legend="true"
+            :y-format="(value) => value.toFixed(2) + 'σ'"
           />
+
           <div v-else class="no-data">No VoV data available</div>
         </div>
       </div>

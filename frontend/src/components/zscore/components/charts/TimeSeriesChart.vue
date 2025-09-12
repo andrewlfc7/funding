@@ -107,7 +107,6 @@ const processedSeries = computed(() => {
 // ---------- Small helpers (PURE; no reactive writes) ----------
 
 function getTimeRangeSafe(): [number, number] | null {
-  // Avoid Math.min(...bigArray)/max which can overflow the call stack
   let min = Number.POSITIVE_INFINITY
   let max = Number.NEGATIVE_INFINITY
 
