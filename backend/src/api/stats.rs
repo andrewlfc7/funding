@@ -22,8 +22,6 @@ pub fn router() -> Router<PgPool> {
         .route(
             "/api/statistics/cross-asset/analytics",
             get(crate::api::statistics::cross_asset::get_cross_asset_analytics),
-            "/api/statistics/cross-asset/analytics",
-            get(crate::api::statistics::cross_asset::get_cross_asset_analytics),
         )
         .route(
             "/api/statistics/cross-section/leaders-laggards",
