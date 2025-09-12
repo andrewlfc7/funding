@@ -6,7 +6,7 @@ pub mod sync;
 pub mod cex;
 pub mod api;
 pub mod math;
-
+pub mod infra;
 mod convert; 
 
 // pub use math::compute::{ momentum, ewmac, breakout};
