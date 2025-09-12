@@ -8,6 +8,7 @@ mod exchanges;
 mod data;
 mod api;
 mod math;
+mod infra;
 
 use axum::{extract::State, response::Json, routing::get, Router};
 use serde::{Deserialize, Serialize};
