@@ -9,10 +9,13 @@
 import TrendDashboard from './trend/TrendDashboard.vue'
 </script>
 
+
 <style scoped>
-.trend-wrapper {
-  display: block;
+.page.trend-wrapper {
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
 }
 </style>

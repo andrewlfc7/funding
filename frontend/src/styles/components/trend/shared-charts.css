@@ -1,0 +1,644 @@
+/* ============================================
+   SHARED CHART COMPONENTS - FIXED VERSION
+   Reusable chart components with proper container management
+   ============================================ */
+
+/* FIXED: Chart Base Containers */
+.chart-base,
+.combined-chart-container,
+.signal-chart-container {
+  position: relative;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  /* CRITICAL: Ensure charts don't overflow their containers */
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 200px;
+}
+
+.chart-base:hover,
+.combined-chart-container:hover,
+.signal-chart-container:hover {
+  border-color: var(--border-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* FIXED: Chart Headers */
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  /* FIXED: Prevent header from causing overflow */
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  flex-shrink: 0;
+  min-height: 60px;
+}
+
+.chart-title,
+.signal-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin: 0;
+  /* FIXED: Prevent title from breaking layout */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.chart-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+.chart-value,
+.signal-value {
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+  /* FIXED: Ensure value displays properly */
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* FIXED: Signal Toggles */
+.signal-toggles {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  /* FIXED: Allow toggles to wrap on smaller screens */
+  flex-wrap: wrap;
+}
+
+.signal-toggle,
+.chart-toggle {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  /* FIXED: Prevent toggles from becoming too small */
+  min-width: 60px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.signal-toggle:hover,
+.chart-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.signal-toggle.active,
+.chart-toggle.active {
+  background: var(--color-accent);
+  color: var(--text-white);
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* FIXED: Chart Body */
+.chart-body,
+.chart-wrapper {
+  padding: var(--space-lg);
+  position: relative;
+  flex: 1;
+  min-height: 200px;
+  /* CRITICAL: Ensure chart body doesn't overflow */
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* FIXED: Canvas elements */
+.chart-wrapper canvas,
+.chart-canvas canvas,
+.chart-body canvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  /* CRITICAL: Prevent canvas from causing scroll issues */
+  object-fit: contain;
+  display: block;
+}
+
+/* FIXED: Chart Controls */
+.chart-controls {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  /* FIXED: Allow controls to wrap */
+  flex-wrap: wrap;
+  min-height: 50px;
+  flex-shrink: 0;
+}
+
+/* FIXED: Metric Cards */
+.metric-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-primary);
+  text-align: center;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  /* FIXED: Ensure metric cards size properly */
+  min-width: 120px;
+  flex: 1;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-accent), #60a5fa);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.metric-card:hover {
+  border-color: var(--border-secondary);
+  background: var(--bg-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.metric-card:hover::before {
+  opacity: 1;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-xs);
+  font-weight: 500;
+  /* FIXED: Prevent label overflow */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metric-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  margin-bottom: var(--space-xs);
+  transition: all var(--transition-normal);
+  /* FIXED: Ensure value displays properly */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metric-value.positive {
+  color: var(--color-positive);
+}
+
+.metric-value.negative {
+  color: var(--color-negative);
+}
+
+.metric-value.neutral {
+  color: var(--color-info);
+}
+
+.metric-value.warning {
+  color: var(--color-warning);
+}
+
+.metric-change {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.metric-change.positive {
+  color: var(--color-positive);
+}
+
+.metric-change.negative {
+  color: var(--color-negative);
+}
+
+/* FIXED: Progress Bars and Indicators */
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: var(--space-sm) 0;
+  /* FIXED: Ensure progress bar doesn't break */
+  flex-shrink: 0;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  min-width: 2px;
+}
+
+.progress-fill.positive {
+  background: linear-gradient(90deg, var(--color-positive), rgba(16, 185, 129, 0.7));
+}
+
+.progress-fill.negative {
+  background: linear-gradient(90deg, var(--color-negative), rgba(239, 68, 68, 0.7));
+}
+
+.progress-fill.neutral {
+  background: linear-gradient(90deg, var(--color-info), rgba(34, 211, 238, 0.7));
+}
+
+.progress-fill.warning {
+  background: linear-gradient(90deg, var(--color-warning), rgba(245, 158, 11, 0.7));
+}
+
+/* FIXED: Gauge Components */
+.gauge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  /* FIXED: Ensure gauge doesn't overflow */
+  min-width: 140px;
+}
+
+.gauge {
+  position: relative;
+  width: 120px;
+  height: 60px;
+  /* FIXED: Ensure gauge maintains aspect ratio */
+  flex-shrink: 0;
+}
+
+.gauge-arc {
+  width: 100%;
+  height: 100%;
+  border-radius: 60px 60px 0 0;
+  background: conic-gradient(
+    from 180deg,
+    var(--color-negative) 0deg,
+    var(--color-warning) 90deg,
+    var(--color-positive) 180deg
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.gauge-arc::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 0;
+  background: var(--bg-primary);
+  border-radius: 54px 54px 0 0;
+}
+
+.gauge-needle {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  height: 45px;
+  background: var(--text-bright);
+  transform-origin: bottom center;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+  border-radius: 1px;
+  margin-left: -1px;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+}
+
+.gauge-needle::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: -2px;
+  width: 6px;
+  height: 6px;
+  background: var(--text-bright);
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+.gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 120px;
+  margin-top: var(--space-xs);
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+.gauge-reading {
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.gauge-reading-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 2px;
+  font-family: var(--font-mono);
+}
+
+.gauge-reading-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* FIXED: Mini Sparklines */
+.sparkline-container {
+  display: flex;
+  align-items: end;
+  gap: 1px;
+  height: 40px;
+  padding: var(--space-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  /* FIXED: Ensure sparkline doesn't overflow */
+  min-width: 100px;
+  overflow: hidden;
+}
+
+.sparkline-bar {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 1px;
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.sparkline-bar:hover {
+  opacity: 0.8;
+  transform: scaleY(1.1) scaleX(1.2);
+}
+
+.sparkline-bar.positive {
+  background: var(--color-positive);
+}
+
+.sparkline-bar.negative {
+  background: var(--color-negative);
+}
+
+.sparkline-bar.neutral {
+  background: var(--color-info);
+}
+
+/* FIXED: Legend Components */
+.chart-legend {
+  display: flex;
+  gap: var(--space-lg);
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  margin-top: var(--space-md);
+  /* FIXED: Allow legend to wrap */
+  flex-wrap: wrap;
+  min-height: 50px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  /* FIXED: Prevent legend items from being too small */
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-toggle {
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.legend-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.legend-toggle.inactive {
+  opacity: 0.5;
+}
+
+/* FIXED: Loading and Error States */
+.loading-state,
+.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: var(--space-md);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  min-height: 150px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  border: 1px dashed var(--border-secondary);
+  /* FIXED: Ensure states display properly */
+  width: 100%;
+  text-align: center;
+  padding: var(--space-lg);
+  flex-direction: column;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-top: 2px solid var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+.error-state {
+  color: var(--color-negative);
+  border-color: var(--color-negative);
+}
+
+.error-icon {
+  font-size: 1.25rem;
+  margin-bottom: var(--space-sm);
+}
+
+/* FIXED: Responsive Design */
+@media (max-width: 1200px) {
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    min-height: 80px;
+  }
+  
+  .signal-toggles {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .chart-legend {
+    gap: var(--space-md);
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-body,
+  .chart-wrapper {
+    padding: var(--space-md);
+    min-height: 150px;
+  }
+  
+  .chart-header {
+    padding: var(--space-sm) var(--space-md);
+  }
+  
+  .chart-controls {
+    padding: var(--space-sm) var(--space-md);
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  
+  .signal-toggles {
+    gap: var(--space-xs);
+  }
+  
+  .signal-toggle,
+  .chart-toggle {
+    font-size: 0.7rem;
+    padding: 2px var(--space-xs);
+    min-width: 50px;
+  }
+  
+  .gauge {
+    width: 100px;
+    height: 50px;
+  }
+  
+  .gauge-needle {
+    height: 38px;
+  }
+  
+  .gauge-labels {
+    width: 100px;
+    font-size: 0.6rem;
+  }
+  
+  .metric-card {
+    padding: var(--space-md);
+    min-width: 100px;
+  }
+  
+  .metric-value {
+    font-size: 1.1rem;
+  }
+  
+  .chart-legend {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-header {
+    padding: var(--space-sm);
+  }
+  
+  .chart-title,
+  .signal-title {
+    font-size: 0.8rem;
+  }
+  
+  .chart-value,
+  .signal-value {
+    font-size: 0.875rem;
+    min-width: 50px;
+  }
+  
+  .sparkline-container {
+    height: 30px;
+    min-width: 80px;
+  }
+  
+  .loading-state,
+  .error-state {
+    min-height: 120px;
+    padding: var(--space-md);
+  }
+}
+
+/* Animation keyframes */
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}

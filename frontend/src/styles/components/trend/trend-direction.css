@@ -1,0 +1,1081 @@
+
+/* ============================================
+   TREND DIRECTION DASHBOARD COMPONENT REFINEMENTS
+   Improving existing visual elements
+   ============================================ */
+
+
+.trend-direction-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  padding: var(--space-xl);
+  background: #0a0a0a;
+  min-height: 100vh;
+  color: var(--text-primary);
+}
+
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.direction-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: var(--space-xl);
+  flex: 1;
+}
+
+.grid-item {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.grid-item h3 {
+  margin: 0 0 var(--space-lg) 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  flex: 1;
+}
+
+/* ============================================
+   TREND SUMMARY ENHANCEMENTS
+   ============================================ */
+
+.trend-summary {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.trend-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.trend-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.trend-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.trend-indicator.bull-market .trend-value {
+  background: linear-gradient(135deg, #00BF63, #059669);
+  color: white;
+  box-shadow: 0 0 12px rgba(0, 191, 99, 0.3);
+}
+
+.trend-indicator.bear-market .trend-value {
+  background: linear-gradient(135deg, #FF4757, #dc2626);
+  color: white;
+  box-shadow: 0 0 12px rgba(255, 71, 87, 0.3);
+}
+
+.trend-strength {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.strength-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.strength-bars {
+  display: flex;
+  gap: 4px;
+}
+
+.strength-bar {
+  width: 6px;
+  height: 24px;
+  border-radius: 3px;
+  background: var(--border-secondary);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.strength-bar.active {
+  background: linear-gradient(180deg, #00BF63, #059669);
+  box-shadow: 0 0 8px rgba(0, 191, 99, 0.4);
+  transform: scaleY(1.1);
+}
+
+/* ============================================
+   GAUGE IMPROVEMENTS
+   ============================================ */
+
+.trend-gauge-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  flex: 1;
+  justify-content: center;
+}
+
+.trend-gauge {
+  position: relative;
+  width: 180px;
+  height: 90px;
+  margin-bottom: var(--space-md);
+  flex-shrink: 0;
+}
+
+.gauge-arc {
+  position: relative;
+  width: 180px;
+  height: 90px;
+  background: conic-gradient(
+    from 180deg,
+    #FF4757 0deg,
+    #FFA502 90deg,
+    #00BF63 180deg
+  );
+  border-radius: 90px 90px 0 0;
+  overflow: hidden;
+}
+
+.gauge-arc::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  background: var(--bg-primary);
+  border-radius: 82px 82px 0 0;
+}
+
+.gauge-needle {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  height: 70px;
+  background: white;
+  border-radius: 2px;
+  transform-origin: bottom center;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+  margin-left: -1.5px;
+}
+
+.gauge-needle::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: -3px;
+  width: 9px;
+  height: 9px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+.gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 180px;
+  margin-top: var(--space-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.gauge-label.bearish { color: #FF4757; }
+.gauge-label.neutral { color: #FFA502; }
+.gauge-label.bullish { color: #00BF63; }
+
+.gauge-reading {
+  text-align: center;
+}
+
+.reading-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 4px;
+}
+
+.reading-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.trend-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: auto;
+  width: 100%;
+}
+
+.metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  min-height: 40px;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ============================================
+   RATIO CHART ENHANCEMENTS
+   ============================================ */
+
+.ls-ratio-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  flex: 1;
+  height: 100%;
+}
+
+.ratio-timeline {
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  height: 80px;
+  padding: var(--space-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  overflow: hidden;
+  flex: 1;
+}
+
+.ratio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.ratio-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.ratio-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.ratio-point {
+  flex: 1;
+  min-width: 3px;
+  border-radius: 2px 2px 0 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+}
+
+.ratio-point:hover {
+  opacity: 0.8;
+  transform: scaleY(1.1) scaleX(1.2);
+  z-index: 1;
+}
+
+/* ============================================
+   PERFORMANCE INDICATORS REFINEMENTS
+   ============================================ */
+
+.ls-performance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-top: auto;
+}
+
+.perf-item {
+  padding: var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  transition: all 0.3s;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.perf-item:hover {
+  border-color: var(--border-secondary);
+  transform: translateY(-1px);
+}
+
+.perf-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+  font-weight: 500;
+}
+
+.perf-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.perf-arrow {
+  font-size: 1.5rem;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.perf-arrow.up { 
+  color: #00BF63;
+  animation: pulse 2s infinite;
+}
+
+.perf-arrow.down { 
+  color: #FF4757;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.perf-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.perf-value.positive { color: #00BF63; }
+.perf-value.negative { color: #FF4757; }
+
+/* ============================================
+   EXPOSURE CHART REFINEMENTS
+   ============================================ */
+
+.exposure-chart {
+  position: relative;
+  height: 120px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.exposure-timeline {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 80px;
+  width: 100%;
+  position: relative;
+}
+
+.exposure-bar {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 1px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  transform-origin: center center;
+}
+
+.exposure-bar:hover {
+  opacity: 0.8;
+  transform: scaleX(1.5);
+  z-index: 1;
+}
+
+.exposure-zero-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--text-muted);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ============================================
+   DURATION ANALYSIS REFINEMENTS (FIXED)
+   ============================================ */
+
+.duration-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  flex: 1;
+  height: 100%;
+}
+
+.duration-chart {
+  padding: var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  flex: 1;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-title {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.duration-bars {
+  display: flex;
+  align-items: end;
+  gap: var(--space-md);
+  height: 80px;
+  justify-content: center;
+  flex: 1;
+}
+
+.duration-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: var(--space-xs);
+  flex: 1;
+  max-width: 40px;
+}
+
+.duration-bar:hover {
+  transform: translateY(-2px);
+}
+
+.duration-bar-fill {
+  background: linear-gradient(180deg, #00D4FF, #0891b2);
+  border-radius: 3px 3px 0 0;
+  width: 100%;
+  min-height: 4px;
+  transition: all 0.3s;
+  box-shadow: 0 0 4px rgba(0, 212, 255, 0.2);
+}
+
+.duration-bar:hover .duration-bar-fill {
+  background: linear-gradient(180deg, #00D4FF, #00BF63);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  transform: scaleY(1.05);
+}
+
+.duration-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-top: var(--space-xs);
+  text-align: center;
+}
+
+/* ============================================
+   REVERSAL ANALYSIS REFINEMENTS
+   ============================================ */
+
+.reversal-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  margin-top: auto;
+  flex-shrink: 0;
+  min-height: 120px;
+}
+
+.reversal-gauge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.reversal-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-width: 130px;
+}
+
+.reversal-meter {
+  flex: 1;
+  height: 8px;
+  background: var(--border-primary);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.reversal-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.reversal-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 0 4px 4px 0;
+}
+
+.reversal-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 35px;
+  text-align: right;
+}
+
+.momentum-sustainability {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-primary);
+}
+
+.sustain-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sustainability-indicator {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sustainability-indicator.sustainability-high {
+  background: linear-gradient(135deg, #00BF63, #059669);
+  color: white;
+  box-shadow: 0 0 8px rgba(0, 191, 99, 0.3);
+}
+
+.sustainability-indicator.sustainability-medium {
+  background: linear-gradient(135deg, #FFA502, #d97706);
+  color: white;
+  box-shadow: 0 0 8px rgba(255, 165, 2, 0.3);
+}
+
+.sustainability-indicator.sustainability-low {
+  background: linear-gradient(135deg, #FF4757, #dc2626);
+  color: white;
+  box-shadow: 0 0 8px rgba(255, 71, 87, 0.3);
+}
+
+/* ============================================
+   REGIME ANALYSIS REFINEMENTS
+   ============================================ */
+
+.regime-classification {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-lg);
+}
+
+.regime-probabilities {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  flex: 1;
+}
+
+.regime-performance {
+  margin-top: auto;
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+
+.regime-perf-grid {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.regime-perf-item {
+  flex: 1;
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  text-align: center;
+  border: 1px solid var(--border-primary);
+  transition: all 0.3s;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.regime-prob-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.regime-prob-item:last-child {
+  border-bottom: none;
+}
+
+.regime-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  min-width: 80px;
+}
+
+.regime-prob-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--border-primary);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.regime-prob-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.regime-prob-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 0 4px 4px 0;
+}
+
+.regime-prob-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 35px;
+  text-align: right;
+}
+
+.regime-performance h4 {
+  margin: 0 0 var(--space-lg) 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.regime-perf-item:hover {
+  border-color: var(--border-secondary);
+  transform: translateY(-1px);
+}
+
+.regime-perf-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.regime-perf-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.regime-perf-value.positive {
+  color: #00BF63;
+}
+
+.regime-perf-value.negative {
+  color: #FF4757;
+}
+
+/* ============================================
+   POSITION LISTS REFINEMENTS
+   ============================================ */
+
+.top-positions {
+  display: flex;
+  gap: var(--space-xl);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.positions-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.position-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+.positions-column h4 {
+  margin: 0 0 var(--space-lg) 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.position-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-primary);
+  transition: all 0.2s;
+}
+
+.position-row:hover {
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  padding-left: var(--space-sm);
+  padding-right: var(--space-sm);
+}
+
+.position-row:last-child {
+  border-bottom: none;
+}
+
+.pos-asset {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 50px;
+  font-family: var(--font-mono);
+}
+
+.pos-weight {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.pos-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--border-primary);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pos-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.pos-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.pos-fill.long {
+  background: linear-gradient(90deg, #00BF63, #059669);
+}
+
+.pos-fill.short {
+  background: linear-gradient(90deg, #FF4757, #dc2626);
+}
+
+/* ============================================
+   CONCENTRATION METRICS REFINEMENTS
+   ============================================ */
+
+.concentration-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.concentration-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.concentration-item:last-child {
+  border-bottom: none;
+}
+
+.conc-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.risk-meter {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.risk-meter.risk-low {
+  background: linear-gradient(135deg, #00BF63, #059669);
+  color: white;
+  box-shadow: 0 0 8px rgba(0, 191, 99, 0.3);
+}
+
+.risk-meter.risk-medium {
+  background: linear-gradient(135deg, #FFA502, #d97706);
+  color: white;
+  box-shadow: 0 0 8px rgba(255, 165, 2, 0.3);
+}
+
+.risk-meter.risk-high {
+  background: linear-gradient(135deg, #FF4757, #dc2626);
+  color: white;
+  box-shadow: 0 0 8px rgba(255, 71, 87, 0.3);
+}
+
+.diversification-score,
+.single-risk {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ============================================
+   RESPONSIVE REFINEMENTS
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .direction-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  
+  .top-positions {
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+  
+  .ls-performance {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  
+  .regime-perf-grid {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  
+  .trend-summary {
+    flex-direction: column;
+    gap: var(--space-lg);
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .trend-gauge {
+    width: 140px;
+    height: 70px;
+  }
+  
+  .gauge-arc {
+    width: 140px;
+    height: 70px;
+  }
+  
+  .gauge-needle {
+    height: 55px;
+  }
+  
+  .duration-bars {
+    height: 60px;
+    gap: var(--space-sm);
+  }
+  
+  .duration-bar {
+    max-width: 30px;
+  }
+  
+  .reversal-gauge {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+  
+  .reversal-label {
+    min-width: auto;
+  }
+  
+  .concentration-metrics,
+  .duration-chart,
+  .reversal-analysis {
+    padding: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .trend-direction-dashboard {
+    padding: var(--space-lg);
+  }
+  
+  .trend-summary {
+    padding: var(--space-md);
+  }
+  
+  .strength-bars {
+    gap: 2px;
+  }
+  
+  .strength-bar {
+    width: 4px;
+    height: 20px;
+  }
+  
+  .trend-gauge {
+    width: 120px;
+    height: 60px;
+  }
+  
+  .gauge-arc {
+    width: 120px;
+    height: 60px;
+  }
+  
+  .gauge-needle {
+    height: 45px;
+  }
+  
+  .gauge-labels {
+    width: 120px;
+    font-size: 0.65rem;
+  }
+  
+  .duration-bars {
+    height: 50px;
+    gap: 6px;
+  }
+  
+  .duration-bar {
+    max-width: 25px;
+  }
+  
+  .position-row {
+    gap: var(--space-sm);
+  }
+  
+  .pos-asset {
+    min-width: 40px;
+    font-size: 0.8rem;
+  }
+  
+  .pos-weight {
+    min-width: 35px;
+    font-size: 0.75rem;
+  }
+}

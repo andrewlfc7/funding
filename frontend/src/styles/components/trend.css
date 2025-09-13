@@ -1,403 +1,619 @@
-.trend-page {
-  padding: 20px;
-  height: 100vh;
+/* ============================================
+   TREND DASHBOARD LAYOUT FIXES
+   Comprehensive fixes for layout, spacing, and container issues
+   ============================================ */
+
+/* Main Dashboard Container - Fixed viewport issues */
+.trend-dashboard {
   display: flex;
-  flex-direction: column;
-  max-width: 1400px; /* Add max width constraint */
-  margin: 0 auto; /* Center the content */
+  height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  position: relative;
 }
 
-.trend-header {
+/* Navigation Sidebar - Fixed width and positioning */
+.dashboard-nav {
+  width: var(--sidebar-width, 100px);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-primary);
+  padding: var(--space-lg);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--space-md);
+  flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 10;
+}
+
+.nav-btn {
+  position: relative;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
   align-items: center;
-  margin-bottom: 20px;
+  justify-content: center;
+  gap: var(--space-md);
+  min-height: 60px;
+  overflow: hidden;
+  text-decoration: none;
+  user-select: none;
+}
+
+.nav-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--color-accent);
+  transform: translateX(4px) translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, var(--color-accent), #4f46e5);
+  border-color: var(--color-accent);
+  color: var(--text-white);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+  transform: translateX(4px);
+}
+
+.nav-indicator {
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  line-height: 1;
   flex-shrink: 0;
 }
 
-.trend-header h1 {
-  margin: 0;
-  color: var(--text-primary);
+/* Hide text by default */
+.nav-text {
+  display: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.controls {
+.nav-tooltip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+}
+
+.nav-btn:hover .nav-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(4px);
+}
+
+/* FIXED: Main Content Area with proper scrolling */
+.dashboard-content {
+  flex: 1;
+  padding: var(--space-xl);
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-primary);
+  scroll-behavior: smooth;
+  /* CRITICAL: Ensure content area takes remaining space properly */
+  min-width: 0;
+  height: 100vh;
+}
+
+/* FIXED: Dashboard Controls - prevent layout shift */
+.dashboard-controls {
   display: flex;
-  gap: 20px;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  padding: var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-primary);
+  align-items: center;
+  flex-wrap: wrap;
+  animation: slideUp 0.5s ease-out 0.1s both;
+  /* FIXED: Prevent controls from causing horizontal overflow */
+  min-width: 0;
 }
 
 .control-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
+  /* FIXED: Prevent control groups from shrinking too much */
+  flex-shrink: 0;
 }
 
-.control-group label {
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.control-group select {
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+.control-select {
+  background: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 14px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.control-group select:hover {
-  border-color: var(--color-accent);
-}
-
-.control-group select:focus {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 120px;
   outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
-/* Charts Layout */
-.charts-layout {
+/* FIXED: Grid layouts with better responsive behavior */
+.signals-grid {
+  display: grid;
+  /* FIXED: Better grid sizing for trend dashboard */
+  grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
+  grid-auto-rows: minmax(350px, auto);
+  gap: var(--space-xl);
+  animation: fadeInGrid 0.6s ease-out 0.2s both;
+  /* CRITICAL: Ensure grid doesn't overflow */
+  width: 100%;
+  max-width: 100%;
+}
+
+/* FIXED: Grid items with proper container sizing */
+.grid-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  /* CRITICAL: Ensure grid items don't exceed container width */
+  min-width: 0;
+  min-height: 350px;
+}
+
+.grid-item:hover {
+  border-color: var(--border-secondary);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.grid-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-accent), #60a5fa);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.grid-item:hover::before {
+  opacity: 1;
+}
+
+.grid-item h3 {
+  margin: 0 0 var(--space-lg) 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-primary);
+  /* FIXED: Prevent title from wrapping awkwardly */
+  flex-shrink: 0;
+}
+
+/* FIXED: Panel content with proper flex behavior */
+.panel-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: var(--space-lg);
   min-height: 0;
-  overflow-y: auto;
+  /* CRITICAL: Ensure content doesn't overflow */
+  overflow: hidden;
 }
 
-/* Main Chart Section */
-.main-chart-section {
-  flex: 0 0 auto; /* Change from percentage to auto */
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  min-height: 280px; /* Reduced from 350px */
-  max-height: 350px; /* Reduced from 500px */
-}
-
-.main-chart-wrapper {
+/* FIXED: Chart containers with proper sizing */
+.chart-container,
+.chart-wrapper {
   flex: 1;
   position: relative;
-  min-height: 0;
-}
-
-.main-chart-wrapper canvas {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* Generic Subplot Section */
-.subplot-section {
-  height: 180px; /* Reduced from 200px */
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  padding: 15px 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-height: 200px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  border: 1px solid var(--border-primary);
+  overflow: hidden;
+  /* CRITICAL: Ensure charts resize properly */
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.subplot-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.subplot-header h4 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.subplot-chart-wrapper {
-  flex: 1;
-  position: relative;
-  min-height: 0;
-}
-
-.subplot-chart-wrapper canvas {
+/* FIXED: Canvas sizing to prevent overflow */
+.chart-container canvas,
+.chart-wrapper canvas {
   width: 100% !important;
   height: 100% !important;
+  max-height: 100% !important;
+  max-width: 100% !important;
+  /* CRITICAL: Prevent canvas from exceeding container */
+  object-fit: contain;
 }
 
-/* Signal Toggles */
-.signal-toggles {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
+/* Wide screen optimizations */
+@media (min-width: 1401px) {
+  .dashboard-nav {
+    width: 280px;
+  }
+
+  .nav-btn {
+    justify-content: flex-start;
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  .nav-text {
+    display: inline;
+    opacity: 1;
+  }
+
+  .nav-tooltip {
+    display: none;
+  }
+  
+  /* FIXED: Better grid layout for wide screens */
+  .signals-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: minmax(400px, auto);
+  }
 }
 
-.signal-toggle {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  font-size: 12px;
+/* FIXED: Responsive breakpoints */
+@media (max-width: 1600px) {
+  .signals-grid {
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  }
 }
 
-.signal-toggle input[type="checkbox"] {
-  cursor: pointer;
-  width: 14px;
-  height: 14px;
+@media (max-width: 1400px) {
+  .dashboard-nav {
+    width: 80px;
+  }
+  
+  .nav-btn {
+    padding: var(--space-md);
+    min-height: 50px;
+  }
+  
+  .nav-indicator {
+    font-size: 1.1rem;
+  }
+  
+  .dashboard-content {
+    padding: var(--space-lg);
+  }
+  
+  .signals-grid {
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: var(--space-lg);
+  }
 }
 
-.signal-toggle span {
-  font-weight: 500;
-  transition: opacity 0.2s ease;
-}
-
-.signal-toggle:hover span {
-  opacity: 0.8;
-}
-
-/* Metric Toggles for Returns/Volatility */
-.metric-toggles {
-  display: flex;
-  gap: 15px;
-}
-
-.metric-toggle {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.metric-toggle input[type="radio"] {
-  cursor: pointer;
-  width: 14px;
-  height: 14px;
-}
-
-.metric-toggle span {
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: color 0.2s ease;
-}
-
-.metric-toggle:hover span {
-  color: var(--text-primary);
-}
-
-.metric-toggle input[type="radio"]:checked + span {
-  color: var(--color-accent);
-  font-weight: 600;
-}
-
-/* Responsive Design */
 @media (max-width: 1200px) {
-  .trend-page {
-    max-width: 100%;
+  .signals-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+    grid-auto-rows: minmax(320px, auto);
   }
   
-  .signal-toggles {
-    flex-direction: column;
-    gap: 8px;
+  .grid-item {
+    min-height: 320px;
+  }
+  
+  .dashboard-header h2 {
+    font-size: 1.5rem;
   }
 }
 
+/* FIXED: Mobile layout */
 @media (max-width: 768px) {
-  .trend-header {
+  .trend-dashboard {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
+    height: auto;
+    min-height: 100vh;
   }
   
-  .controls {
-    flex-wrap: wrap;
+  .dashboard-nav {
+    width: 100%;
+    flex-direction: row;
+    padding: var(--space-md);
+    border-right: none;
+    border-bottom: 1px solid var(--border-primary);
+    overflow-x: auto;
+    gap: var(--space-sm);
+    /* FIXED: Prevent nav from taking too much height */
+    height: auto;
+    max-height: 80px;
   }
   
-  .charts-layout {
-    gap: 12px;
+  .nav-btn {
+    min-width: 60px;
+    min-height: 45px;
+    flex-shrink: 0;
+    padding: var(--space-sm);
   }
   
-  .main-chart-section {
-    min-height: 250px;
-    max-height: 300px;
+  .nav-indicator {
+    font-size: 1rem;
   }
   
-  .subplot-section {
-    height: 160px;
+  .nav-text {
+    display: none;
+  }
+
+  .nav-tooltip {
+    display: none;
   }
   
-  .subplot-header {
+  .dashboard-content {
+    padding: var(--space-md);
+    overflow-y: visible;
+    height: auto;
+  }
+  
+  .dashboard-controls {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: stretch;
+    gap: var(--space-md);
+    padding: var(--space-md);
   }
   
-  .signal-toggles,
-  .metric-toggles {
-    flex-wrap: wrap;
+  .control-group {
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  
+  .grid-item {
+    min-height: 280px;
+    padding: var(--space-lg);
+  }
+  
+  .signals-grid {
+    gap: var(--space-md);
+    grid-auto-rows: minmax(280px, auto);
   }
 }
 
 @media (max-width: 480px) {
-  .trend-page {
-    padding: 10px;
+  .dashboard-content {
+    padding: var(--space-sm);
   }
   
-  .control-group {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
+  .dashboard-controls {
+    padding: var(--space-sm);
   }
   
-  .main-chart-section {
-    min-height: 200px;
-    max-height: 250px;
-    padding: 15px;
+  .grid-item {
+    padding: var(--space-md);
+    min-height: 250px;
   }
   
-  .subplot-section {
-    height: 140px;
-    padding: 12px 15px;
+  .grid-item h3 {
+    font-size: 1rem;
+    margin-bottom: var(--space-md);
   }
   
-  .signal-toggles,
-  .metric-toggles {
-    gap: 10px;
+  .nav-btn {
+    min-width: 50px;
+    min-height: 40px;
   }
   
-  .signal-toggle,
-  .metric-toggle {
-    font-size: 11px;
+  .nav-indicator {
+    font-size: 0.9rem;
   }
   
-  .subplot-header h4 {
-    font-size: 13px;
+  .signals-grid {
+    grid-auto-rows: minmax(250px, auto);
   }
 }
 
-/* Scrollbar styling for charts layout */
-.charts-layout::-webkit-scrollbar {
-  width: 8px;
+/* FIXED: Ultra-wide screen optimization */
+@media (min-width: 2560px) {
+  .signals-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    grid-auto-rows: minmax(450px, auto);
+  }
+  
+  .dashboard-content {
+    padding: 2.5rem;
+  }
+  
+  .dashboard-nav {
+    width: 320px;
+  }
+  
+  .grid-item {
+    padding: 2rem;
+    min-height: 450px;
+  }
 }
 
-.charts-layout::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-  border-radius: 4px;
-}
-
-.charts-layout::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
-}
-
-.charts-layout::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
-}
-
-/* Compact main chart */
-.main-chart-section.compact {
-  flex: 0 0 250px; /* Reduced from 300px */
-  max-height: 250px; /* Reduced from 300px */
-  min-height: 200px; /* Reduced from 250px */
-}
-
-/* Toggle buttons */
-.toggle-buttons {
-  display: flex;
-  gap: 4px;
-  background: var(--bg-primary);
-  border-radius: 6px;
-  padding: 2px;
-}
-
-.toggle-btn {
-  padding: 6px 16px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.toggle-btn:hover {
-  color: var(--text-primary);
-}
-
-.toggle-btn.active {
-  background: var(--color-accent);
-  color: white;
-}
-
-/* Lookback toggles */
-.lookback-toggles {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.lookback-toggle {
+/* FIXED: Loading and error states */
+.loading-state,
+.error-state {
   display: flex;
   align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  font-size: 12px;
+  justify-content: center;
+  flex: 1;
+  gap: var(--space-md);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  min-height: 150px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  border: 1px dashed var(--border-secondary);
+  /* FIXED: Ensure states don't overflow */
+  width: 100%;
+  text-align: center;
 }
 
-.lookback-toggle input[type="checkbox"] {
-  cursor: pointer;
-  width: 14px;
-  height: 14px;
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-top: 2px solid var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
 }
 
-.lookback-toggle span {
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: color 0.2s ease;
+.error-state {
+  color: var(--color-negative);
+  border-color: var(--color-negative);
 }
 
-.lookback-toggle:hover span {
-  color: var(--text-primary);
+/* FIXED: Custom scrollbar */
+.dashboard-content::-webkit-scrollbar {
+  width: 6px;
 }
 
-.lookback-toggle input[type="checkbox"]:checked + span {
-  color: var(--color-accent);
-  font-weight: 600;
+.dashboard-content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 3px;
 }
 
-/* Individual signal charts spacing */
-.charts-layout .subplot-section + .subplot-section {
-  margin-top: 12px;
+.dashboard-content::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 3px;
+  transition: background 0.2s;
 }
 
-/* Responsive adjustments for compact view */
-@media (max-width: 768px) {
-  .main-chart-section.compact {
-    flex: 0 0 200px;
-    min-height: 180px;
-    max-height: 220px;
+.dashboard-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* FIXED: Accessibility and motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
   
-  .toggle-buttons {
-    gap: 2px;
-    padding: 1px;
+  .nav-btn:hover {
+    transform: none;
   }
   
-  .toggle-btn {
-    padding: 4px 12px;
-    font-size: 12px;
+  .grid-item:hover {
+    transform: none;
+  }
+}
+
+/* FIXED: Focus states for keyboard navigation */
+.nav-btn:focus-visible,
+.control-select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* FIXED: High contrast mode */
+@media (prefers-contrast: high) {
+  .grid-item {
+    border-width: 2px;
   }
   
-  .lookback-toggles {
-    gap: 8px;
+  .nav-btn {
+    border-width: 2px;
   }
-  
-  .lookback-toggle {
-    font-size: 11px;
+}
+
+/* ADDITIONAL FIXES FOR SPECIFIC COMPONENTS */
+
+/* Fix for dashboard headers */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 2px solid var(--border-primary);
+  animation: slideDown 0.5s ease-out;
+  /* FIXED: Prevent header from overflowing */
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.dashboard-header h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin: 0;
+  background: linear-gradient(135deg, var(--color-accent), #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  /* FIXED: Ensure title doesn't break layout */
+  flex-shrink: 0;
+}
+
+/* Animations */
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInGrid {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }

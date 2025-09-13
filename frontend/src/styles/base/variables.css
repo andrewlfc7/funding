@@ -78,9 +78,25 @@
   --zscore-card-max-height: 400px;
   --zscore-header-height: 48px;
   
+
+  /* trend specific
+  --trend-card-min-height: 320px;
+  --trend-card-max-height: 400px;
+  --trend-header-height: 48px;
+   */
+
   /* Consistent spacing */
   --dashboard-padding: var(--space-lg);
   --dashboard-gap: var(--space-md);
+}
+
+:root {
+  --sidebar-width: 100px;
+  --sidebar-width-expanded: 280px;
+  --dashboard-max-width: none; /* Remove width constraints */
+  --chart-min-height: 200px;
+  --grid-gap: 1.5rem;
+  --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :root {
@@ -90,3 +106,4 @@
   --color-accent: #6366f1;
   --color-accent-hover: #4f46e5;
 }
+
