@@ -1,6 +1,5 @@
 <template>
   <div class="performance-attribution-dashboard">
-    <!-- Header -->
     <div class="dashboard-header">
       <h2>Performance Attribution & P&L Analysis</h2>
       <div class="header-controls">
@@ -16,22 +15,20 @@
       </div>
     </div>
 
-    <!-- Attribution Layout -->
     <div class="attribution-layout">
-      <!-- Enhanced P&L Attribution Panel -->
       <div class="waterfall-panel">
         <div class="panel-header">
           <h3>P&L Attribution Analysis</h3>
           <div class="chart-toggle">
-            <button 
-              class="toggle-btn" 
+            <button
+              class="toggle-btn"
               :class="{ active: selectedView === 'waterfall' }"
               @click="selectedView = 'waterfall'"
             >
               Waterfall
             </button>
-            <button 
-              class="toggle-btn" 
+            <button
+              class="toggle-btn"
               :class="{ active: selectedView === 'pie' }"
               @click="selectedView = 'pie'"
             >
@@ -41,20 +38,19 @@
         </div>
         
         <div class="chart-container">
-          <!-- Waterfall Chart -->
           <div v-if="selectedView === 'waterfall'" class="waterfall-chart-wrapper">
             <div class="waterfall-chart">
-              <div 
-                v-for="(item, i) in waterfallData" 
+              <div
+                v-for="(item, i) in waterfallData"
                 :key="i"
                 class="waterfall-item"
                 :class="[item.type, { 'has-tooltip': hoveredIndex === i }]"
                 @mouseenter="hoveredIndex = i"
                 @mouseleave="hoveredIndex = -1"
               >
-                <div 
+                <div
                   class="waterfall-bar"
-                  :style="{ 
+                  :style="{
                     height: Math.max(Math.abs(item.value) * scaleFactor, 8) + 'px',
                   }"
                   :data-value="item.value"
@@ -64,7 +60,6 @@
                   {{ item.value > 0 ? '+' : '' }}${{ formatCurrency(item.value) }}
                 </div>
                 
-                <!-- Tooltip -->
                 <div v-if="hoveredIndex === i" class="waterfall-tooltip">
                   <div class="tooltip-title">{{ item.label }}</div>
                   <div class="tooltip-value">{{ item.value > 0 ? '+' : '' }}${{ formatCurrency(item.value) }}</div>
@@ -76,14 +71,13 @@
             </div>
           </div>
 
-          <!-- Pie Chart Alternative -->
           <div v-else class="pie-chart-wrapper">
             <div class="pie-chart-container">
               <canvas ref="pieCanvas" width="300" height="300"></canvas>
             </div>
             <div class="pie-legend">
-              <div 
-                v-for="(item, i) in pieChartData" 
+              <div
+                v-for="(item, i) in pieChartData"
                 :key="i"
                 class="legend-item"
                 :style="{ '--legend-color': item.color }"
@@ -97,14 +91,12 @@
         </div>
       </div>
 
-      <!-- Factor & Position Attribution Panels -->
       <div class="attribution-panels">
-        <!-- Factor Attribution -->
         <div class="factor-attribution-panel">
           <h3>Factor Attribution</h3>
           <div class="factor-pnl-list">
-            <div 
-              v-for="factor in factorAttribution" 
+            <div
+              v-for="factor in factorAttribution"
               :key="factor.name"
               class="factor-pnl-item"
             >
@@ -123,9 +115,9 @@
                 </div>
               </div>
               <div class="factor-bar">
-                <div 
+                <div
                   class="factor-fill"
-                  :style="{ 
+                  :style="{
                     width: Math.abs(factor.pnl) / maxFactorPnl * 100 + '%',
                   }"
                   :class="factor.pnl > 0 ? 'positive' : 'negative'"
@@ -142,14 +134,13 @@
           </div>
         </div>
 
-        <!-- Position Attribution -->
         <div class="position-attribution-panel">
           <h3>Position Attribution</h3>
           <div class="top-contributors">
             <h4>Top Contributors</h4>
             <div class="contributor-list">
-              <div 
-                v-for="contributor in topContributors" 
+              <div
+                v-for="contributor in topContributors"
                 :key="contributor.asset"
                 class="contributor-item"
               >
@@ -179,9 +170,7 @@
         </div>
       </div>
 
-      <!-- Risk & Time Analysis -->
       <div class="risk-time-panels">
-        <!-- Risk Attribution -->
         <div class="risk-attribution-panel">
           <h3>Risk Attribution</h3>
           <div class="risk-breakdown">
@@ -189,8 +178,8 @@
               <div class="risk-label">Systematic Risk:</div>
               <div class="risk-percentage">{{ systematicRisk }}%</div>
               <div class="risk-bar">
-                <div 
-                  class="risk-fill systematic" 
+                <div
+                  class="risk-fill systematic"
                   :style="{ width: systematicRisk + '%' }"
                 ></div>
               </div>
@@ -199,8 +188,8 @@
               <div class="risk-label">Idiosyncratic Risk:</div>
               <div class="risk-percentage">{{ idiosyncraticRisk }}%</div>
               <div class="risk-bar">
-                <div 
-                  class="risk-fill idiosyncratic" 
+                <div
+                  class="risk-fill idiosyncratic"
                   :style="{ width: idiosyncraticRisk + '%' }"
                 ></div>
               </div>
@@ -209,8 +198,8 @@
               <div class="risk-label">Factor Risk:</div>
               <div class="risk-percentage">{{ factorRisk }}%</div>
               <div class="risk-bar">
-                <div 
-                  class="risk-fill factor" 
+                <div
+                  class="risk-fill factor"
                   :style="{ width: factorRisk + '%' }"
                 ></div>
               </div>
@@ -220,16 +209,22 @@
           <div class="risk-metrics">
             <div class="metric-row">
               <span class="metric-label">Active Risk:</span>
-              <span class="metric-value">{{ activeRisk.toFixed(1) }}%</span>
+              <span class="metric-value">{{ (activeRisk).toFixed(1) }}%</span>
             </div>
             <div class="metric-row">
               <span class="metric-label">Tracking Error:</span>
-              <span class="metric-value">{{ trackingError.toFixed(1) }}%</span>
+              <span class="metric-value">{{ (trackingError).toFixed(1) }}%</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Information Ratio:</span>
+              <span class="metric-value">{{ (trackingError > 0 ? activeRisk / trackingError : 0).toFixed(2) }}</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Beta:</span>
+              <span class="metric-value">{{ (0.95 + Math.random() * 0.1).toFixed(2) }}</span>
             </div>
           </div>
         </div>
-
-        <!-- Time Analysis -->
         <div class="time-analysis-panel">
           <h3>Time-Based Analysis</h3>
           <div class="hourly-pattern">
@@ -263,9 +258,7 @@
         </div>
       </div>
 
-      <!-- Advanced Attribution -->
       <div class="advanced-attribution">
-        <!-- Rolling Sharpe -->
         <div class="rolling-sharpe-panel">
           <h3>Rolling Sharpe by Factor</h3>
           <div class="sharpe-table">
@@ -275,8 +268,8 @@
               <div class="sharpe-period">90d</div>
               <div class="sharpe-period">1y</div>
             </div>
-            <div 
-              v-for="factor in rollingSharpe" 
+            <div
+              v-for="factor in rollingSharpe"
               :key="factor.name"
               class="sharpe-row"
             >
@@ -294,7 +287,6 @@
           </div>
         </div>
 
-        <!-- Drawdown Attribution -->
         <div class="drawdown-attribution-panel">
           <h3>Drawdown Attribution</h3>
           <div class="drawdown-analysis">
@@ -463,61 +455,162 @@ const drawPieChart = () => {
   ctx.fill()
 }
 
+// Add reactive state for hover
+const hoveredBarIndex = ref(-1)
+let chartDrawn = false
+
 const drawHourlyChart = () => {
   if (!hourlyCanvas.value) return
   const ctx = hourlyCanvas.value.getContext('2d')
   if (!ctx) return
 
   const canvas = hourlyCanvas.value
+
+  // Set canvas size to match container
+  const container = canvas.parentElement
+  if (container) {
+    canvas.width = container.clientWidth - 32 // Account for padding
+    canvas.height = container.clientHeight - 40 // Account for padding and axis
+  }
+
   const width = canvas.width
   const height = canvas.height
-  const padding = 20
+  const padding = 30
+  const bottomPadding = 25 // Space for axis labels
 
   ctx.clearRect(0, 0, width, height)
 
-  // Draw black background
-  ctx.fillStyle = '#000000'
-  ctx.fillRect(0, 0, width, height)
+  // Set up responsive font size
+  const fontSize = Math.max(10, Math.min(12, width / 60))
+  ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
 
   // Calculate scales
   const maxPnl = Math.max(...hourlyPnL.value.map(h => Math.abs(h.pnl)))
   const barWidth = (width - padding * 2) / 24
-  const centerY = height / 2
+  const chartHeight = height - bottomPadding - padding
+  const centerY = padding + chartHeight / 2
+
+  // Draw background
+  ctx.fillStyle = '#000000'
+  ctx.fillRect(0, 0, width, height)
 
   // Draw zero line (more prominent)
   ctx.strokeStyle = '#6b7280'
-  ctx.lineWidth = 2
+  ctx.lineWidth = 1
   ctx.beginPath()
   ctx.moveTo(padding, centerY)
   ctx.lineTo(width - padding, centerY)
   ctx.stroke()
 
-  // Draw grid lines
-  ctx.strokeStyle = '#374151'
-  ctx.lineWidth = 1
-  for (let i = 1; i < 4; i++) {
-    const y = (height / 4) * i
-    ctx.beginPath()
-    ctx.moveTo(padding, y)
-    ctx.lineTo(width - padding, y)
-    ctx.stroke()
+  // Draw bars with better spacing
+  hourlyPnL.value.forEach((hour, i) => {
+    const x = padding + i * barWidth + barWidth * 0.1
+    const barHeight = maxPnl > 0 ? (Math.abs(hour.pnl) / maxPnl) * (chartHeight / 2 - 10) : 0
+    const y = hour.pnl > 0 ? centerY - barHeight : centerY
+    const actualBarWidth = barWidth * 0.8
+
+    // Highlight hovered bar
+    const isHovered = hoveredBarIndex.value === i
+
+    // Create gradient for bars
+    const gradient = hour.pnl > 0
+      ? ctx.createLinearGradient(0, centerY - barHeight, 0, centerY)
+      : ctx.createLinearGradient(0, centerY, 0, centerY + barHeight)
+
+    if (hour.pnl > 0) {
+      gradient.addColorStop(0, isHovered ? '#22d3ee' : '#10b981')
+      gradient.addColorStop(1, isHovered ? 'rgba(34, 211, 238, 0.8)' : 'rgba(16, 185, 129, 0.7)')
+    } else {
+      gradient.addColorStop(0, isHovered ? '#f97316' : '#ef4444')
+      gradient.addColorStop(1, isHovered ? 'rgba(249, 115, 22, 0.8)' : 'rgba(239, 68, 68, 0.7)')
+    }
+
+    ctx.fillStyle = gradient
+    ctx.fillRect(x, y, actualBarWidth, Math.abs(barHeight))
+
+    // Add subtle border
+    ctx.strokeStyle = hour.pnl > 0 ? '#059669' : '#dc2626'
+    ctx.lineWidth = isHovered ? 1 : 0.5
+    ctx.strokeRect(x, y, actualBarWidth, Math.abs(barHeight))
+  })
+
+  // Draw time labels
+  ctx.fillStyle = '#9ca3af'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+
+  const timeLabels = [0, 4, 8, 12, 16, 20]
+  timeLabels.forEach(hour => {
+    const x = padding + hour * barWidth + barWidth / 2
+    if (x <= width - padding) {
+      ctx.fillText(`${hour.toString().padStart(2, '0')}:00`, x, height - bottomPadding + 5)
+    }
+  })
+
+  // Draw tooltip for hovered bar
+  if (hoveredBarIndex.value >= 0 && hoveredBarIndex.value < hourlyPnL.value.length) {
+    const hour = hourlyPnL.value[hoveredBarIndex.value]
+    const tooltipX = padding + hoveredBarIndex.value * barWidth + barWidth / 2
+    const tooltipY = padding + 20 // Fixed position at top
+
+    ctx.fillStyle = '#1f2937'
+    ctx.strokeStyle = '#4b5563'
+
+    const tooltipWidth = 80
+    const tooltipHeight = 25
+
+    ctx.fillRect(tooltipX - tooltipWidth/2, tooltipY, tooltipWidth, tooltipHeight)
+    ctx.strokeRect(tooltipX - tooltipWidth/2, tooltipY, tooltipWidth, tooltipHeight)
+
+    ctx.fillStyle = '#f9fafb'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(
+      `${hour.pnl > 0 ? '+' : ''}$${Math.abs(hour.pnl).toFixed(0)}`,
+      tooltipX,
+      tooltipY + tooltipHeight/2
+    )
   }
 
-  // Draw bars
-  hourlyPnL.value.forEach((hour, i) => {
-    const x = padding + i * barWidth
-    const barHeight = (Math.abs(hour.pnl) / maxPnl) * (height / 2 - 20)
-    const y = hour.pnl > 0 ? centerY - barHeight : centerY
+  // Set up hover event listener only once
+  if (!chartDrawn) {
+    let throttleTimer: number | null = null
     
-    ctx.fillStyle = hour.pnl > 0 ? '#00BF63' : '#FF4757'
-    ctx.fillRect(x, y, barWidth * 0.8, Math.abs(barHeight))
-    
-    // Add subtle border to bars
-    ctx.strokeStyle = hour.pnl > 0 ? '#10b981' : '#ef4444'
-    ctx.lineWidth = 1
-    ctx.strokeRect(x, y, barWidth * 0.8, Math.abs(barHeight))
-  })
+    canvas.addEventListener('mousemove', (e) => {
+      if (throttleTimer) return
+      
+      throttleTimer = setTimeout(() => {
+        const rect = canvas.getBoundingClientRect()
+        const mouseX = e.clientX - rect.left
+        const barIndex = Math.floor((mouseX - padding) / barWidth)
+
+        if (barIndex >= 0 && barIndex < hourlyPnL.value.length) {
+          if (hoveredBarIndex.value !== barIndex) {
+            hoveredBarIndex.value = barIndex
+            drawHourlyChart()
+          }
+        } else {
+          if (hoveredBarIndex.value !== -1) {
+            hoveredBarIndex.value = -1
+            drawHourlyChart()
+          }
+        }
+        
+        throttleTimer = null
+      }, 16) // ~60fps throttling
+    })
+
+    canvas.addEventListener('mouseleave', () => {
+      if (hoveredBarIndex.value !== -1) {
+        hoveredBarIndex.value = -1
+        drawHourlyChart()
+      }
+    })
+
+    chartDrawn = true
+  }
 }
+
 
 // Lifecycle
 onMounted(() => {
@@ -533,3 +626,16 @@ watch(selectedView, () => {
   }
 })
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+

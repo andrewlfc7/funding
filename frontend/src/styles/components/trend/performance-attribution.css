@@ -757,7 +757,9 @@
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  min-height: 500px; /* Ensure adequate height */
 }
+
 
 .risk-attribution-panel::before,
 .time-analysis-panel::before {
@@ -788,6 +790,7 @@
   gap: var(--space-sm);
   padding-bottom: var(--space-md);
   border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
 .risk-attribution-panel h3::before,
@@ -800,14 +803,13 @@
 }
 
 
-
-
 .hourly-pattern {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
   margin-bottom: var(--space-lg);
+  min-height: 280px; /* Ensure minimum height */
 }
 
 .hourly-pattern h4 {
@@ -817,31 +819,56 @@
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  flex-shrink: 0; /* Prevent title from shrinking */
 }
 
 .hourly-chart-container {
   background: var(--bg-primary);
   border-radius: var(--radius-lg);
-  padding: var(--space-md);
+  padding: var(--space-lg);
   border: 1px solid var(--border-primary);
-  height: 140px;
+  flex: 1; /* Take all available space */
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
 }
 
-.hourly-chart {
+/* Canvas takes full container space */
+.hourly-chart-canvas {
+  flex: 1;
   width: 100%;
-  height: 100px;
+  height: 100%;
   display: block;
   cursor: crosshair;
+  min-height: 160px;
 }
 
+/* Improved axis positioning */
 .hourly-axis {
   position: absolute;
-  bottom: var(--space-sm);
-  left: var(--space-md);
-  right: var(--space-md);
+  bottom: var(--space-md);
+  left: var(--space-lg);
+  right: var(--space-lg);
+  height: 20px;
+  display: flex;
+  align-items: center;
 }
+
+.axis-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.axis-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+
 
 
 .hourly-chart::before {
@@ -1045,7 +1072,14 @@
   font-weight: 600;
   font-family: var(--font-mono);
   color: var(--text-primary);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  min-width: 60px;
+  text-align: center;
 }
+
 
 
 
@@ -1134,13 +1168,15 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  margin-top: var(--space-lg);
+  flex-shrink: 0;
 }
 
 .session-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-sm);
+  padding: var(--space-md);
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
@@ -1150,6 +1186,7 @@
 .session-item:hover {
   border-color: var(--border-secondary);
   background: var(--bg-hover);
+  transform: translateX(2px);
 }
 
 .session-label {
@@ -1162,15 +1199,25 @@
   font-size: 0.875rem;
   font-weight: 700;
   font-family: var(--font-mono);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
 }
 
 .session-pnl.positive {
   color: var(--color-positive);
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .session-pnl.negative {
   color: var(--color-negative);
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
 }
+
+
 
 /* Advanced Attribution Panel */
 .advanced-attribution {
@@ -1429,56 +1476,68 @@
 }
 
 /* Responsive Design Enhancements */
+
 @media (max-width: 1200px) {
-  .advanced-attribution {
-    grid-template-columns: 1fr;
+  .hourly-pattern {
+    min-height: 240px;
   }
   
-  .sharpe-table {
-    font-size: 0.8rem;
+  .hourly-chart-container {
+    min-height: 180px;
   }
   
-  .sharpe-header,
-  .sharpe-row {
-    grid-template-columns: 1fr repeat(3, 60px);
-    padding: var(--space-sm);
+  .time-analysis-panel {
+    min-height: 450px;
   }
 }
 
 @media (max-width: 768px) {
-  .sharpe-header,
-  .sharpe-row {
-    grid-template-columns: 1fr repeat(3, 50px);
-    font-size: 0.75rem;
+  .hourly-pattern {
+    min-height: 200px;
   }
   
-  .dd-breakdown {
-    gap: var(--space-xs);
+  .hourly-chart-container {
+    padding: var(--space-md);
+    min-height: 140px;
   }
   
-  .dd-item {
-    padding: var(--space-xs);
+  .hourly-chart-canvas {
+    min-height: 120px;
+  }
+  
+  .time-analysis-panel {
+    min-height: 400px;
+    padding: var(--space-lg);
   }
   
   .session-item {
     flex-direction: column;
     gap: var(--space-xs);
     align-items: flex-start;
+    padding: var(--space-sm);
   }
   
-  .hourly-chart {
-    height: 60px;
-  }
-  
-  .hour-labels {
-    display: none; /* Hide on mobile for space */
-  }
-  
-  .risk-item {
-    padding: var(--space-md);
-  }
-  
-  .risk-percentage {
-    font-size: 1rem;
+  .axis-labels {
+    display: none; /* Hide labels on very small screens */
   }
 }
+
+@media (max-width: 480px) {
+  .hourly-chart-container {
+    padding: var(--space-sm);
+  }
+  
+  .metric-row {
+    flex-direction: column;
+    gap: var(--space-xs);
+    align-items: flex-start;
+    padding: var(--space-sm) 0;
+  }
+  
+  .metric-value {
+    min-width: auto;
+    align-self: flex-end;
+  }
+}
+
+

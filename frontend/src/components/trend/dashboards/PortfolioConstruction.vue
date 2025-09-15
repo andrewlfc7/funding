@@ -87,47 +87,64 @@
         </div>
       </div>
 
-      <div class="metrics-panel">
-        <div class="portfolio-metrics">
-          <h3>Portfolio Metrics</h3>
-          <div class="metrics-grid">
-            <div class="metric-card">
-              <div class="metric-label">Total Long</div>
-              <div class="metric-value long">{{ totalLong.toFixed(1) }}%</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-label">Total Short</div>
-              <div class="metric-value short">{{ totalShort.toFixed(1) }}%</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-label">Net Exposure</div>
-              <div class="metric-value net">{{ netExposure.toFixed(1) }}%</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-label">Gross Exposure</div>
-              <div class="metric-value gross">{{ grossExposure.toFixed(1) }}%</div>
+      <div class="covariance-section">
+        <h3>Covariance Matrix</h3>
+        <div class="covariance-matrix">
+          <div class="matrix-header" :style="{'--matrix-size': correlationAssets.length}">
+            <div class="matrix-label"></div>
+            <div v-for="asset in correlationAssets" :key="asset" class="matrix-header-cell">{{ asset }}</div>
+          </div>
+          <div v-for="(row, i) in covarianceMatrix" :key="i" class="matrix-row" :style="{'--matrix-size': correlationAssets.length}">
+            <div class="matrix-row-label">{{ correlationAssets[i] }}</div>
+            <div v-for="(cov, j) in row" :key="j" class="matrix-cell" :style="{ backgroundColor: getCovarianceColor(cov) }" :title="`${correlationAssets[i]} vs ${correlationAssets[j]}: ${(cov/1000).toFixed(3)}`">
+              {{ cov.toFixed(1) }}
             </div>
           </div>
         </div>
-        <div class="expected-performance">
-          <h3>Expected Performance</h3>
-          <div class="performance-grid">
-            <div class="performance-card">
-              <div class="perf-label">Daily Expected Return</div>
-              <div class="perf-value positive">{{ expectedReturn.toFixed(1) }}%</div>
-            </div>
-            <div class="performance-card">
-              <div class="perf-label">Daily Expected Vol</div>
-              <div class="perf-value neutral">{{ expectedVol.toFixed(1) }}%</div>
-            </div>
-            <div class="performance-card">
-              <div class="perf-label">Expected Sharpe</div>
-              <div class="perf-value" :class="sharpeClass">{{ expectedSharpe.toFixed(1) }}</div>
-            </div>
-            <div class="performance-card">
-              <div class="perf-label">Max Drawdown Risk</div>
-              <div class="perf-value negative">{{ maxDrawdownRisk.toFixed(1) }}%</div>
-            </div>
+      </div>
+
+      <!-- Separate Portfolio Metrics Panel -->
+      <div class="portfolio-metrics-panel">
+        <h3>Portfolio Metrics</h3>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">Total Long</div>
+            <div class="metric-value long">{{ totalLong.toFixed(1) }}%</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Total Short</div>
+            <div class="metric-value short">{{ totalShort.toFixed(1) }}%</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Net Exposure</div>
+            <div class="metric-value net">{{ netExposure.toFixed(1) }}%</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Gross Exposure</div>
+            <div class="metric-value gross">{{ grossExposure.toFixed(1) }}%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Separate Expected Performance Panel -->
+      <div class="expected-performance-panel">
+        <h3>Expected Performance</h3>
+        <div class="performance-grid">
+          <div class="performance-card">
+            <div class="perf-label">Daily Expected Return</div>
+            <div class="perf-value positive">{{ expectedReturn.toFixed(1) }}%</div>
+          </div>
+          <div class="performance-card">
+            <div class="perf-label">Daily Expected Vol</div>
+            <div class="perf-value neutral">{{ expectedVol.toFixed(1) }}%</div>
+          </div>
+          <div class="performance-card">
+            <div class="perf-label">Expected Sharpe</div>
+            <div class="perf-value" :class="sharpeClass">{{ expectedSharpe.toFixed(1) }}</div>
+          </div>
+          <div class="performance-card">
+            <div class="perf-label">Max Drawdown Risk</div>
+            <div class="perf-value negative">{{ maxDrawdownRisk.toFixed(1) }}%</div>
           </div>
         </div>
       </div>
@@ -205,6 +222,14 @@ const correlationMatrix = [
   [0.6, 0.7, 0.8, 1.0]
 ]
 
+// Covariance matrix (scaled by 1000 for display)
+const covarianceMatrix = [
+  [12.5, 8.2, 6.8, 5.1],
+  [8.2, 15.6, 11.3, 7.9],
+  [6.8, 11.3, 18.2, 9.4],
+  [5.1, 7.9, 9.4, 13.7]
+]
+
 // Portfolio metrics
 const totalLong = computed(() => longPositions.value.reduce((sum, pos) => sum + pos.weight, 0))
 const totalShort = computed(() => Math.abs(shortPositions.value.reduce((sum, pos) => sum + pos.weight, 0)))
@@ -241,5 +266,14 @@ const getCorrelationColor = (corr: number) => {
   const saturation = 70;
   const lightness = 50;
   return `hsla(${hue}, ${saturation}%, ${lightness}%, ${intensity * 0.8 + 0.2})`;
+}
+
+const getCovarianceColor = (cov: number) => {
+  const maxCov = 20; // Approximate max covariance for scaling
+  const intensity = Math.min(Math.abs(cov) / maxCov, 1);
+  const hue = 220; // Blue color for covariance
+  const saturation = 60;
+  const lightness = 45;
+  return `hsla(${hue}, ${saturation}%, ${lightness}%, ${intensity * 0.7 + 0.3})`;
 }
 </script>

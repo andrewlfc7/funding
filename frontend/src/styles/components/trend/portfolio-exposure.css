@@ -1,6 +1,3 @@
-/* ============================================
-   PORTFOLIO EXPOSURE DASHBOARD - FIXED LAYOUT
-   ============================================ */
 
 .trend-direction-dashboard {
   padding: var(--space-lg) var(--space-xl);
@@ -9,12 +6,16 @@
   gap: var(--space-xl);
   background: #0a0a0a;
   color: var(--text-primary);
+  width: 100vw;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .dashboard-header {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+  width: 100%;
 }
 
 .dashboard-header h2 {
@@ -24,12 +25,14 @@
   color: var(--text-bright);
 }
 
+/* FIXED GRID - Now properly uses full width */
 .direction-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
   gap: var(--space-xl);
   min-height: 0;
+  width: 100%;
 }
 
 .grid-item {
@@ -40,8 +43,9 @@
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  min-height: 280px;
+  min-height: 350px;
   overflow: hidden;
+  width: 100%;
 }
 
 .grid-item h3 {
@@ -58,6 +62,7 @@
   gap: var(--space-lg);
   flex: 1;
   min-height: 0;
+  width: 100%;
 }
 
 /* ============================================
@@ -69,6 +74,7 @@
   align-items: center;
   gap: 2rem;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .trend-indicator {
@@ -146,6 +152,7 @@
   gap: var(--space-sm);
   padding: var(--space-md);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .trend-gauge {
@@ -231,6 +238,7 @@
   gap: var(--space-md);
   margin-top: auto;
   flex-shrink: 0;
+  width: 100%;
 }
 
 .metric-item {
@@ -257,7 +265,7 @@
 }
 
 /* ============================================
-   FIXED LONG/SHORT BREAKDOWN
+   FIXED LONG/SHORT BREAKDOWN - FULL WIDTH
    ============================================ */
 
 .long-short-panel .panel-content {
@@ -266,6 +274,7 @@
   gap: var(--space-lg);
   height: 100%;
   min-height: 0;
+  width: 100%;
 }
 
 .net-position-chart {
@@ -277,6 +286,7 @@
   flex-direction: column;
   gap: var(--space-md);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .chart-header {
@@ -286,6 +296,7 @@
   padding-bottom: var(--space-md);
   border-bottom: 2px solid var(--border-primary);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .chart-title {
@@ -322,7 +333,7 @@
   color: #FF4757;
 }
 
-/* FIXED NET CHART CONTAINER */
+/* FIXED NET CHART CONTAINER - FULL WIDTH */
 .net-chart-container {
   position: relative;
   height: 60px;
@@ -335,6 +346,7 @@
   overflow: hidden;
   margin-bottom: var(--space-md);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .net-timeline {
@@ -351,7 +363,7 @@
 .net-bar {
   flex: 1;
   min-width: 2px;
-  max-width: 3px;
+  max-width: 100%;
   border-radius: 1px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -434,6 +446,7 @@
   gap: var(--space-lg);
   flex: 1;
   min-height: 0;
+  width: 100%;
 }
 
 .ratio-section {
@@ -442,6 +455,7 @@
   padding: var(--space-lg);
   border: 1px solid var(--border-primary);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .ratio-header {
@@ -476,6 +490,7 @@
   display: flex;
   justify-content: space-between;
   gap: var(--space-lg);
+  width: 100%;
 }
 
 .breakdown-item {
@@ -508,7 +523,7 @@
 }
 
 /* ============================================
-   PERFORMANCE INDICATORS
+   PERFORMANCE INDICATORS - FULL WIDTH
    ============================================ */
 
 .ls-performance {
@@ -516,6 +531,7 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-md);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .perf-item {
@@ -582,7 +598,7 @@
 }
 
 /* ============================================
-   DIRECTIONAL EXPOSURE
+   DIRECTIONAL EXPOSURE - FULL WIDTH
    ============================================ */
 
 .exposure-chart {
@@ -596,6 +612,7 @@
   align-items: center;
   justify-content: center;
   flex: 1;
+  width: 100%;
 }
 
 .exposure-timeline {
@@ -610,7 +627,7 @@
 .exposure-bar {
   flex: 1;
   min-width: 2px;
-  max-width: 4px;
+  max-width: 100%;
   border-radius: 1px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -635,7 +652,7 @@
 }
 
 /* ============================================
-   TREND PERSISTENCE
+   TREND PERSISTENCE - FULL WIDTH
    ============================================ */
 
 .duration-analysis {
@@ -643,6 +660,7 @@
   flex-direction: column;
   gap: var(--space-lg);
   flex: 1;
+  width: 100%;
 }
 
 .duration-chart {
@@ -653,6 +671,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .chart-title {
@@ -719,6 +738,7 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-primary);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .reversal-gauge {
@@ -799,7 +819,7 @@
 }
 
 /* ============================================
-   REGIME ANALYSIS
+   REGIME ANALYSIS - FULL WIDTH
    ============================================ */
 
 .regime-classification {
@@ -808,6 +828,7 @@
   flex-direction: column;
   margin-bottom: var(--space-lg);
   min-height: 0;
+  width: 100%;
 }
 
 .regime-probabilities {
@@ -872,6 +893,7 @@
 .regime-perf-grid {
   display: flex;
   gap: var(--space-sm);
+  width: 100%;
 }
 
 .regime-perf-item {
@@ -911,7 +933,7 @@
 }
 
 /* ============================================
-   POSITION LISTS
+   POSITION LISTS - FULL WIDTH
    ============================================ */
 
 .top-positions {
@@ -919,6 +941,7 @@
   gap: var(--space-lg);
   flex: 1;
   min-height: 0;
+  width: 100%;
 }
 
 .positions-column {
@@ -1002,7 +1025,7 @@
 }
 
 /* ============================================
-   CONCENTRATION METRICS
+   CONCENTRATION METRICS - FULL WIDTH
    ============================================ */
 
 .concentration-metrics {
@@ -1014,6 +1037,7 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-primary);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .concentration-item {
@@ -1058,8 +1082,14 @@
 }
 
 /* ============================================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN - UPDATED FOR FULL WIDTH
    ============================================ */
+
+@media (max-width: 1400px) {
+  .trend-direction-dashboard {
+    padding: var(--space-lg);
+  }
+}
 
 @media (max-width: 1200px) {
   .direction-grid {
@@ -1072,16 +1102,21 @@
     gap: var(--space-md);
     align-items: flex-start;
   }
+  
+  .grid-item {
+    min-height: 300px;
+  }
 }
 
 @media (max-width: 768px) {
   .trend-direction-dashboard {
-    padding: var(--space-lg);
+    padding: var(--space-md);
+    width: 100vw;
   }
   
   .grid-item {
     padding: var(--space-lg);
-    min-height: 240px;
+    min-height: 280px;
   }
   
   .trend-gauge {
@@ -1115,9 +1150,23 @@
   .ls-performance {
     grid-template-columns: 1fr;
   }
+  
+  .ratio-breakdown {
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: stretch;
+  }
+  
+  .breakdown-item {
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 480px) {
+  .trend-direction-dashboard {
+    padding: var(--space-sm);
+  }
+  
   .trend-gauge {
     width: 60px;
     height: 30px;
@@ -1137,12 +1186,63 @@
     font-size: 0.45rem;
   }
   
-  .ratio-breakdown {
+  .grid-item {
+    padding: var(--space-md);
+    min-height: 250px;
+  }
+  
+  .chart-header {
     flex-direction: column;
+    gap: var(--space-sm);
+    align-items: flex-start;
+  }
+  
+  .regime-perf-grid {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  
+  .duration-bars {
     gap: var(--space-sm);
   }
   
-  .breakdown-item {
-    align-items: flex-start;
+  .duration-bar {
+    max-width: 25px;
   }
+}
+
+/* ============================================
+   CONTAINER UTILITIES FOR FULL WIDTH
+   ============================================ */
+
+.full-width {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.flex-fill {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+}
+
+/* Ensure no element creates horizontal overflow */
+* {
+  max-width: 100%;
+}
+
+/* Fix for any potential overflow issues */
+.trend-direction-dashboard * {
+  box-sizing: border-box;
+}
+
+/* Additional utility to force full width on key containers */
+.direction-grid,
+.grid-item,
+.panel-content,
+.net-chart-container,
+.net-timeline,
+.exposure-timeline,
+.top-positions,
+.concentration-metrics {
+  width: 100% !important;
 }

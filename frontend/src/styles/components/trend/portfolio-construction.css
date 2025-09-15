@@ -1,60 +1,65 @@
-
+/* ============================================
+   PORTFOLIO CONSTRUCTION DASHBOARD - UPDATED
+   src/styles/components/trend/portfolio-construction.css
+   ============================================ */
 
 .portfolio-construction-dashboard {
-  padding: var(--space-lg) var(--space-xl);
+  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
+  /* REMOVED: width: 100%; - Let parent control width */
+  box-sizing: border-box;
 }
-
 
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-xl);
-  padding-bottom: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
   border-bottom: 2px solid var(--border-primary);
 }
 
 .dashboard-header h2 {
-  font-size: 1.875rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--text-bright);
-  margin: 0;
   background: linear-gradient(135deg, var(--color-accent), #60a5fa);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  margin: 0;
 }
 
+/* Main Grid Layout */
 .construction-layout {
+  display: grid;
   width: 100%;
-  max-width: none;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto 1fr;
-  gap: var(--space-xl);
+  min-height: calc(100vh - 200px);
+  grid-template-columns: 1fr 1fr 1fr;
+  /* UPDATED: New grid areas with separate correlation/covariance and equal metrics/performance */
   grid-template-areas:
-    "constraints constraints"
-    "positions   correlations"
-    "metrics     attribution";
+    "constraints constraints constraints"
+    "positions   correlations covariance"
+    "metrics     metrics      performance"
+    "attribution attribution  attribution";
+  gap: var(--space-lg);
 }
-
-
 
 /* --- Portfolio Constraints Panel --- */
 .constraints-panel {
   grid-area: constraints;
   background: var(--bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
   border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .constraints-panel h3 {
-  margin: 0 0 var(--space-lg) 0;
-  font-size: 1.125rem;
+  margin: 0 0 var(--space-md) 0;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-bright);
   display: flex;
@@ -64,16 +69,16 @@
 
 .constraints-panel h3::before {
   content: '';
-  width: 4px;
-  height: 20px;
+  width: 3px;
+  height: 16px;
   background: linear-gradient(135deg, var(--color-accent), #60a5fa);
   border-radius: 2px;
 }
 
 .constraints-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
 }
 
 .constraint-item {
@@ -81,8 +86,8 @@
   align-items: center;
   gap: var(--space-sm);
   background: var(--bg-primary);
-  padding: var(--space-lg);
-  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
   transition: all var(--transition-normal);
 }
@@ -93,22 +98,22 @@
 }
 
 .constraint-item label {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 500;
-  min-width: 80px;
+  min-width: 75px;
 }
 
 .constraint-input {
   flex: 1;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-md);
-  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 0.875rem;
-  max-width: 80px;
+  font-size: 0.8rem;
+  max-width: 70px;
   text-align: right;
   outline: none;
   transition: all var(--transition-normal);
@@ -116,32 +121,33 @@
 
 .constraint-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
 .constraint-unit {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  min-width: 15px;
+  min-width: 12px;
 }
 
 /* --- Positions Section --- */
 .positions-section {
   grid-area: positions;
   background: var(--bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
   border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-height: 400px;
+  height: 100%;
 }
 
 .positions-section h3 {
-  margin: 0 0 var(--space-lg) 0;
-  font-size: 1.125rem;
+  margin: 0 0 var(--space-md) 0;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-bright);
   display: flex;
@@ -151,17 +157,16 @@
 
 .positions-section h3::before {
   content: '';
-  width: 4px;
-  height: 20px;
+  width: 3px;
+  height: 16px;
   background: linear-gradient(135deg, var(--color-accent), #60a5fa);
   border-radius: 2px;
 }
 
 .positions-group {
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-lg);
   flex: 1;
   min-height: 0;
-  /* Added flex to allow child list to grow */
   display: flex;
   flex-direction: column;
 }
@@ -171,8 +176,8 @@
 }
 
 .positions-group h4 {
-  margin: 0 0 var(--space-md) 0;
-  font-size: 0.9rem;
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -184,14 +189,13 @@
   flex-direction: column;
   gap: var(--space-sm);
   overflow-y: auto;
-  padding-right: var(--space-sm);
-  /* --- (FIXED) Replaced max-height with flex grow properties --- */
+  padding-right: var(--space-xs);
   flex: 1;
   min-height: 0;
 }
 
 .positions-list::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
 
 .positions-list::-webkit-scrollbar-track {
@@ -206,8 +210,8 @@
 
 .position-item {
   background: var(--bg-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
   border: 1px solid var(--border-primary);
   transition: all var(--transition-normal);
   cursor: pointer;
@@ -216,7 +220,7 @@
 .position-item:hover {
   border-color: var(--border-secondary);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .position-header {
@@ -228,12 +232,12 @@
 
 .asset-name {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--text-primary);
 }
 
 .position-weight {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   font-family: var(--font-mono);
 }
@@ -249,13 +253,13 @@
 .position-details {
   display: flex;
   justify-content: space-between;
-  margin-bottom: var(--space-sm);
-  font-size: 0.75rem;
+  margin-bottom: var(--space-xs);
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 
 .position-bar {
-  height: 4px;
+  height: 3px;
   background: var(--bg-tertiary);
   border-radius: 2px;
   overflow: hidden;
@@ -263,7 +267,7 @@
 
 .position-fill {
   height: 100%;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 2px;
 }
 
@@ -271,19 +275,18 @@
 .correlation-section {
   grid-area: correlations;
   background: var(--bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
   border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
-  min-height: 400px; 
-  height: 100%;
+  align-self: start;
 }
 
 .correlation-section h3 {
-  margin: 0 0 var(--space-lg) 0;
-  font-size: 1.125rem;
+  margin: 0 0 var(--space-md) 0;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-bright);
   display: flex;
@@ -293,102 +296,27 @@
 
 .correlation-section h3::before {
   content: '';
-  width: 4px;
-  height: 20px;
+  width: 3px;
+  height: 16px;
   background: linear-gradient(135deg, var(--color-accent), #60a5fa);
   border-radius: 2px;
 }
 
-.correlation-matrix {
-  width: 100%;
-  max-width: 100%;
-  justify-content: center;
-  align-content: center;
-}
-
-.matrix-header {
-  display: grid;
-  grid-template-columns: 60px repeat(var(--matrix-size, 4), 1fr);
-  gap: 2px;
-  margin-bottom: 2px;
-}
-
-.matrix-label {
-  min-height: 30px;
-}
-
-.matrix-header-cell {
-  background: var(--bg-primary);
-  border-radius: var(--radius-sm);
-  padding: var(--space-xs);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-}
-
-.matrix-row {
-  display: grid;
-  grid-template-columns: 60px repeat(var(--matrix-size, 4), 1fr);
-  gap: 2px;
-}
-
-.matrix-row-label {
-  background: var(--bg-primary);
-  border-radius: var(--radius-sm);
-  padding: var(--space-xs);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-}
-
-.matrix-cell {
-  background: var(--bg-primary);
-  border-radius: var(--radius-sm);
-  padding: var(--space-xs);
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.matrix-cell:hover {
-  transform: scale(1.05);
-  z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-/* --- Portfolio Metrics Panel --- */
-.metrics-panel {
-  grid-area: metrics;
+/* --- Covariance Section --- */
+.covariance-section {
+  grid-area: covariance;
   background: var(--bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
   border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  align-self: start;
 }
 
-.portfolio-metrics h3,
-.expected-performance h3 {
-  margin: 0 0 var(--space-lg) 0;
+.covariance-section h3 {
+  margin: 0 0 var(--space-md) 0;
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-bright);
@@ -397,8 +325,7 @@
   gap: var(--space-sm);
 }
 
-.portfolio-metrics h3::before,
-.expected-performance h3::before {
+.covariance-section h3::before {
   content: '';
   width: 3px;
   height: 16px;
@@ -406,21 +333,177 @@
   border-radius: 2px;
 }
 
-.metrics-grid,
+/* Matrix sections container */
+.matrix-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.matrix-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.matrix-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.correlation-matrix,
+.covariance-matrix {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+}
+
+.matrix-header {
+  display: grid;
+  grid-template-columns: 50px repeat(var(--matrix-size, 4), 1fr);
+  gap: 1px;
+  margin-bottom: 1px;
+}
+
+.matrix-label {
+  min-height: 24px;
+}
+
+.matrix-header-cell {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xs);
+  padding: var(--space-xs);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+}
+
+.matrix-row {
+  display: grid;
+  grid-template-columns: 50px repeat(var(--matrix-size, 4), 1fr);
+  gap: 1px;
+  margin-bottom: 1px;
+}
+
+.matrix-row-label {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xs);
+  padding: var(--space-xs);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+}
+
+.matrix-cell {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xs);
+  padding: var(--space-xs);
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.matrix-cell:hover {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Separate Metrics and Performance Panels --- */
+.portfolio-metrics-panel {
+  grid-area: metrics;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.expected-performance-panel {
+  grid-area: performance;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.portfolio-metrics-panel h3,
+.expected-performance-panel h3 {
+  margin: 0 0 var(--space-md) 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.portfolio-metrics-panel h3::before,
+.expected-performance-panel h3::before {
+  content: '';
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(135deg, var(--color-accent), #60a5fa);
+  border-radius: 2px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: var(--space-md);
+  flex: 1;
+  align-content: start;
+}
+
 .performance-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
   gap: var(--space-md);
+  flex: 1;
+  align-content: start;
 }
 
 .metric-card,
 .performance-card {
   background: var(--bg-primary);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   padding: var(--space-lg);
   border: 1px solid var(--border-primary);
   text-align: center;
   transition: all var(--transition-normal);
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .metric-card:hover,
@@ -431,19 +514,21 @@
 
 .metric-label,
 .perf-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   margin-bottom: var(--space-xs);
+  line-height: 1;
 }
 
 .metric-value,
 .perf-value {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   font-family: var(--font-mono);
-  margin-bottom: 0;
+  margin: 0;
+  line-height: 1;
 }
 
 .metric-value.long,
@@ -469,19 +554,28 @@
 .attribution-panel {
   grid-area: attribution;
   background: var(--bg-secondary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
   border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
+  min-height: 300px;
+  height: auto;
+}
+
+.signal-attribution,
+.position-attribution {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .signal-attribution h3,
 .position-attribution h3 {
-  margin: 0 0 var(--space-lg) 0;
-  font-size: 1.125rem;
+  margin: 0 0 var(--space-md) 0;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-bright);
   display: flex;
@@ -492,8 +586,8 @@
 .signal-attribution h3::before,
 .position-attribution h3::before {
   content: '';
-  width: 4px;
-  height: 20px;
+  width: 3px;
+  height: 16px;
   background: linear-gradient(135deg, var(--color-accent), #60a5fa);
   border-radius: 2px;
 }
@@ -501,18 +595,21 @@
 .attribution-bars {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-sm);
+  flex: 1;
+  overflow-y: auto;
 }
 
 .attribution-bar {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-md);
+  gap: var(--space-sm);
+  padding: var(--space-sm);
   background: var(--bg-primary);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
   transition: all var(--transition-normal);
+  min-height: 36px;
 }
 
 .attribution-bar:hover {
@@ -521,60 +618,62 @@
 }
 
 .attr-label {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-secondary);
-  min-width: 60px;
+  min-width: 50px;
 }
 
 .attr-bar-container {
   flex: 1;
-  height: 6px;
+  height: 4px;
   background: var(--bg-tertiary);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
   position: relative;
 }
 
 .attr-bar-fill {
   height: 100%;
-  border-radius: 3px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .attr-value {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   font-family: var(--font-mono);
   color: var(--text-primary);
-  min-width: 50px;
+  min-width: 40px;
   text-align: right;
 }
 
 .position-perf-summary {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  margin-bottom: var(--space-lg);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  flex: 1;
 }
 
 .perf-summary-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-md);
+  padding: var(--space-sm);
   background: var(--bg-primary);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
+  min-height: 36px;
 }
 
 .summary-label {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
 .summary-value {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   font-family: var(--font-mono);
 }
@@ -587,41 +686,63 @@
   color: var(--color-negative);
 }
 
-
-
-/* Improve responsive behavior for wider screens */
-@media (min-width: 1400px) {
+/* Responsive Improvements */
+@media (min-width: 400px) {
   .portfolio-construction-dashboard {
-    padding: var(--space-xl) var(--space-2xl);
+    padding: var(--space-xl);
   }
   
   .construction-layout {
-    gap: var(--space-2xl);
+    gap: var(--space-xl);
   }
-  
-  /* Keep 2-column layout on larger screens */
+}
+
+@media (max-width: 1400px) {
   .construction-layout {
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "constraints constraints"
-      "positions   correlations"
-      "metrics     attribution";
+      "positions   positions"
+      "correlations covariance"
+      "metrics     performance"
+      "attribution attribution";
   }
 }
 
-@media (min-width: 1600px) {
-  .matrix-header-cell,
-  .matrix-cell,
-  .matrix-row-label {
-    min-height: 50px;
+@media (max-width: 1200px) {
+  .construction-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "constraints"
+      "positions"
+      "correlations"
+      "covariance"
+      "metrics"
+      "performance"
+      "attribution";
   }
   
-  .matrix-header-cell,
-  .matrix-cell {
-    min-width: 70px;
+  .attribution-panel {
+    grid-template-columns: 1fr;
   }
   
-  .matrix-row-label {
-    min-width: 90px;
+  .correlation-section,
+  .covariance-section {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .construction-layout {
+    gap: var(--space-md);
+  }
+  
+  .metrics-grid,
+  .performance-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .constraints-grid {
+    grid-template-columns: 1fr;
   }
 }

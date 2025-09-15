@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: var(--space-lg);
   width: 100%;
+  max-width: 100%;
   min-height: 100vh;
   background: var(--bg-primary);
   color: var(--text-primary);
@@ -60,11 +61,11 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-/* Main grid layout with more compact sizing */
+/* Main grid layout with proper space utilization */
 .performance-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 400px 400px auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(400px, auto) minmax(400px, auto) auto;
   gap: var(--space-lg);
   grid-template-areas:
     "signal-return trend-decomp"
@@ -72,9 +73,10 @@
     "exposure-heatmap exposure-heatmap";
   flex: 1;
   width: 100%;
+  max-width: 100%;
 }
 
-/* Grid Items with better sizing */
+/* Grid Items with better space utilization */
 .grid-item {
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
@@ -85,6 +87,7 @@
   flex-direction: column;
   min-height: 0;
   width: 100%;
+  max-width: 100%;
   transition: var(--transition-normal);
   overflow: hidden;
 }
@@ -566,7 +569,7 @@
   max-height: 100%;
 }
 
-/* More compact exposure heatmap */
+/* More compact exposure heatmap with better space utilization */
 .exposure-heatmap-container {
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
@@ -574,6 +577,7 @@
   color: var(--text-primary);
   height: 100%;
   width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -652,14 +656,15 @@
 
 .heatmap-grid.exposure-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--space-md);
   flex: 1;
   width: 100%;
+  max-width: 100%;
   min-height: 0;
 }
 
-/* Smaller position cells */
+/* Position cells with better space utilization */
 .position-cell {
   background: var(--bg-primary);
   border-radius: var(--radius-md);
@@ -673,6 +678,7 @@
   justify-content: space-between;
   min-height: 120px;
   width: 100%;
+  max-width: 100%;
   box-shadow: var(--shadow-md);
 }
 
@@ -896,7 +902,7 @@
   border-radius: 2px;
 }
 
-/* Responsive design - more compact */
+/* Responsive design with better width utilization */
 @media (max-width: 1400px) {
   .performance-metrics {
     grid-template-columns: repeat(2, 1fr);
@@ -908,7 +914,11 @@
   }
   
   .performance-grid {
-    grid-template-rows: 320px 320px auto;
+    grid-template-rows: minmax(320px, auto) minmax(320px, auto) auto;
+  }
+  
+  .heatmap-grid.exposure-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 }
 
@@ -918,8 +928,8 @@
   }
   
   .performance-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: 300px 280px 280px 280px auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(300px, auto) minmax(280px, auto) minmax(280px, auto) minmax(280px, auto) auto;
     grid-template-areas:
       "signal-return"
       "trend-decomp"
@@ -930,7 +940,7 @@
   }
   
   .heatmap-grid.exposure-grid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
   
   .summary-row {
@@ -958,10 +968,9 @@
   }
   
   .heatmap-grid.exposure-grid {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 }
-
 @media (max-width: 768px) {
   .performance-metrics {
     grid-template-columns: 1fr;
@@ -1005,5 +1014,9 @@
   
   .risk-metrics {
     grid-template-columns: 1fr;
+  }
+  
+  .heatmap-grid.exposure-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
 }
