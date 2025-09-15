@@ -1,14 +1,12 @@
-/* ============================================
-   PORTFOLIO CONSTRUCTION & RISK MANAGEMENT
-   src/styles/components/trend/portfolio-construction.css
-   ============================================ */
+
 
 .portfolio-construction-dashboard {
+  padding: var(--space-lg) var(--space-xl);
   display: flex;
   flex-direction: column;
   gap: var(--space-xl);
-  overflow-y: auto;
 }
+
 
 .dashboard-header {
   display: flex;
@@ -30,21 +28,19 @@
   background-clip: text;
 }
 
-/* --- Main Layout Grid (FIXED) --- */
 .construction-layout {
-  display: grid;
+  width: 100%;
+  max-width: none;
   grid-template-columns: 1fr 1fr;
-  /* Changed to a 3-row layout where the last row is flexible */
   grid-template-rows: auto auto 1fr;
   gap: var(--space-xl);
-  /* Corrected grid-template-areas to be a valid, contiguous 3x2 grid */
   grid-template-areas:
     "constraints constraints"
     "positions   correlations"
     "metrics     attribution";
-  flex: 1;
-  min-height: 0;
 }
+
+
 
 /* --- Portfolio Constraints Panel --- */
 .constraints-panel {
@@ -279,9 +275,10 @@
   padding: var(--space-xl);
   border: 1px solid var(--border-primary);
   box-shadow: var(--shadow-lg);
-  /* --- (FIXED) Added flex to allow matrix to fill space --- */
   display: flex;
   flex-direction: column;
+  min-height: 400px; 
+  height: 100%;
 }
 
 .correlation-section h3 {
@@ -303,11 +300,10 @@
 }
 
 .correlation-matrix {
-  display: grid;
-  gap: 2px;
   width: 100%;
-  /* Added flex: 1 to make it grow */
-  flex: 1;
+  max-width: 100%;
+  justify-content: center;
+  align-content: center;
 }
 
 .matrix-header {
@@ -591,38 +587,41 @@
   color: var(--color-negative);
 }
 
-/* --- Responsive Design --- */
-@media (max-width: 1400px) {
-  .construction-layout {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "constraints"
-      "positions"
-      "correlations"
-      "metrics"
-      "attribution";
-  }
 
-  .attribution-panel {
-    grid-template-columns: 1fr;
+
+/* Improve responsive behavior for wider screens */
+@media (min-width: 1400px) {
+  .portfolio-construction-dashboard {
+    padding: var(--space-xl) var(--space-2xl);
+  }
+  
+  .construction-layout {
+    gap: var(--space-2xl);
+  }
+  
+  /* Keep 2-column layout on larger screens */
+  .construction-layout {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "constraints constraints"
+      "positions   correlations"
+      "metrics     attribution";
   }
 }
 
-@media (max-width: 768px) {
-  .portfolio-construction-dashboard {
-    padding: var(--space-lg);
+@media (min-width: 1600px) {
+  .matrix-header-cell,
+  .matrix-cell,
+  .matrix-row-label {
+    min-height: 50px;
   }
-
-  .constraints-grid {
-    grid-template-columns: 1fr;
+  
+  .matrix-header-cell,
+  .matrix-cell {
+    min-width: 70px;
   }
-
-  .metrics-grid,
-  .performance-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-header h2 {
-    font-size: 1.5rem;
+  
+  .matrix-row-label {
+    min-width: 90px;
   }
 }

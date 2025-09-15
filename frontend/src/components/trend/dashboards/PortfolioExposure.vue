@@ -2,7 +2,7 @@
   <div class="trend-direction-dashboard">
     <!-- Header -->
     <div class="dashboard-header">
-      <h2>Portfolio Trend & Direction Analysis</h2>
+      <h2>Portfolio Exposure</h2>
       <div class="trend-summary">
         <div class="trend-indicator" :class="trendStateClass">
           <span class="trend-label">Current Trend:</span>
@@ -66,40 +66,81 @@
       <div class="grid-item long-short-panel">
         <h3>Long/Short Breakdown</h3>
         <div class="panel-content">
-          <!-- L/S ratio chart -->
-          <div class="ls-ratio-chart">
-            <div class="ratio-header">
-              <span class="ratio-label">L/S Ratio:</span>
-              <span class="ratio-value">{{ lsRatio.toFixed(2) }}</span>
-            </div>
-            <div class="ratio-timeline">
-              <div 
-                v-for="(point, i) in lsRatioHistory" 
-                :key="i"
-                class="ratio-point"
-                :style="{ 
-                  height: point * 50 + 'px',
-                  backgroundColor: point > 1 ? '#00BF63' : '#FF4757'
-                }"
-                :title="`Day ${i + 1}: ${point.toFixed(2)}`"
-              ></div>
-            </div>
-          </div>
-          
-          <!-- Long vs Short performance -->
-          <div class="ls-performance">
-            <div class="perf-item long-perf">
-              <div class="perf-label">Long Positions Trend</div>
-              <div class="perf-indicator">
-                <div class="perf-arrow" :class="longTrendDirection">{{ longTrendArrow }}</div>
-                <div class="perf-value positive">{{ longTrendStrength.toFixed(1) }}%</div>
+          <!-- Net L/S Position Chart with Zero Line -->
+          <div class="net-position-chart">
+            <div class="chart-header">
+              <div class="chart-title">Net Position Timeline</div>
+              <div class="current-net">
+                <span class="net-label">Current Net:</span>
+                <span class="net-value" :class="currentNetExposure >= 0 ? 'positive' : 'negative'">
+                  {{ currentNetExposure >= 0 ? '+' : '' }}{{ currentNetExposure.toFixed(1) }}%
+                </span>
               </div>
             </div>
-            <div class="perf-item short-perf">
-              <div class="perf-label">Short Positions Trend</div>
-              <div class="perf-indicator">
-                <div class="perf-arrow" :class="shortTrendDirection">{{ shortTrendArrow }}</div>
-                <div class="perf-value negative">{{ shortTrendStrength.toFixed(1) }}%</div>
+            
+            <div class="net-chart-container">
+              <!-- Zero line -->
+              <div class="zero-line"></div>
+              
+              <!-- Net position bars -->
+              <div class="net-timeline">
+                <div 
+                  v-for="(netPos, i) in netPositionHistory" 
+                  :key="i"
+                  class="net-bar"
+                  :class="{ 
+                    'net-long': netPos > 0, 
+                    'net-short': netPos < 0,
+                    'net-neutral': netPos === 0
+                  }"
+                  :style="getNetBarStyle(netPos)"
+                  :title="`Day ${i + 1}: ${netPos > 0 ? '+' : ''}${netPos.toFixed(1)}% net`"
+                ></div>
+              </div>
+              
+              <!-- Chart labels -->
+              <div class="chart-labels">
+                <span class="label-short">Net Short</span>
+                <span class="label-neutral">Neutral</span>
+                <span class="label-long">Net Long</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- L/S ratio and performance -->
+          <div class="ls-details">
+            <div class="ratio-section">
+              <div class="ratio-header">
+                <span class="ratio-label">L/S Ratio:</span>
+                <span class="ratio-value">{{ lsRatio.toFixed(2) }}</span>
+              </div>
+              <div class="ratio-breakdown">
+                <div class="breakdown-item long">
+                  <span class="breakdown-label">Long Allocation:</span>
+                  <span class="breakdown-value">{{ longAllocation.toFixed(1) }}%</span>
+                </div>
+                <div class="breakdown-item short">
+                  <span class="breakdown-label">Short Allocation:</span>
+                  <span class="breakdown-value">{{ shortAllocation.toFixed(1) }}%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Long vs Short performance -->
+            <div class="ls-performance">
+              <div class="perf-item long-perf">
+                <div class="perf-label">Long Positions Trend</div>
+                <div class="perf-indicator">
+                  <div class="perf-arrow" :class="longTrendDirection">{{ longTrendArrow }}</div>
+                  <div class="perf-value positive">{{ longTrendStrength.toFixed(1) }}%</div>
+                </div>
+              </div>
+              <div class="perf-item short-perf">
+                <div class="perf-label">Short Positions Trend</div>
+                <div class="perf-indicator">
+                  <div class="perf-arrow" :class="shortTrendDirection">{{ shortTrendArrow }}</div>
+                  <div class="perf-value negative">{{ shortTrendStrength.toFixed(1) }}%</div>
+                </div>
               </div>
             </div>
           </div>
@@ -113,22 +154,23 @@
           <!-- Net exposure over time -->
           <div class="exposure-chart">
             <div class="exposure-timeline">
-              <div 
-                v-for="(exposure, i) in netExposureHistory" 
-                :key="i"
-                class="exposure-bar"
-                :style="{ 
-                  height: Math.abs(exposure) * 100 + 'px',
-                  backgroundColor: exposure > 0 ? '#00BF63' : '#FF4757',
-                  transform: exposure < 0 ? 'scaleY(-1)' : 'none'
-                }"
-              ></div>
+            <div 
+              v-for="(exposure, i) in netExposureHistory" 
+              :key="i"
+              class="exposure-bar"
+              :style="{ 
+                height: Math.abs(exposure) * 100 + 'px',
+                backgroundColor: exposure > 0 ? '#00BF63' : (exposure < 0 ? '#FF4757' : '#6B7280'),
+                transform: exposure < 0 ? 'translateY(50%)' : 'translateY(-50%)'
+              }"
+              :title="`Day ${i + 1}: ${(exposure * 100).toFixed(1)}%`"
+            ></div>
             </div>
             <div class="exposure-zero-line"></div>
           </div>
         </div>
       </div>
-
+      
       <div class="grid-item trend-persistence-panel">
         <h3>Trend Persistence</h3>
         <div class="panel-content">
@@ -311,9 +353,18 @@ const regimeClass = computed(() => marketRegime.value.toLowerCase().replace(' ',
 // Trend gauge angle (-90 to +90 degrees)
 const trendAngle = computed(() => (trendReading.value / 3) * 90)
 
-// Long/Short metrics
-const lsRatio = ref(2.94) // Long exposure / Short exposure
-const lsRatioHistory = ref(Array.from({ length: 20 }, () => Math.random() * 2 + 1))
+// Long/Short metrics with proper net calculation
+const longAllocation = ref(58.5) // Total long positions %
+const shortAllocation = ref(24.8) // Total short positions % (positive number)
+const lsRatio = computed(() => longAllocation.value / shortAllocation.value)
+const currentNetExposure = computed(() => longAllocation.value - shortAllocation.value)
+
+// Generate realistic net position history (net long/short over time)
+const netPositionHistory = ref(Array.from({ length: 20 }, (_, i) => {
+  // Create a trending pattern with some volatility
+  const trend = -10 + (i * 3.5) + (Math.random() - 0.5) * 8
+  return Math.max(-50, Math.min(50, trend)) // Clamp between -50% and +50%
+}))
 
 const longTrendStrength = ref(2.4)
 const shortTrendStrength = ref(-1.2)
@@ -322,7 +373,23 @@ const shortTrendDirection = computed(() => shortTrendStrength.value > 0 ? 'up' :
 const longTrendArrow = computed(() => longTrendDirection.value === 'up' ? '↗' : '↘')
 const shortTrendArrow = computed(() => shortTrendDirection.value === 'up' ? '↗' : '↘')
 
-// Directional exposure
+// Fixed bar style function to properly contain bars
+const getNetBarStyle = (netPos: number) => {
+  const maxHeight = 35
+  const height = Math.abs(netPos) * 0.8
+  const clampedHeight = Math.min(height, maxHeight)
+  
+  let backgroundColor = '#6B7280'
+  if (netPos > 0) backgroundColor = '#00BF63'
+  if (netPos < 0) backgroundColor = '#FF4757'
+  
+  return {
+    height: `${clampedHeight}px`,
+    backgroundColor,
+    transform: netPos >= 0 ? 'translateY(-50%)' : 'translateY(50%)',
+  }
+}
+
 const netExposureHistory = ref(Array.from({ length: 30 }, () => (Math.random() - 0.3) * 0.6))
 
 // Trend persistence

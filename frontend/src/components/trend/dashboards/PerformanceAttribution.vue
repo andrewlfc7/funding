@@ -16,37 +16,90 @@
       </div>
     </div>
 
-    <!-- Multi-Level Attribution Layout -->
+    <!-- Attribution Layout -->
     <div class="attribution-layout">
-      <!-- Top Panel: P&L Waterfall Chart -->
+      <!-- Enhanced P&L Attribution Panel -->
       <div class="waterfall-panel">
-        <h3>P&L Waterfall Chart</h3>
-        <div class="waterfall-container">
-          <div class="waterfall-chart">
-            <div 
-              v-for="(item, i) in waterfallData" 
-              :key="i"
-              class="waterfall-item"
-              :class="item.type"
+        <div class="panel-header">
+          <h3>P&L Attribution Analysis</h3>
+          <div class="chart-toggle">
+            <button 
+              class="toggle-btn" 
+              :class="{ active: selectedView === 'waterfall' }"
+              @click="selectedView = 'waterfall'"
             >
+              Waterfall
+            </button>
+            <button 
+              class="toggle-btn" 
+              :class="{ active: selectedView === 'pie' }"
+              @click="selectedView = 'pie'"
+            >
+              Breakdown
+            </button>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <!-- Waterfall Chart -->
+          <div v-if="selectedView === 'waterfall'" class="waterfall-chart-wrapper">
+            <div class="waterfall-chart">
               <div 
-                class="waterfall-bar"
-                :style="{ 
-                  height: Math.abs(item.value) * 2 + 'px',
-                  backgroundColor: getWaterfallColor(item.value, item.type)
-                }"
-              ></div>
-              <div class="waterfall-label">{{ item.label }}</div>
-              <div class="waterfall-value">
-                {{ item.value > 0 ? '+' : '' }}${{ formatCurrency(item.value) }}
+                v-for="(item, i) in waterfallData" 
+                :key="i"
+                class="waterfall-item"
+                :class="[item.type, { 'has-tooltip': hoveredIndex === i }]"
+                @mouseenter="hoveredIndex = i"
+                @mouseleave="hoveredIndex = -1"
+              >
+                <div 
+                  class="waterfall-bar"
+                  :style="{ 
+                    height: Math.max(Math.abs(item.value) * scaleFactor, 8) + 'px',
+                  }"
+                  :data-value="item.value"
+                ></div>
+                <div class="waterfall-label">{{ item.label }}</div>
+                <div class="waterfall-value">
+                  {{ item.value > 0 ? '+' : '' }}${{ formatCurrency(item.value) }}
+                </div>
+                
+                <!-- Tooltip -->
+                <div v-if="hoveredIndex === i" class="waterfall-tooltip">
+                  <div class="tooltip-title">{{ item.label }}</div>
+                  <div class="tooltip-value">{{ item.value > 0 ? '+' : '' }}${{ formatCurrency(item.value) }}</div>
+                  <div v-if="item.cumulative" class="tooltip-cumulative">
+                    Cumulative: ${{ formatCurrency(item.cumulative) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pie Chart Alternative -->
+          <div v-else class="pie-chart-wrapper">
+            <div class="pie-chart-container">
+              <canvas ref="pieCanvas" width="300" height="300"></canvas>
+            </div>
+            <div class="pie-legend">
+              <div 
+                v-for="(item, i) in pieChartData" 
+                :key="i"
+                class="legend-item"
+                :style="{ '--legend-color': item.color }"
+              >
+                <span class="legend-color"></span>
+                <span class="legend-label">{{ item.label }}</span>
+                <span class="legend-value">${{ formatCurrency(Math.abs(item.value)) }}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Middle Panel: Factor & Position Attribution -->
+      <!-- Factor & Position Attribution Panels -->
       <div class="attribution-panels">
+        <!-- Factor Attribution -->
         <div class="factor-attribution-panel">
           <h3>Factor Attribution</h3>
           <div class="factor-pnl-list">
@@ -74,8 +127,8 @@
                   class="factor-fill"
                   :style="{ 
                     width: Math.abs(factor.pnl) / maxFactorPnl * 100 + '%',
-                    backgroundColor: factor.pnl > 0 ? '#00BF63' : '#FF4757'
                   }"
+                  :class="factor.pnl > 0 ? 'positive' : 'negative'"
                 ></div>
               </div>
             </div>
@@ -89,6 +142,7 @@
           </div>
         </div>
 
+        <!-- Position Attribution -->
         <div class="position-attribution-panel">
           <h3>Position Attribution</h3>
           <div class="top-contributors">
@@ -101,7 +155,9 @@
               >
                 <div class="contributor-header">
                   <span class="contributor-asset">{{ contributor.asset }}</span>
-                  <span class="contributor-type" :class="contributor.direction">{{ contributor.direction }}</span>
+                  <span class="contributor-type" :class="contributor.direction.toLowerCase()">
+                    {{ contributor.direction }}
+                  </span>
                 </div>
                 <div class="contributor-pnl" :class="contributor.pnl > 0 ? 'positive' : 'negative'">
                   {{ contributor.pnl > 0 ? '+' : '' }}${{ formatCurrency(contributor.pnl) }}
@@ -123,8 +179,9 @@
         </div>
       </div>
 
-      <!-- Risk Attribution & Time Analysis -->
+      <!-- Risk & Time Analysis -->
       <div class="risk-time-panels">
+        <!-- Risk Attribution -->
         <div class="risk-attribution-panel">
           <h3>Risk Attribution</h3>
           <div class="risk-breakdown">
@@ -132,21 +189,30 @@
               <div class="risk-label">Systematic Risk:</div>
               <div class="risk-percentage">{{ systematicRisk }}%</div>
               <div class="risk-bar">
-                <div class="risk-fill systematic" :style="{ width: systematicRisk + '%' }"></div>
+                <div 
+                  class="risk-fill systematic" 
+                  :style="{ width: systematicRisk + '%' }"
+                ></div>
               </div>
             </div>
             <div class="risk-item">
               <div class="risk-label">Idiosyncratic Risk:</div>
               <div class="risk-percentage">{{ idiosyncraticRisk }}%</div>
               <div class="risk-bar">
-                <div class="risk-fill idiosyncratic" :style="{ width: idiosyncraticRisk + '%' }"></div>
+                <div 
+                  class="risk-fill idiosyncratic" 
+                  :style="{ width: idiosyncraticRisk + '%' }"
+                ></div>
               </div>
             </div>
             <div class="risk-item">
               <div class="risk-label">Factor Risk:</div>
               <div class="risk-percentage">{{ factorRisk }}%</div>
               <div class="risk-bar">
-                <div class="risk-fill factor" :style="{ width: factorRisk + '%' }"></div>
+                <div 
+                  class="risk-fill factor" 
+                  :style="{ width: factorRisk + '%' }"
+                ></div>
               </div>
             </div>
           </div>
@@ -163,26 +229,20 @@
           </div>
         </div>
 
+        <!-- Time Analysis -->
         <div class="time-analysis-panel">
           <h3>Time-Based Analysis</h3>
           <div class="hourly-pattern">
             <h4>Hourly P&L Pattern</h4>
-            <div class="hourly-chart">
-              <div 
-                v-for="(hour, i) in hourlyPnL" 
-                :key="i"
-                class="hour-bar"
-                :style="{ 
-                  height: Math.abs(hour.pnl) * 5 + 'px',
-                  backgroundColor: hour.pnl > 0 ? '#00BF63' : '#FF4757'
-                }"
-                :title="`${hour.hour}:00 - ${hour.pnl > 0 ? '+' : ''}$${formatCurrency(hour.pnl)}`"
-              ></div>
-            </div>
-            <div class="hour-labels">
-              <span v-for="i in 6" :key="i" class="hour-label">
-                {{ (i - 1) * 4 }}:00
-              </span>
+            <div class="hourly-chart-container">
+              <canvas ref="hourlyCanvas" class="hourly-chart-canvas"></canvas>
+              <div class="hourly-axis">
+                <div class="axis-labels">
+                  <span v-for="hour in [0, 4, 8, 12, 16, 20]" :key="hour" class="axis-label">
+                    {{ hour.toString().padStart(2, '0') }}:00
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -205,6 +265,7 @@
 
       <!-- Advanced Attribution -->
       <div class="advanced-attribution">
+        <!-- Rolling Sharpe -->
         <div class="rolling-sharpe-panel">
           <h3>Rolling Sharpe by Factor</h3>
           <div class="sharpe-table">
@@ -233,6 +294,7 @@
           </div>
         </div>
 
+        <!-- Drawdown Attribution -->
         <div class="drawdown-attribution-panel">
           <h3>Drawdown Attribution</h3>
           <div class="drawdown-analysis">
@@ -266,26 +328,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, inject } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 
-// Inject shared state
-const signalData = inject('signalData')!
-
-// Local state
+// Reactive state
 const selectedPeriod = ref('1d')
+const selectedView = ref('waterfall')
+const hoveredIndex = ref(-1)
+const pieCanvas = ref<HTMLCanvasElement | null>(null)
+const hourlyCanvas = ref<HTMLCanvasElement | null>(null)
 const totalPnl = ref(14500)
 
+// Computed properties
 const totalPnlClass = computed(() => totalPnl.value > 0 ? 'positive' : 'negative')
 
-// Waterfall data
+// Data
 const waterfallData = ref([
-  { label: 'Starting P&L', value: 10200, type: 'start' },
-  { label: 'EWMAC', value: 2300, type: 'factor' },
-  { label: 'Momentum', value: 1800, type: 'factor' },
-  { label: 'Breakout', value: 900, type: 'factor' },
-  { label: 'Trend', value: -300, type: 'factor' },
-  { label: 'Transaction Costs', value: -400, type: 'cost' },
-  { label: 'Final P&L', value: 14500, type: 'end' }
+  { label: 'Starting P&L', value: 10200, cumulative: 10200, type: 'start' },
+  { label: 'EWMAC', value: 2300, cumulative: 12500, type: 'factor' },
+  { label: 'Momentum', value: 1800, cumulative: 14300, type: 'factor' },
+  { label: 'Breakout', value: 900, cumulative: 15200, type: 'factor' },
+  { label: 'Trend', value: -300, cumulative: 14900, type: 'factor' },
+  { label: 'Transaction Costs', value: -400, cumulative: 14500, type: 'cost' },
+  { label: 'Final P&L', value: 14500, cumulative: 14500, type: 'end' }
+])
+
+const scaleFactor = computed(() => {
+  const maxValue = Math.max(...waterfallData.value.map(item => Math.abs(item.value)))
+  return 150 / maxValue // Scale to max 150px height
+})
+
+const pieChartData = computed(() => [
+  { label: 'EWMAC', value: 2300, color: '#00BF63' },
+  { label: 'Momentum', value: 1800, color: '#60a5fa' },
+  { label: 'Breakout', value: 900, color: '#22d3ee' },
+  { label: 'Trend', value: 300, color: '#FF4757' }, // Absolute value
+  { label: 'Transaction Costs', value: 400, color: '#fbbf24' }
 ])
 
 // Factor attribution
@@ -318,17 +395,17 @@ const netPositionContrib = computed(() =>
   topContributors.value.reduce((sum, c) => sum + c.pnl, 0)
 )
 
-// Risk attribution
+// Risk data
 const systematicRisk = ref(68)
 const idiosyncraticRisk = ref(23)
 const factorRisk = ref(9)
 const activeRisk = ref(2.1)
 const trackingError = ref(1.8)
 
-// Time-based analysis
+// Hourly P&L data
 const hourlyPnL = ref(Array.from({ length: 24 }, (_, i) => ({
   hour: i,
-  pnl: (Math.random() - 0.5) * 500
+  pnl: (Math.sin(i * 0.3) * 200) + (Math.random() - 0.5) * 100
 })))
 
 // Rolling Sharpe ratios
@@ -341,14 +418,8 @@ const rollingSharpe = ref([
 
 const maxDDPeriod = ref('Mar 15-28')
 
-// Utility functions
+// Methods
 const formatCurrency = (value: number) => Math.abs(value).toLocaleString()
-
-const getWaterfallColor = (value: number, type: string) => {
-  if (type === 'start' || type === 'end') return '#2C3E50'
-  if (type === 'cost') return '#FF4757'
-  return value > 0 ? '#00BF63' : '#FF4757'
-}
 
 const getSharpeClass = (sharpe: number) => {
   if (sharpe > 1.5) return 'excellent'
@@ -356,4 +427,109 @@ const getSharpeClass = (sharpe: number) => {
   if (sharpe > 0) return 'fair'
   return 'poor'
 }
+
+// Chart drawing functions
+const drawPieChart = () => {
+  if (!pieCanvas.value) return
+  const ctx = pieCanvas.value.getContext('2d')
+  if (!ctx) return
+
+  const centerX = 150
+  const centerY = 150
+  const radius = 80
+
+  ctx.clearRect(0, 0, 300, 300)
+
+  const total = pieChartData.value.reduce((sum, item) => sum + Math.abs(item.value), 0)
+  let currentAngle = -Math.PI / 2
+
+  pieChartData.value.forEach(item => {
+    const sliceAngle = (Math.abs(item.value) / total) * 2 * Math.PI
+    
+    ctx.beginPath()
+    ctx.moveTo(centerX, centerY)
+    ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle)
+    ctx.closePath()
+    ctx.fillStyle = item.color
+    ctx.fill()
+    
+    currentAngle += sliceAngle
+  })
+
+  // Draw inner circle for donut effect
+  ctx.beginPath()
+  ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI)
+  ctx.fillStyle = '#1f2937'
+  ctx.fill()
+}
+
+const drawHourlyChart = () => {
+  if (!hourlyCanvas.value) return
+  const ctx = hourlyCanvas.value.getContext('2d')
+  if (!ctx) return
+
+  const canvas = hourlyCanvas.value
+  const width = canvas.width
+  const height = canvas.height
+  const padding = 20
+
+  ctx.clearRect(0, 0, width, height)
+
+  // Draw black background
+  ctx.fillStyle = '#000000'
+  ctx.fillRect(0, 0, width, height)
+
+  // Calculate scales
+  const maxPnl = Math.max(...hourlyPnL.value.map(h => Math.abs(h.pnl)))
+  const barWidth = (width - padding * 2) / 24
+  const centerY = height / 2
+
+  // Draw zero line (more prominent)
+  ctx.strokeStyle = '#6b7280'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(padding, centerY)
+  ctx.lineTo(width - padding, centerY)
+  ctx.stroke()
+
+  // Draw grid lines
+  ctx.strokeStyle = '#374151'
+  ctx.lineWidth = 1
+  for (let i = 1; i < 4; i++) {
+    const y = (height / 4) * i
+    ctx.beginPath()
+    ctx.moveTo(padding, y)
+    ctx.lineTo(width - padding, y)
+    ctx.stroke()
+  }
+
+  // Draw bars
+  hourlyPnL.value.forEach((hour, i) => {
+    const x = padding + i * barWidth
+    const barHeight = (Math.abs(hour.pnl) / maxPnl) * (height / 2 - 20)
+    const y = hour.pnl > 0 ? centerY - barHeight : centerY
+    
+    ctx.fillStyle = hour.pnl > 0 ? '#00BF63' : '#FF4757'
+    ctx.fillRect(x, y, barWidth * 0.8, Math.abs(barHeight))
+    
+    // Add subtle border to bars
+    ctx.strokeStyle = hour.pnl > 0 ? '#10b981' : '#ef4444'
+    ctx.lineWidth = 1
+    ctx.strokeRect(x, y, barWidth * 0.8, Math.abs(barHeight))
+  })
+}
+
+// Lifecycle
+onMounted(() => {
+  nextTick(() => {
+    drawPieChart()
+    drawHourlyChart()
+  })
+})
+
+watch(selectedView, () => {
+  if (selectedView.value === 'pie') {
+    nextTick(() => drawPieChart())
+  }
+})
 </script>

@@ -47,8 +47,7 @@
 @import './components/trend/exposure-heatmap.css';
 @import './components/trend/market-signals.css';
 @import './components/trend/waterfall.css';
-@import './components/trend/trend-direction.css';
-
+@import './components/trend/portfolio-exposure.css';
 @import './components/trend/portfolio-construction.css';
 @import './components/trend/signal-performance.css';
 @import './components/trend/performance-attribution.css';

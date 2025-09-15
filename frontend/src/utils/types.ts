@@ -40,11 +40,7 @@ export type LineDataset = {
 
 export type MarketType = 'spot' | 'perps';
 
-// --- NEWLY SEPARATED TYPES ---
 
-/**
- * Represents general market data like price, returns, and volatility.
- */
 export interface MarketData {
   dates: string[];
   returns: number[];

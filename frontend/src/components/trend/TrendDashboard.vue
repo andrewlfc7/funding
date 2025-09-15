@@ -39,7 +39,7 @@ import { ref, provide, onMounted } from 'vue'
 import MarketSignalsDashboard from './dashboards/MarketSignals.vue'
 import SignalPerformanceDashboard from './dashboards/SignalPerformance.vue'
 import PortfolioConstructionDashboard from './dashboards/PortfolioConstruction.vue'
-import TrendDirectionDashboard from './dashboards/TrendDirection.vue'
+import TrendDirectionDashboard from './dashboards/PortfolioExposure.vue'
 import PerformanceAttributionDashboard from './dashboards/PerformanceAttribution.vue'
 
 import { useXSecSignals } from '@/composables/useXSecSignals'
@@ -49,7 +49,7 @@ const dashboards = [
   { name: 'Signals' },
   { name: 'Signal Performance' },    
   { name: 'Portfolio Construction' },
-  { name: 'Trend & Direction' },
+  { name: 'Portfolio Exposure' },
   { name: 'Performance Attribution' }
 ]
 

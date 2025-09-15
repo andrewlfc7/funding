@@ -185,7 +185,7 @@ async fn main() -> anyhow::Result<()> {
     let pool = db::migrations::create_pool().await;
 
     let meta_router  = api::meta::router();  
-    let signals_router = api::signals::router(); 
+    let trend_router = api::trend::signals::router(); 
     let market_router = api::market::router(); 
     let stats_router = api::stats::router(); 
 
@@ -211,7 +211,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/health", get(health))
         .merge(market_router) 
         .merge(meta_router)
-        .merge(signals_router)                         
+        .merge(trend_router)                         
         .merge(stats_router)                         
         .with_state(pool)             
         .layer(cors);

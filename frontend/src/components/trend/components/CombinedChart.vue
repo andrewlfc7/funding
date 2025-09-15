@@ -29,20 +29,20 @@
     </div>
     
     <div v-else class="chart-wrapper">
-      <canvas ref="chartCanvas"></canvas>
+      <!-- Use TimeSeriesChart component instead of canvas -->
+      <TimeSeriesChart
+        :series="chartSeries"
+        :height="chartHeight"
+        y-label="Signal Strength (Z-Score)"
+        :y-format="(value) => value.toFixed(2)"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import { Chart, registerables, type ChartTypeRegistry, type ChartConfiguration, type Point } from 'chart.js'
-import 'chartjs-adapter-date-fns'
-
-Chart.register(...registerables)
-
-// Define a more specific chart type to avoid casting issues
-type LineChartWithTime = Chart<'line', (number | Point | null)[], unknown>;
+import { ref, computed, watch } from 'vue'
+import TimeSeriesChart from '@/components/zscore/components/charts/TimeSeriesChart.vue'
 
 interface Signal {
   id: string
@@ -57,6 +57,7 @@ interface Props {
   activeSignals?: Record<string, boolean>
   loading?: boolean
   error?: string | null
+  height?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -73,142 +74,44 @@ const props = withDefaults(defineProps<Props>(), {
     composite: true
   }),
   loading: false,
-  error: null
+  error: null,
+  height: 300
 })
 
 const emit = defineEmits<{
   'update:activeSignals': [signals: Record<string, boolean>]
 }>()
 
-const chartCanvas = ref<HTMLCanvasElement | null>(null)
-let chart: LineChartWithTime | null = null
-
 const availableSignals = computed(() => props.signals!)
 const localActiveSignals = ref({ ...props.activeSignals! })
+const chartHeight = computed(() => props.height)
 
-const chartData = computed(() => {
+// Convert data to TimeSeriesChart format
+const chartSeries = computed(() => {
   return availableSignals.value
     .filter(signal => localActiveSignals.value[signal.id])
-    .map(signal => ({
-      label: signal.name,
-      // FIX: Convert Date to number for TypeScript compatibility
-      // The date adapter will still interpret this as a timestamp.
-      data: (props.dataById[signal.id] || []).map((value, index) => ({
-        x: props.labels[index].getTime(), 
-        y: value
-      })),
-      borderColor: signal.color,
-      backgroundColor: `${signal.color}20`,
-      borderWidth: 2,
-      fill: false,
-      tension: 0.2,
-      pointRadius: 0,
-      pointHoverRadius: 4
-    }))
+    .map(signal => {
+      const signalData = props.dataById[signal.id] || []
+      
+      return {
+        symbol: signal.name,
+        data: signalData.map((value, index) => ({
+          timestamp: props.labels[index]?.getTime() || 0,
+          value: value
+        }))
+      }
+    })
 })
 
 function toggleSignal(signalId: string) {
   localActiveSignals.value[signalId] = !localActiveSignals.value[signalId]
   emit('update:activeSignals', { ...localActiveSignals.value })
-  updateChart()
 }
 
-function createChart() {
-  if (!chartCanvas.value || chart) return
-  
-  const ctx = chartCanvas.value.getContext('2d')
-  if (!ctx) return
-
-  // Use the specific chart type here
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      datasets: chartData.value,
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: {
-        duration: 0
-      },
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
-      plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false,
-          backgroundColor: 'rgba(44, 62, 80, 0.9)',
-          titleColor: '#ECF0F1',
-          bodyColor: '#ECF0F1',
-          borderColor: '#00D4FF',
-          borderWidth: 1,
-          callbacks: {
-            label: function(context) {
-              return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          type: 'time',
-          time: {
-            unit: 'day',
-            displayFormats: {
-              day: 'MMM dd'
-            }
-          },
-          grid: {
-            color: 'rgba(236, 240, 241, 0.1)'
-          },
-          ticks: {
-            color: '#ECF0F1',
-            maxRotation: 0
-          }
-        },
-        y: {
-          grid: {
-            color: 'rgba(236, 240, 241, 0.1)'
-          },
-          ticks: {
-            color: '#ECF0F1'
-          },
-          title: {
-            display: true,
-            text: 'Signal Strength (Z-Score)',
-            color: '#ECF0F1'
-          }
-        }
-      }
-    }
-  }) as LineChartWithTime;
-}
-
-function updateChart() {
-  if (!chart) {
-    createChart()
-    return
-  }
-  
-  // The types now match, so no error here.
-  chart.data.datasets = chartData.value;
-  chart.update('none')
-}
-
+// Watch for external changes to activeSignals
 watch(() => props.activeSignals, (newSignals) => {
   if (newSignals) {
     localActiveSignals.value = { ...newSignals }
-    updateChart()
   }
 }, { deep: true })
-
-watch(() => [props.labels, props.dataById], () => {
-  updateChart()
-}, { deep: true })
-
 </script>

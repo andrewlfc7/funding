@@ -15,7 +15,6 @@ function adjustColorOpacity(color: string, opacity: number): string {
   return color;
 }
 
-// CORRECTED: This function now correctly expects MarketData
 export function createCandlestickConfig(data: MarketData, coin: string): ChartConfiguration {
   return {
     type: 'candlestick' as const,
