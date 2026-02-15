@@ -3,8 +3,8 @@
     <div class="dashboard-controls">
       <div class="control-group">
         <label>Asset:</label>
-        <select v-model="selectedCoin" @change="reloadAll" class="control-select">
-          <option v-for="symbol in symbols" :key="symbol" :value="symbol">
+        <select v-model="selectedCoin" @change="handleCoinChange" class="control-select">
+          <option v-for="symbol in availableSymbols" :key="symbol" :value="symbol">
             {{ symbol }}
           </option>
         </select>
@@ -12,48 +12,54 @@
       
       <div class="control-group">
         <label>Exchange:</label>
-        <select v-model="selectedExchange" @change="reloadAll" class="control-select">
+        <select v-model="selectedExchange" @change="handleExchangeChange" class="control-select">
           <option value="binance">Binance</option>
-          <option value="coinbase">Coinbase</option>
-          <option value="kraken">Kraken</option>
         </select>
       </div>
       
       <div class="control-group">
         <label>Period:</label>
-        <select v-model="selectedPeriod" @change="reloadAll" class="control-select">
+        <select v-model="selectedPeriod" @change="handlePeriodChange" class="control-select">
           <option value="30d">30 Days</option>
           <option value="60d">60 Days</option>
           <option value="90d">90 Days</option>
         </select>
       </div>
+
+      <div class="debug-info" v-if="showDebug">
+        <small>
+          Symbols: {{ availableSymbols.length }} | 
+          Prices: {{ priceValues.length }} | 
+          Signals: {{ Object.keys(signalsBySymbol).length }} |
+          Loading: {{ loading }}
+        </small>
+      </div>
     </div>
 
-    <!-- 2x3 Grid Layout -->
     <div class="signals-grid">
-      <!-- Row 1: Price & Volume | Returns & Volatility -->
-      <div class="grid-item price-vol-panel">
-        <h3>Price & Volume</h3>
+      <div class="grid-item price-panel">
+        <h3>Price - {{ selectedCoin }}</h3>
         <div class="panel-content">
-          <div class="price-chart-container">
-            <PriceChart
-              :labels="chartLabels"
-              :prices="priceData"
-              :volumes="volumeData"
-              :loading="loadingLive || loadingXSec"
-              :error="errorLive || errorXSec"
-            />
-          </div>
-          <div class="volume-stats">
-            <div class="stat-item">
-              <span class="label">20d EWMA Vol:</span>
-              <span class="value">{{ formatVolume(avgVolume) }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="label">Current Price:</span>
-              <span class="value">${{ formatPrice(currentPrice) }}</span>
-            </div>
-          </div>
+          <PriceChart
+            :labels="priceLabels"
+            :prices="priceValues"
+            :loading="loading"
+            :error="error"
+            :key="`price-${dataVersion}`"
+          />
+        </div>
+      </div>
+
+      <div class="grid-item volume-panel">
+        <h3>Volume</h3>
+        <div class="panel-content">
+          <VolumeChart
+            :labels="volumeLabels"
+            :volumes="volumeValues"
+            :loading="loading"
+            :error="error"
+            :key="`volume-${dataVersion}`"
+          />
         </div>
       </div>
 
@@ -61,11 +67,12 @@
         <h3>Returns & Volatility</h3>
         <div class="panel-content">
           <ReturnsChart
-            :labels="chartLabels"
-            :returns="returnsData"
-            :volatility="volatilityData"
-            :loading="loadingLive"
-            :error="errorLive"
+            :labels="returnsLabels"
+            :returns="returnsValues"
+            :volatility="volatilityValues"
+            :loading="loading"
+            :error="error"
+            :key="`returns-${dataVersion}`"
           />
           <div class="vol-percentiles">
             <div class="percentile-item">
@@ -84,32 +91,18 @@
         </div>
       </div>
 
-      <!-- Row 2: EWMAC Signal | Breakout Signal -->
       <div class="grid-item ewmac-panel">
         <h3>EWMAC Signal</h3>
         <div class="panel-content">
           <SignalChart
-            title="EWMAC (4/16 span)"
+            title="EWMAC"
             color="#00D4FF"
-            :labels="chartLabels"
+            :labels="signalLabels"
             :values="ewmacValues"
-            :loading="loadingXSec"
-            :error="errorXSec"
+            :loading="loading"
+            :error="error"
+            :key="`ewmac-${dataVersion}`"
           />
-          <div class="signal-distribution">
-            <div class="dist-item">
-              <span class="label">Raw Score:</span>
-              <span class="value">{{ formatSignal(currentEWMAC) }}</span>
-            </div>
-            <div class="dist-item">
-              <span class="label">Standardized:</span>
-              <span class="value">{{ formatSignal(currentEWMACStd) }}</span>
-            </div>
-            <div class="dist-item">
-              <span class="label">Rank:</span>
-              <span class="value">{{ ewmacRank }}/100</span>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -117,58 +110,44 @@
         <h3>Breakout Signal</h3>
         <div class="panel-content">
           <SignalChart
-            title="Breakout Score (20d)"
+            title="Breakout"
             color="#FF6B6B"
-            :labels="chartLabels"
+            :labels="signalLabels"
             :values="breakoutValues"
-            :loading="loadingXSec"
-            :error="errorXSec"
+            :loading="loading"
+            :error="error"
+            :key="`breakout-${dataVersion}`"
           />
-          <div class="breakout-metrics">
-            <div class="metric-item">
-              <span class="label">Days from High:</span>
-              <span class="value">{{ daysFromHigh }}d</span>
-            </div>
-            <div class="metric-item">
-              <span class="label">Cross-sec Rank:</span>
-              <span class="value">{{ breakoutRank }}/100</span>
-            </div>
-            <div class="metric-item">
-              <span class="label">Strength:</span>
-              <div class="strength-indicator" :class="getStrengthClass(currentBreakout)">
-                {{ getStrengthLabel(currentBreakout) }}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
-      <!-- Row 3: Momentum Signal | Combined Signals -->
       <div class="grid-item momentum-panel">
         <h3>Momentum Signal</h3>
         <div class="panel-content">
           <SignalChart
-            title="Momentum (20d, 5d HL)"
+            title="Momentum"
             color="#00BF63"
-            :labels="chartLabels"
+            :labels="signalLabels"
             :values="momentumValues"
-            :loading="loadingXSec"
-            :error="errorXSec"
+            :loading="loading"
+            :error="error"
+            :key="`momentum-${dataVersion}`"
           />
-          <div class="momentum-percentiles">
-            <div class="perc-item">
-              <span class="label">Weighted Returns:</span>
-              <span class="value">{{ formatPercent(weightedReturns) }}</span>
-            </div>
-            <div class="perc-item">
-              <span class="label">Mom Score:</span>
-              <span class="value">{{ formatSignal(currentMomentum) }}</span>
-            </div>
-            <div class="perc-item">
-              <span class="label">Percentile:</span>
-              <span class="value">{{ momentumPercentile }}%</span>
-            </div>
-          </div>
+        </div>
+      </div>
+
+      <div class="grid-item trend-panel">
+        <h3>Trend Factor</h3>
+        <div class="panel-content">
+          <SignalChart
+            title="Trend"
+            color="#7C5CFF"
+            :labels="signalLabels"
+            :values="trendValues"
+            :loading="loading"
+            :error="error"
+            :key="`trend-${dataVersion}`"
+          />
         </div>
       </div>
 
@@ -176,35 +155,14 @@
         <h3>Combined Signals</h3>
         <div class="panel-content">
           <CombinedChart
-            :labels="chartLabels"
+            :labels="signalLabels"
             :dataById="signalDataById"
             :activeSignals="activeSignals"
             @update:activeSignals="activeSignals = $event"
-            :loading="loadingXSec"
-            :error="errorXSec"
+            :loading="loading"
+            :error="error"
+            :key="`combined-${dataVersion}`"
           />
-          <div class="correlation-mini-matrix">
-            <div class="matrix-title">Signal Correlations</div>
-            <div class="mini-matrix">
-              <div v-for="(row, i) in signalCorrelations" :key="i" class="matrix-row">
-                <div 
-                  v-for="(corr, j) in row" 
-                  :key="j"
-                  class="matrix-cell"
-                  :style="{ backgroundColor: getCorrelationColor(corr) }"
-                  :title="`${signalNames[i]} vs ${signalNames[j]}: ${corr.toFixed(2)}`"
-                >
-                  {{ corr.toFixed(1) }}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="composite-score">
-            <div class="score-label">Composite Score:</div>
-            <div class="score-value" :class="getScoreClass(currentComposite)">
-              {{ formatSignal(currentComposite) }}
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -212,243 +170,278 @@
 </template>
 
 <script setup lang="ts">
-// FIX: Use `import type` for type-only imports
-import { ref, computed, inject, onMounted, type Ref } from 'vue'
+import { ref, computed, inject, type Ref, watch, onMounted } from 'vue'
 import PriceChart from '../components/PriceChart.vue'
+import VolumeChart from '../components/VolumeChart.vue'
 import ReturnsChart from '../components/ReturnsChart.vue'
 import SignalChart from '../components/SignalChart.vue'
 import CombinedChart from '../components/CombinedChart.vue'
+import { fetchMetaData } from '@/api/meta'
 
-// --- TYPE DEFINITIONS ---
+/* ---------- Interfaces ---------- */
+interface TrendSignalPoint {
+  ts: number
+  symbol: string
+  trend: number
+  momentum: number
+  ewmac: number
+  breakout: number
+  composite: number
+}
 
-interface DataPoint {
-  timestamp: number;
-  price: number;
-  volume: number;
-  returns: number;
-  volatility: number;
-  momentum: number;
-  ewmac: number;
-  breakout: number;
-  composite: number;
+interface TimeSeriesPoint {
+  date: string
+  value: number
+}
+
+interface VolumePoint {
+  date: string
+  volume_ewma: number
+  dollar_volume_ewma: number
 }
 
 interface Controls {
-  selectedCoin: Ref<string>;
-  selectedExchange: Ref<string>;
-  selectedPeriod: Ref<string>;
-  reloadAll: () => void;
+  selectedCoin: Ref<string>
+  selectedExchange: Ref<string>
+  selectedPeriod: Ref<string>
+  reloadAll: () => void
 }
 
-interface MarketData {
-  klines: Ref<any[]>;
-  returnsSeries: Ref<number[]>;
-  volSeries: Ref<number[]>;
-  loadingLive: Ref<boolean>;
-  errorLive: Ref<string | null>;
+interface MarketDataProvider {
+  priceSeries: Ref<TimeSeriesPoint[]>
+  returnsSeries: Ref<TimeSeriesPoint[]>
+  volSeries: Ref<TimeSeriesPoint[]>
+  volumeSeries: Ref<VolumePoint[]>
+  loading: Ref<boolean>
+  error: Ref<string | null>
 }
 
-interface SignalData {
-  xsecSignals: Ref<Record<string, any>>;
-  loadingXSec: Ref<boolean>;
-  errorXSec: Ref<string | null>;
-  series: Ref<Record<string, DataPoint[]>>;
-  symbols: Ref<string[]>;
+interface SignalDataProvider {
+  series: Ref<Record<string, TrendSignalPoint[]>>
+  symbols: Ref<string[]>
+  loading: Ref<boolean>
+  error: Ref<string | null>
 }
 
-// FIX: This type can be simplified as it's passed to a component
-// that accepts a more generic record.
-type ActiveSignals = Record<string, boolean>;
+type ActiveSignals = Record<string, boolean>
 
-// --- INJECTIONS ---
-
-// Inject shared state with proper typing
+/* ---------- Injections ---------- */
 const controls = inject<Controls>('controls')!
-const marketData = inject<MarketData>('marketData')!
-const signalData = inject<SignalData>('signalData')!
-
 const { selectedCoin, selectedExchange, selectedPeriod, reloadAll } = controls
-const { klines, returnsSeries, volSeries, loadingLive, errorLive } = marketData
-const { xsecSignals, loadingXSec, errorXSec, series, symbols } = signalData
 
-// --- LOCAL STATE ---
+const marketData = inject<MarketDataProvider>('marketData')!
+const signalData = inject<SignalDataProvider>('signalData')!
 
-// Local state for signal toggles with explicit type
+// Create reactive references that properly track changes
+const priceSeries = computed(() => marketData.priceSeries.value || [])
+const returnsSeries = computed(() => marketData.returnsSeries.value || [])
+const volSeries = computed(() => marketData.volSeries.value || [])
+const volumeSeries = computed(() => marketData.volumeSeries.value || [])
+const loading = computed(() => marketData.loading.value || signalData.loading.value)
+const error = computed(() => marketData.error.value || signalData.error.value)
+
+const showDebug = ref(false)
+
+/* ---------- Local State ---------- */
 const activeSignals = ref<ActiveSignals>({
   momentum: true,
   ewmac: true,
   breakout: true,
-  composite: true
+  composite: true,
+  trend: true,
 })
+const metaCoins = ref<string[]>([])
+const lastLoadedParams = ref<{ coin: string; exchange: string; period: string } | null>(null)
 
-// --- COMPUTED PROPERTIES ---
+// Add a data version tracker to force chart re-renders
+const dataVersion = ref(0)
 
-// Chart data adapters
-const chartLabels = computed(() => {
-  const symbolData = series.value[selectedCoin.value]
-  if (!symbolData) return []
-  return symbolData.map((point: DataPoint) => new Date(point.timestamp * 1000))
-})
-
-const signalDataById = computed((): Record<string, number[]> => {
-  const symbolData = series.value[selectedCoin.value]
-  if (!symbolData || symbolData.length === 0) {
-    return { momentum: [], ewmac: [], breakout: [], composite: [] }
+/* ---------- Lifecycle Hooks ---------- */
+onMounted(async () => {
+  try {
+    const meta = await fetchMetaData('spot', 'USDT');
+    metaCoins.value = meta.coins.sort();
+  } catch (e) {
+    console.error("Failed to fetch metadata for dropdown", e);
   }
+});
+
+/* ---------- Data Processing ---------- */
+const MAX_DATA_POINTS = 90
+
+const getLatestData = <T>(data: T[], maxPoints: number = MAX_DATA_POINTS): T[] => {
+  if (!data || !data.length) return [];
+  return data.slice(-maxPoints);
+}
+
+// Helper function to safely parse dates
+const parseDate = (dateStr: string): Date => {
+  const date = new Date(dateStr);
+  return isNaN(date.getTime()) ? new Date() : date;
+}
+
+// Helper function to convert timestamp to Date
+const timestampToDate = (ts: number): Date => {
+  return new Date(ts);
+}
+
+/* ---------- Computed Properties ---------- */
+const availableSymbols = computed(() => {
+  const allSymbols = metaCoins.value;
+  if (allSymbols.length === 0) return ['BTC'];
+  
+  const majorCoins = ['BTC', 'ETH', 'BNB', 'ADA', 'XRP', 'SOL', 'DOT', 'AVAX', 'MATIC', 'LTC'];
+  const availableSet = new Set(allSymbols);
+  
+  const result = majorCoins.filter(coin => availableSet.has(coin));
+  const otherCoins = allSymbols
+    .filter(coin => !majorCoins.includes(coin))
+    .sort();
+  
+  return [...result, ...otherCoins];
+})
+
+const signalsBySymbol = computed(() => signalData.series.value || {})
+
+// Improved chart data processing with better error handling
+const priceChartData = computed(() => {
+  const data = getLatestData(priceSeries.value);
+  if (!data.length) return { labels: [], values: [] };
   
   return {
-    momentum: symbolData.map((p: DataPoint) => p.momentum),
-    ewmac: symbolData.map((p: DataPoint) => p.ewmac),
-    breakout: symbolData.map((p: DataPoint) => p.breakout),
-    composite: symbolData.map((p: DataPoint) => p.composite)
+    labels: data.map((p: TimeSeriesPoint) => parseDate(p.date)),
+    values: data.map((p: TimeSeriesPoint) => Number(p.value) || 0)
+  };
+});
+
+const returnsChartData = computed(() => {
+  const data = getLatestData(returnsSeries.value);
+  if (!data.length) return { labels: [], values: [] };
+  
+  return {
+    labels: data.map((r: TimeSeriesPoint) => parseDate(r.date)),
+    values: data.map((r: TimeSeriesPoint) => Number(r.value) || 0)
+  };
+});
+
+const volChartData = computed(() => {
+  const data = getLatestData(volSeries.value);
+  if (!data.length) return { labels: [], values: [] };
+  
+  return {
+    labels: data.map((v: TimeSeriesPoint) => parseDate(v.date)),
+    values: data.map((v: TimeSeriesPoint) => Number(v.value) || 0)
+  };
+});
+
+const volumeChartData = computed(() => {
+  const data = getLatestData(volumeSeries.value);
+  if (!data.length) return { labels: [], values: [] };
+  
+  return {
+    labels: data.map((v: VolumePoint) => parseDate(v.date)),
+    values: data.map((v: VolumePoint) => Number(v.dollar_volume_ewma) || 0)
+  };
+});
+
+const priceLabels = computed(() => priceChartData.value.labels)
+const priceValues = computed(() => priceChartData.value.values)
+const returnsLabels = computed(() => returnsChartData.value.labels)
+const returnsValues = computed(() => returnsChartData.value.values)
+const volatilityValues = computed(() => volChartData.value.values)
+const volumeLabels = computed(() => volumeChartData.value.labels)
+const volumeValues = computed(() => volumeChartData.value.values)
+
+const coinSignals = computed(() => {
+  const seriesData = signalsBySymbol.value[selectedCoin.value];
+  if (!seriesData) return [];
+  const sortedSignals = [...seriesData].sort((a, b) => a.ts - b.ts);
+  return getLatestData(sortedSignals);
+});
+
+const signalLabels = computed(() => {
+  if (!coinSignals.value.length) return [];
+  return coinSignals.value.map(s => timestampToDate(s.ts));
+});
+
+const signalDataById = computed((): Record<string, number[]> => {
+  const signals = coinSignals.value;
+  const result: Record<string, number[]> = { momentum: [], ewmac: [], breakout: [], composite: [], trend: [] };
+  if (!signals || signals.length === 0) return result;
+  
+  for (const s of signals) {
+    result.momentum.push(Number(s.momentum) || 0);
+    result.ewmac.push(Number(s.ewmac) || 0);
+    result.breakout.push(Number(s.breakout) || 0);
+    result.composite.push(Number(s.composite) || 0);
+    result.trend.push(Number(s.trend) || 0);
   }
-})
+  return result;
+});
 
-const priceData = computed(() => {
-  const symbolData = series.value[selectedCoin.value]
-  if (!symbolData) return []
-  return symbolData.map((p: DataPoint) => p.price)
-})
+const ewmacValues = computed(() => signalDataById.value.ewmac)
+const breakoutValues = computed(() => signalDataById.value.breakout)
+const momentumValues = computed(() => signalDataById.value.momentum)
+const trendValues = computed(() => signalDataById.value.trend)
 
-const volumeData = computed(() => {
-  const symbolData = series.value[selectedCoin.value]
-  if (!symbolData) return []
-  return symbolData.map((p: DataPoint) => p.volume)
-})
+const last = (arr: number[]) => (arr?.length ? arr[arr.length - 1] : 0);
 
-const returnsData = computed(() => {
-  const symbolData = series.value[selectedCoin.value]
-  if (!symbolData) return []
-  return symbolData.map((p: DataPoint) => p.returns)
-})
-
-const volatilityData = computed(() => {
-  const symbolData = series.value[selectedCoin.value]
-  if (!symbolData) return []
-  return symbolData.map((p: DataPoint) => p.volatility)
-})
-
-// Individual signal values
-const ewmacValues = computed(() => signalDataById.value.ewmac || [])
-const breakoutValues = computed(() => signalDataById.value.breakout || [])
-const momentumValues = computed(() => signalDataById.value.momentum || [])
-
-// Current values (latest in time series)
-const currentPrice = computed(() => {
-  const prices = priceData.value
-  return prices.length > 0 ? prices[prices.length - 1] : 0
-})
-
-const currentVol = computed(() => {
-  const vols = volatilityData.value
-  return vols.length > 0 ? vols[vols.length - 1] : 0
-})
-
-const currentEWMAC = computed(() => {
-  const values = ewmacValues.value
-  return values.length > 0 ? values[values.length - 1] : 0
-})
-
-const currentBreakout = computed(() => {
-  const values = breakoutValues.value
-  return values.length > 0 ? values[values.length - 1] : 0
-})
-
-const currentMomentum = computed(() => {
-  const values = momentumValues.value
-  return values.length > 0 ? values[values.length - 1] : 0
-})
-
-const currentComposite = computed(() => {
-  const values = signalDataById.value.composite || []
-  return values.length > 0 ? values[values.length - 1] : 0
-})
-
-// Derived metrics
-const avgVolume = computed(() => {
-  const volumes = volumeData.value
-  if (volumes.length === 0) return 0
-  return volumes.reduce((sum: number, vol: number) => sum + vol, 0) / volumes.length
-})
+const currentVol = computed(() => last(volatilityValues.value));
 
 const vol25th = computed(() => {
-  const vols = [...volatilityData.value].sort((a: number, b: number) => a - b)
-  if (vols.length === 0) return 0
-  const index = Math.floor(vols.length * 0.25)
-  return vols[index]
-})
+  const sorted = [...volatilityValues.value].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length * 0.25)] ?? 0;
+});
 
 const vol75th = computed(() => {
-  const vols = [...volatilityData.value].sort((a: number, b: number) => a - b)
-  if (vols.length === 0) return 0
-  const index = Math.floor(vols.length * 0.75)
-  return vols[index]
-})
+  const sorted = [...volatilityValues.value].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length * 0.75)] ?? 0;
+});
 
-// Mock derived values (would come from API in real implementation)
-const currentEWMACStd = computed(() => currentEWMAC.value * 1.2)
-const ewmacRank = computed(() => Math.floor(Math.random() * 100))
-const daysFromHigh = computed(() => Math.floor(Math.random() * 30))
-const breakoutRank = computed(() => Math.floor(Math.random() * 100))
-const weightedReturns = computed(() => currentMomentum.value * 0.01)
-const momentumPercentile = computed(() => Math.floor(Math.random() * 100))
-
-// Signal correlations matrix
-const signalNames = ['Mom', 'EWMAC', 'Break', 'Comp']
-const signalCorrelations = computed(() => [
-  [1.0, 0.3, 0.5, 0.8],
-  [0.3, 1.0, 0.2, 0.7],
-  [0.5, 0.2, 1.0, 0.6],
-  [0.8, 0.7, 0.6, 1.0]
-])
-
-// --- UTILITY FUNCTIONS ---
-
-function formatPrice(price: number): string {
-  return price.toLocaleString('en-US', { 
-    minimumFractionDigits: 2, 
-    maximumFractionDigits: 2 
-  })
+/* ---------- Event Handlers ---------- */
+function shouldReload(): boolean {
+  const current = { coin: selectedCoin.value, exchange: selectedExchange.value, period: selectedPeriod.value };
+  return !lastLoadedParams.value || JSON.stringify(current) !== JSON.stringify(lastLoadedParams.value);
 }
 
-function formatVolume(volume: number): string {
-  if (volume > 1e9) return (volume / 1e9).toFixed(1) + 'B'
-  if (volume > 1e6) return (volume / 1e6).toFixed(1) + 'M'
-  if (volume > 1e3) return (volume / 1e3).toFixed(1) + 'K'
-  return volume.toFixed(0)
+function updateLastLoadedParams() {
+  lastLoadedParams.value = { coin: selectedCoin.value, exchange: selectedExchange.value, period: selectedPeriod.value };
 }
 
-function formatPercent(value: number): string {
-  return (value * 100).toFixed(1) + '%'
+function handleControlChange() {
+  if (shouldReload()) {
+    updateLastLoadedParams();
+    reloadAll();
+  }
 }
 
-function formatSignal(value: number): string {
-  return value.toFixed(2)
+const handleCoinChange = handleControlChange;
+const handleExchangeChange = handleControlChange;
+const handlePeriodChange = handleControlChange;
+
+/* ---------- Utility Functions ---------- */
+function formatPercent(valueLike: unknown) {
+  return `${(Number(valueLike || 0) * 100).toFixed(1)}%`;
 }
 
-function getStrengthClass(value: number): string {
-  const abs = Math.abs(value)
-  if (abs > 2) return 'strong'
-  if (abs > 1) return 'medium'
-  return 'weak'
-}
+// Watch for data changes and increment version to force chart re-renders
+watch([priceSeries, returnsSeries, volSeries, volumeSeries, signalsBySymbol], () => {
+  dataVersion.value++;
+}, { deep: true });
 
-function getStrengthLabel(value: number): string {
-  const abs = Math.abs(value)
-  if (abs > 2) return 'Strong'
-  if (abs > 1) return 'Medium'
-  return 'Weak'
-}
+// Also watch for loading state changes
+watch([loading], ([newLoading]) => {
+  if (!newLoading) {
+    // Small delay to ensure all data is properly set
+    setTimeout(() => {
+      dataVersion.value++;
+    }, 100);
+  }
+});
 
-function getScoreClass(value: number): string {
-  if (value > 1) return 'bullish'
-  if (value < -1) return 'bearish'
-  return 'neutral'
-}
-
-function getCorrelationColor(corr: number): string {
-  const intensity = Math.abs(corr)
-  if (corr > 0) return `rgba(0, 191, 99, ${intensity})`
-  return `rgba(255, 71, 87, ${intensity})`
-}
+watch([priceSeries, signalsBySymbol], () => {
+  if (priceSeries.value.length > 0 || Object.keys(signalsBySymbol.value).length > 0) {
+    updateLastLoadedParams();
+  }
+}, { immediate: true });
 </script>

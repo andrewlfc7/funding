@@ -1,4 +1,4 @@
-use super::endpoints::{get_public_url, ApiEnvironment, PublicEndpoint};
+use super::endpoints::{ApiEnvironment, PublicEndpoint, get_public_url};
 use bytes::Bytes;
 use reqwest::Client;
 
@@ -16,7 +16,10 @@ impl BluefinClient {
             .build()
             .expect("Failed to create reqwest client");
 
-        Self { client, environment }
+        Self {
+            client,
+            environment,
+        }
     }
 
     /// Retrieves exchange information, including all available perpetual markets.
@@ -32,7 +35,12 @@ impl BluefinClient {
     /// GET /v1/exchange/ticker?symbol={symbol}
     pub async fn get_ticker(&self, symbol: &str) -> Result<Bytes, reqwest::Error> {
         let url = get_public_url(PublicEndpoint::Ticker(symbol.to_string()), self.environment);
-        let res = self.client.get(&url).query(&[("symbol", symbol)]).send().await?;
+        let res = self
+            .client
+            .get(&url)
+            .query(&[("symbol", symbol)])
+            .send()
+            .await?;
         res.error_for_status()?.bytes().await
     }
 
@@ -60,7 +68,12 @@ impl BluefinClient {
             PublicEndpoint::FundingRateHistory(symbol.to_string()),
             self.environment,
         );
-        let res = self.client.get(&url).query(&[("symbol", symbol)]).send().await?;
+        let res = self
+            .client
+            .get(&url)
+            .query(&[("symbol", symbol)])
+            .send()
+            .await?;
         res.error_for_status()?.bytes().await
     }
 }

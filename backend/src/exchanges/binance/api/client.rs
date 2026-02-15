@@ -1,10 +1,10 @@
 // src/exchanges/binance/api/client.rs
 use crate::exchanges::binance::api::endpoints::{
     EXCHANGE_INFO_PATH, FUTURES_EXCHANGE_INFO_PATH, FUTURES_KLINES_PATH, FUTURES_TRADES_PATH,
-    KLINES_PATH, TRADES_PATH, USD_FUTURES_API_URL, SPOT_API_URL, MarketType,
+    KLINES_PATH, MarketType, SPOT_API_URL, TRADES_PATH, USD_FUTURES_API_URL,
 };
-use reqwest::Client;
 use bytes::Bytes;
+use reqwest::Client;
 
 #[derive(Debug, Clone)]
 pub struct BinanceClient {
@@ -19,28 +19,36 @@ impl BinanceClient {
     }
 
     /// Get recent trades (doesn't support time range - use get_historical_trades for time ranges)
-    pub async fn get_trades(&self, market_type: MarketType, symbol: &str, limit: usize) -> Result<Bytes, reqwest::Error> {
+    pub async fn get_trades(
+        &self,
+        market_type: MarketType,
+        symbol: &str,
+        limit: usize,
+    ) -> Result<Bytes, reqwest::Error> {
         let (base_url, path) = match market_type {
             MarketType::Spot => (SPOT_API_URL, TRADES_PATH),
             MarketType::UsdFutures => (USD_FUTURES_API_URL, FUTURES_TRADES_PATH),
         };
         let url = format!("{}{}", base_url, path);
 
-        let res = self.client.get(&url)
+        let res = self
+            .client
+            .get(&url)
             .query(&[("symbol", symbol), ("limit", &limit.to_string())])
-            .send().await?;
+            .send()
+            .await?;
 
         res.error_for_status()?.bytes().await
     }
 
     /// Get historical aggregate trades with time range support
     pub async fn get_historical_trades(
-        &self, 
-        market_type: MarketType, 
-        symbol: &str, 
+        &self,
+        market_type: MarketType,
+        symbol: &str,
         start_time: Option<u64>,
         end_time: Option<u64>,
-        limit: Option<usize>
+        limit: Option<usize>,
     ) -> Result<Bytes, reqwest::Error> {
         let (base_url, path) = match market_type {
             MarketType::Spot => (SPOT_API_URL, "/api/v3/aggTrades"),
@@ -62,24 +70,27 @@ impl BinanceClient {
         let res = self.client.get(&url).query(&query).send().await?;
         res.error_for_status()?.bytes().await
     }
-    
+
     /// Get klines with optional time range
     pub async fn get_klines(
-        &self, 
-        market_type: MarketType, 
-        symbol: &str, 
-        interval: &str, 
+        &self,
+        market_type: MarketType,
+        symbol: &str,
+        interval: &str,
         start_time: Option<u64>,
         end_time: Option<u64>,
-        limit: Option<usize>
+        limit: Option<usize>,
     ) -> Result<Bytes, reqwest::Error> {
         let (base_url, path) = match market_type {
             MarketType::Spot => (SPOT_API_URL, KLINES_PATH),
             MarketType::UsdFutures => (USD_FUTURES_API_URL, FUTURES_KLINES_PATH),
         };
         let url = format!("{}{}", base_url, path);
-        
-        let mut query = vec![("symbol", symbol.to_string()), ("interval", interval.to_string())];
+
+        let mut query = vec![
+            ("symbol", symbol.to_string()),
+            ("interval", interval.to_string()),
+        ];
         if let Some(st) = start_time {
             query.push(("startTime", st.to_string()));
         }
@@ -94,7 +105,10 @@ impl BinanceClient {
         res.error_for_status()?.bytes().await
     }
 
-    pub async fn get_exchange_info(&self, market_type: MarketType) -> Result<Bytes, reqwest::Error> {
+    pub async fn get_exchange_info(
+        &self,
+        market_type: MarketType,
+    ) -> Result<Bytes, reqwest::Error> {
         let (base_url, path) = match market_type {
             MarketType::Spot => (SPOT_API_URL, EXCHANGE_INFO_PATH),
             MarketType::UsdFutures => (USD_FUTURES_API_URL, FUTURES_EXCHANGE_INFO_PATH),

@@ -1,0 +1,599 @@
+/* ===== FUNDING MATRIX STYLES ===== */
+
+/* Matrix Container */
+.funding-matrix-container {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-primary);
+  overflow: hidden;
+}
+
+/* Matrix Header */
+.funding-matrix-header {
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.funding-matrix-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-white);
+  margin: 0;
+}
+
+.funding-matrix-legend {
+  display: flex;
+  gap: var(--space-lg);
+  align-items: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.legend-positive {
+  background: #ef4444;
+}
+
+.legend-negative {
+  background: #10b981;
+}
+
+/* Matrix Wrapper - Horizontal Scroll Container */
+.funding-matrix-wrapper {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-height: 600px;
+  scrollbar-width: thin;
+  scrollbar-color: #333 var(--bg-secondary);
+}
+
+.funding-matrix-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.funding-matrix-wrapper::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.funding-matrix-wrapper::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: var(--radius-sm);
+}
+
+.funding-matrix-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Matrix Scroll Container */
+.funding-matrix-scroll {
+  min-width: max-content;
+  width: 100%;
+}
+
+/* Matrix Table */
+.funding-matrix-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  min-width: 800px;
+}
+
+/* Matrix Table Header */
+.funding-matrix-table thead {
+  background: var(--bg-primary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.funding-matrix-table th {
+  padding: var(--space-md) var(--space-sm);
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--border-secondary);
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.matrix-symbol-header {
+  position: sticky;
+  left: 0;
+  background: var(--bg-primary);
+  z-index: 11;
+  text-align: left !important;
+  min-width: 140px !important;
+  max-width: 140px;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.matrix-exchange-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--transition-fast);
+  min-width: 120px;
+}
+
+.matrix-exchange-header:hover {
+  background: var(--bg-hover);
+}
+
+.sort-indicator {
+  display: inline-block;
+  margin-left: var(--space-xs);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+/* Matrix Table Body */
+.funding-matrix-table tbody tr {
+  transition: background-color var(--transition-fast);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.funding-matrix-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.funding-matrix-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* Matrix Cells */
+.funding-matrix-table td {
+  padding: var(--space-sm);
+  text-align: center;
+  vertical-align: middle;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.funding-matrix-table td:last-child {
+  border-right: none;
+}
+
+/* Symbol Column (Sticky) */
+.matrix-symbol-cell {
+  position: sticky;
+  left: 0;
+  background: var(--bg-secondary);
+  z-index: 5;
+  text-align: left !important;
+  min-width: 140px !important;
+  max-width: 140px;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.funding-matrix-table tbody tr:hover .matrix-symbol-cell {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.symbol-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+}
+
+.symbol-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-white);
+}
+
+.symbol-oi {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rate Cells */
+.matrix-rate-cell {
+  min-width: 120px;
+  max-width: 120px;
+  padding: var(--space-xs) !important;
+}
+
+.matrix-rate-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* Matrix Funding Rates */
+.matrix-funding-rate {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px var(--space-xs);
+  border-radius: var(--radius-sm);
+  min-width: 70px;
+  text-align: center;
+  transition: all var(--transition-fast);
+  cursor: help;
+}
+
+/* Matrix Rate Colors - Positive = Red, Negative = Green */
+.matrix-rate-positive {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.matrix-rate-negative {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Matrix Rate Magnitudes */
+.matrix-rate-extreme {
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+  animation: matrix-pulse 2s ease-in-out infinite;
+}
+
+.matrix-rate-positive.matrix-rate-extreme {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  color: white;
+  border-color: #7f1d1d;
+}
+
+.matrix-rate-negative.matrix-rate-extreme {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: white;
+  border-color: #065f46;
+}
+
+.matrix-rate-very-high {
+  font-weight: 700;
+  border-width: 2px;
+}
+
+.matrix-rate-positive.matrix-rate-very-high {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.matrix-rate-negative.matrix-rate-very-high {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.matrix-rate-high {
+  font-weight: 600;
+}
+
+.matrix-rate-positive.matrix-rate-high {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.matrix-rate-negative.matrix-rate-high {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.matrix-rate-medium {
+  font-weight: 500;
+}
+
+.matrix-rate-low {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* Matrix OI Display */
+.matrix-oi {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+/* Missing Rate */
+.matrix-rate-missing {
+  color: var(--text-dim);
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+/* Row Highlighting */
+.matrix-row-extreme {
+  background: linear-gradient(90deg, rgba(220, 38, 38, 0.08), transparent);
+  border-left: 3px solid #dc2626;
+}
+
+.matrix-row-high {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.06), transparent);
+  border-left: 2px solid #f59e0b;
+}
+
+/* Scroll Indicators */
+.scroll-indicators {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+}
+
+.scroll-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-tertiary);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.scroll-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-white);
+}
+
+.scroll-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.scroll-progress {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+.scroll-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-positive), var(--color-info));
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-fast);
+}
+
+/* Hover Effects */
+.matrix-funding-rate:hover {
+  transform: scale(1.05);
+  z-index: 10;
+  position: relative;
+}
+
+.matrix-rate-data:hover .matrix-oi {
+  opacity: 1;
+  color: var(--text-tertiary);
+}
+
+/* Matrix Pulse Animation */
+@keyframes matrix-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.95;
+  }
+}
+
+/* ===== RESPONSIVE MATRIX STYLES ===== */
+
+@media (max-width: 1024px) {
+  .funding-matrix-table {
+    min-width: 600px;
+  }
+  
+  .funding-matrix-table th,
+  .funding-matrix-table td {
+    min-width: 90px;
+  }
+  
+  .matrix-symbol-header,
+  .matrix-symbol-cell {
+    min-width: 120px !important;
+    max-width: 120px;
+  }
+  
+  .matrix-funding-rate {
+    font-size: 12px;
+    min-width: 60px;
+    padding: 4px 6px;
+  }
+  
+  .matrix-oi {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 768px) {
+  .funding-matrix-header {
+    padding: var(--space-md);
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .funding-matrix-legend {
+    justify-content: center;
+  }
+  
+  .funding-matrix-table {
+    min-width: 500px;
+  }
+  
+  .funding-matrix-table th,
+  .funding-matrix-table td {
+    min-width: 80px;
+    padding: var(--space-xs);
+  }
+  
+  .matrix-symbol-header,
+  .matrix-symbol-cell {
+    min-width: 100px !important;
+    max-width: 100px;
+  }
+  
+  .matrix-funding-rate {
+    font-size: 11px;
+    min-width: 50px;
+    padding: 3px 4px;
+  }
+  
+  .symbol-name {
+    font-size: 13px;
+  }
+  
+  .symbol-oi {
+    font-size: 10px;
+  }
+  
+  .matrix-oi {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .funding-matrix-wrapper {
+    max-height: 400px;
+  }
+  
+  .funding-matrix-table {
+    min-width: 400px;
+    font-size: 11px;
+  }
+  
+  .funding-matrix-table th,
+  .funding-matrix-table td {
+    min-width: 60px;
+    padding: 4px;
+  }
+  
+  .matrix-symbol-header,
+  .matrix-symbol-cell {
+    min-width: 80px !important;
+    max-width: 80px;
+  }
+  
+  .matrix-funding-rate {
+    font-size: 10px;
+    min-width: 40px;
+    padding: 2px 3px;
+  }
+  
+  .symbol-name {
+    font-size: 11px;
+  }
+  
+  .symbol-oi {
+    font-size: 9px;
+  }
+  
+  .matrix-oi {
+    display: none; /* Hide on very small screens */
+  }
+  
+  .scroll-indicators {
+    padding: var(--space-sm);
+  }
+  
+  .scroll-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+.matrix-funding-rate:focus {
+  outline: 2px solid var(--color-positive);
+  outline-offset: 2px;
+}
+
+.matrix-exchange-header:focus {
+  outline: 2px solid var(--color-positive);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .matrix-rate-positive,
+  .matrix-rate-negative {
+    border-width: 2px;
+  }
+  
+  .matrix-rate-extreme {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .matrix-funding-rate,
+  .scroll-btn,
+  .scroll-progress-bar {
+    transition: none;
+  }
+  
+  .matrix-rate-extreme {
+    animation: none;
+  }
+  
+  .matrix-funding-rate:hover {
+    transform: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .funding-matrix-container {
+    page-break-inside: avoid;
+  }
+  
+  .funding-matrix-wrapper {
+    overflow: visible;
+    max-height: none;
+  }
+  
+  .scroll-indicators {
+    display: none;
+  }
+  
+  .matrix-rate-extreme {
+    animation: none;
+    box-shadow: none;
+  }
+}
+

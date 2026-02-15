@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import FundingMatrix from './components/funding/FundingMatrix.vue';
+import Funding from './components/Funding.vue';  // Change this line
 import Trend from './components/Trend.vue'
 import ZScore from './components/ZScore.vue'
 
@@ -13,7 +13,7 @@ const router = createRouter({
     { 
       path: '/funding', 
       name: 'Funding', 
-      component: FundingMatrix, 
+      component: Funding,  // Change this line
       meta: { title: 'Funding' } 
     },
     { 

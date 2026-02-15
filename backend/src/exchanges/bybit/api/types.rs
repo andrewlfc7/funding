@@ -2,11 +2,11 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct BybitInstrumentsResponse {
-    pub result: BybitInstrumentsResult
+    pub result: BybitInstrumentsResult,
 }
 #[derive(Debug, Deserialize)]
 pub struct BybitInstrumentsResult {
-    pub list: Vec<BybitSymbol>
+    pub list: Vec<BybitSymbol>,
 }
 #[derive(Debug, Deserialize)]
 #[allow(non_snake_case)]
@@ -19,21 +19,20 @@ pub struct BybitSymbol {
 
 #[derive(Debug, Deserialize)]
 pub struct BybitKlineResponse {
-    pub result: BybitKlineResult
+    pub result: BybitKlineResult,
 }
 #[derive(Debug, Deserialize)]
 pub struct BybitKlineResult {
-    pub list: Vec<Vec<String>>
+    pub list: Vec<Vec<String>>,
 }
-
 
 #[derive(Debug, Deserialize)]
 pub struct BybitTradeResponse {
-    pub result: BybitTradeResult
+    pub result: BybitTradeResult,
 }
 #[derive(Debug, Deserialize)]
 pub struct BybitTradeResult {
-    pub list: Vec<BybitTrade>
+    pub list: Vec<BybitTrade>,
 }
 #[derive(Debug, Deserialize)]
 #[allow(non_snake_case)]

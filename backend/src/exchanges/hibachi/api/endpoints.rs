@@ -7,7 +7,6 @@ pub enum ApiEnvironment {
 
 #[derive(Debug, Clone)]
 pub enum PublicEndpoint {
-
     ExchangeInfo,
     OpenInterest(String),
     Stats(String),
@@ -30,4 +29,3 @@ pub fn get_public_url(endpoint: PublicEndpoint, environment: ApiEnvironment) -> 
         PublicEndpoint::Prices(_) => format!("{}/market/data/prices", base),
     }
 }
-

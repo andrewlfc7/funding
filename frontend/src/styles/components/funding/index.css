@@ -1,0 +1,111 @@
+/* ===== FUNDING COMPONENTS MASTER STYLES ===== */
+
+/* Import core funding styles - no duplicates */
+@import './dashboard.css';     /* Dashboard layout and controls */
+@import './table.css';         /* Table layout and responsive design */  
+@import './matrix.css';        /* Matrix layout and scrolling */
+@import './rates.css';         /* Rate styling and color coding */
+@import './arbitrage.css';     /* Arbitrage opportunity styling */
+@import './states.css';        /* Loading, error, empty states */
+@import './layout.css';        /* Loading, error, empty states */
+
+/* ===== FUNDING GLOBAL OVERRIDES ===== */
+
+/* Ensure consistent theming across all funding components */
+.funding-dashboard-wrapper,
+.funding-dashboard-card,
+.table-container,
+.funding-matrix-container {
+  /* Apply consistent border and background */
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+
+/* Consistent scrollbar styling for all funding containers */
+.funding-dashboard-wrapper,
+.table-container,
+.funding-matrix-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) var(--bg-secondary);
+}
+
+.funding-dashboard-wrapper::-webkit-scrollbar,
+.table-container::-webkit-scrollbar,
+.funding-matrix-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.funding-dashboard-wrapper::-webkit-scrollbar-track,
+.table-container::-webkit-scrollbar-track,
+.funding-matrix-wrapper::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.funding-dashboard-wrapper::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb,
+.funding-matrix-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-sm);
+}
+
+.funding-dashboard-wrapper::-webkit-scrollbar-thumb:hover,
+.table-container::-webkit-scrollbar-thumb:hover,
+.funding-matrix-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Global responsive utilities for funding components */
+@media (max-width: 480px) {
+  /* Ensure all funding components are mobile-friendly */
+  .funding-dashboard-wrapper {
+    padding: var(--space-xs);
+  }
+  
+  .funding-page-header {
+    margin-bottom: var(--space-md);
+  }
+  
+  .funding-dashboard-controls {
+    margin-bottom: var(--space-md);
+  }
+}
+
+/* Performance optimizations for all funding components */
+.funding-dashboard-wrapper,
+.funding-dashboard-card,
+.table-container,
+.funding-matrix-container {
+  contain: layout style;
+}
+
+.funding-table,
+.funding-matrix-table {
+  contain: layout;
+}
+
+/* Print optimizations for funding components */
+@media print {
+  .funding-dashboard-wrapper {
+    max-width: none;
+    padding: 0;
+    overflow: visible;
+  }
+  
+  .funding-dashboard-controls,
+  .funding-page-header,
+  .funding-last-updated {
+    display: none;
+  }
+  
+  .funding-dashboard-card,
+  .table-container,
+  .funding-matrix-container {
+    border: 1px solid #ddd;
+    box-shadow: none;
+    overflow: visible;
+    max-height: none;
+  }
+}

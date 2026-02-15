@@ -14,21 +14,14 @@
       </button>
     </nav>
 
-    <!-- Dashboard content area -->
     <div class="dashboard-content">
-      <!-- Dashboard 1: Market Data & Factor Signals -->
-      <MarketSignalsDashboard v-if="currentDashboard === 0" />
-      
-      <!-- Dashboard 2: Signal Performance & Risk Analytics -->
+      <MarketSignalsDashboard
+        v-if="currentDashboard === 0"
+        :key="`signals-${selectedExchange}-${selectedCoin}-${selectedPeriod}`"
+      />
       <SignalPerformanceDashboard v-if="currentDashboard === 1" />
-      
-      <!-- Dashboard 3: Portfolio Construction & Risk Management -->
       <PortfolioConstructionDashboard v-if="currentDashboard === 2" />
-      
-      <!-- Dashboard 4: Portfolio Trend & Direction Analysis -->
       <TrendDirectionDashboard v-if="currentDashboard === 3" />
-      
-      <!-- Dashboard 5: Performance Attribution & P&L Analysis -->
       <PerformanceAttributionDashboard v-if="currentDashboard === 4" />
     </div>
   </div>
@@ -41,9 +34,7 @@ import SignalPerformanceDashboard from './dashboards/SignalPerformance.vue'
 import PortfolioConstructionDashboard from './dashboards/PortfolioConstruction.vue'
 import TrendDirectionDashboard from './dashboards/PortfolioExposure.vue'
 import PerformanceAttributionDashboard from './dashboards/PerformanceAttribution.vue'
-
-import { useXSecSignals } from '@/composables/useXSecSignals'
-import { fetchKlines, fetchReturns, fetchVolatility } from '@/api/trend/volatility'
+import { useTrendSignals } from '@/composables/useTrendSignals'
 
 const dashboards = [
   { name: 'Signals' },
@@ -53,111 +44,62 @@ const dashboards = [
   { name: 'Performance Attribution' }
 ]
 
-// Current dashboard state
 const currentDashboard = ref(0)
 
-// Shared controls state
 const selectedCoin = ref('BTC')
 const selectedExchange = ref<'binance' | string>('binance')
-const selectedPeriod = ref<'30d' | '60d' | '90d' | string>('90d')
+const selectedPeriod = ref<'30d' | '90d' | '180d' | '1y' | string>('90d')
 const viewMode = ref<'combined' | 'individual'>('combined')
 
-// Shared data state - X-sec signals
 const {
-  signals: xsecSignals, 
-  loading: loadingXSec, 
-  error: errorXSec,
-  selectedSymbol, 
-  symbols, 
-  series, 
-  load: loadXSec,
-} = useXSecSignals()
+  rawSignals, priceSeries, returnsSeries, volSeries, volumeSeries,
+  loading, error, symbols, signalsBySymbol,
+  aggregatedSignals, correlationMatrix,
+  priceChartData, returnsChartData, volChartData, volumeEwmaChartData,
+  fetchSignalsData,
+} = useTrendSignals()
 
-// Shared data state - Live market data
-const klines = ref<any[]>([])
-const returnsSeries = ref<{ ts: number; value: number }[]>([])
-const volSeries = ref<{ ts: number; value: number }[]>([])
-const loadingLive = ref(false)
-const errorLive = ref<string | null>(null)
-
-// Utility functions
 function periodToDays(p: string): number {
-  const m = p.match(/^(\d+)([dw])$/)
-  if (!m) return 180
-  const n = Number(m[1]); const u = m[2]
-  return u === 'd' ? n : n * 7
-}
-
-
-async function loadLive() {
-  loadingLive.value = true
-  errorLive.value = null
-  try {
-    const days = periodToDays(selectedPeriod.value)
-    const symbol = selectedCoin.value
-
-    const [k, r, v] = await Promise.all([
-      fetchKlines({ exchange: selectedExchange.value, market_type: 'spot', symbol, days }),
-      fetchReturns({ exchange: selectedExchange.value, market_type: 'spot', symbol, days }),
-      fetchVolatility({ exchange: selectedExchange.value, market_type: 'spot', symbol, days, vol_window: 30 }),
-    ])
-
-    klines.value = k
-    returnsSeries.value = r
-    volSeries.value = v
-
-    console.debug('[Live]', { symbol, klines: k.length, returns: r.length, vol: v.length })
-  } catch (e: any) {
-    errorLive.value = e?.message ?? String(e)
-    console.error('[Live] error:', e)
-  } finally {
-    loadingLive.value = false
+  const m = p.match(/^(\d+)([dwmy])$/)
+  if (!m) return 90
+  const n = Number(m[1]); const unit = m[2]
+  switch (unit) {
+    case 'd': return n
+    case 'w': return n * 7
+    case 'm': return n * 30
+    case 'y': return n * 365
+    default: return 90
   }
 }
 
-// Load all data
+let reloadTimeout: number | null = null
 async function reloadAll() {
-  const days = periodToDays(selectedPeriod.value)
-
-  await loadXSec({
-    exchange: selectedExchange.value,
-    market_type: 'spot',
-    days,
-    vol_window: 30,
-    min_decile: 3,
-  })
-
-  await loadLive()
+  if (reloadTimeout) clearTimeout(reloadTimeout)
+  reloadTimeout = setTimeout(async () => {
+    const days = periodToDays(selectedPeriod.value)
+    await fetchSignalsData({
+      exchange: selectedExchange.value,
+      market_type: 'spot',
+      symbol: selectedCoin.value,
+      days,
+    })
+  }, 0)
 }
 
-// Provide shared state to all dashboards
-provide('controls', {
-  selectedCoin,
-  selectedExchange, 
-  selectedPeriod,
-  viewMode,
-  reloadAll
-})
-
+provide('controls', { selectedCoin, selectedExchange, selectedPeriod, viewMode, reloadAll })
 provide('marketData', {
-  klines,
-  returnsSeries,
-  volSeries,
-  loadingLive,
-  errorLive
+  priceSeries, returnsSeries, volSeries, volumeSeries, loading, error,
+  priceChartData, returnsChartData, volChartData, volumeEwmaChartData,
+  loadingLive: loading, errorLive: error,
 })
-
 provide('signalData', {
-  xsecSignals,
-  loadingXSec,
-  errorXSec,
-  series,
-  symbols
+  xsecSignals: rawSignals,
+  loading, error,
+  series: signalsBySymbol,
+  symbols, aggregatedSignals, correlationMatrix,
+  loadingXSec: loading, errorXSec: error,
 })
-
-provide('utils', {
-  periodToDays,
-})
+provide('utils', { periodToDays })
 
 onMounted(reloadAll)
 </script>

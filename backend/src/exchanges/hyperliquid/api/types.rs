@@ -35,21 +35,18 @@ pub struct HyperliquidUniverseWrapper {
     pub universe: Vec<HyperliquidUniverseEntry>,
 }
 
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HyperliquidAssetCtx {
     #[serde(deserialize_with = "deserialize_decimal_from_str")]
     pub day_ntl_vlm: Decimal, // 24h Volume (already in USD)
-    
+
     #[serde(deserialize_with = "deserialize_decimal_from_str")]
     pub open_interest: Decimal, // In number of contracts/coins
 
     #[serde(deserialize_with = "deserialize_decimal_from_str")]
     pub mark_px: Decimal, // The Mark Price, used for valuation
 }
-
-
 
 // ----- For `get_funding_history` (type: "fundingHistory") -----
 // The response is a direct array of these entries.

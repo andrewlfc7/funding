@@ -36,7 +36,9 @@ impl<Req: Send + 'static, Res: Send + 'static> EndpointPool<Req, Res> {
                         let h = handler.clone();
                         let jh = tokio::spawn(async move { h(req).await });
                         match jh.await {
-                            Ok(res) => { let _ = resp_tx.send(res); }
+                            Ok(res) => {
+                                let _ = resp_tx.send(res);
+                            }
                             Err(e) => eprintln!("[{name}] task join error: {e}"),
                         }
                     }
@@ -55,5 +57,8 @@ impl<Req: Send + 'static, Res: Send + 'static> EndpointPool<Req, Res> {
 }
 
 pub fn threads_from_env(key: &str, default_n: usize) -> usize {
-    std::env::var(key).ok().and_then(|s| s.parse().ok()).unwrap_or(default_n)
+    std::env::var(key)
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(default_n)
 }

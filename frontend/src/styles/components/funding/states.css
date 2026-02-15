@@ -1,0 +1,418 @@
+/* ===== FUNDING COMPONENT STATES ===== */
+
+/* ===== LOADING STATES ===== */
+
+/* Main Loading Container */
+.funding-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-primary);
+  padding: var(--space-2xl);
+}
+
+/* Loading Spinner */
+.funding-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-primary);
+  border-top-color: var(--color-positive);
+  border-radius: 50%;
+  animation: funding-spin 1s linear infinite;
+  margin-bottom: var(--space-lg);
+}
+
+@keyframes funding-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Loading Text */
+.funding-loading-container p {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Inline Loading States */
+.funding-updating-indicator {
+  color: var(--color-positive);
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: var(--space-md);
+}
+
+.funding-updating-indicator::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-positive);
+  animation: funding-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes funding-pulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+}
+
+/* Table Loading Overlay */
+.funding-table-loading {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.funding-table-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    transparent 25%, 
+    rgba(16, 185, 129, 0.05) 25%, 
+    rgba(16, 185, 129, 0.05) 50%, 
+    transparent 50%, 
+    transparent 75%, 
+    rgba(16, 185, 129, 0.05) 75%
+  );
+  background-size: 20px 20px;
+  animation: funding-loading-stripes 1s linear infinite;
+  border-radius: var(--radius-xl);
+  z-index: 15;
+}
+
+@keyframes funding-loading-stripes {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 20px; }
+}
+
+/* ===== ERROR STATES ===== */
+
+/* Main Error Container */
+.funding-error-container {
+  text-align: center;
+  padding: var(--space-3xl) var(--space-xl);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  margin: var(--space-lg) 0;
+}
+
+/* Error Icon */
+.funding-error-container::before {
+  content: '⚠️';
+  font-size: 48px;
+  display: block;
+  margin-bottom: var(--space-lg);
+  opacity: 0.8;
+}
+
+/* Error Message */
+.funding-error-message {
+  color: var(--color-negative);
+  margin-bottom: var(--space-lg);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* Retry Button */
+.funding-retry-button {
+  background: linear-gradient(135deg, var(--color-positive), #059669);
+  color: white;
+  border: none;
+  padding: 12px var(--space-xl);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.funding-retry-button:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.funding-retry-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.funding-retry-button:focus {
+  outline: 2px solid var(--color-positive);
+  outline-offset: 2px;
+}
+
+/* Inline Error States */
+.funding-error-inline {
+  color: var(--color-negative);
+  font-size: 12px;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-sm);
+  margin: var(--space-sm) 0;
+}
+
+/* ===== EMPTY STATES ===== */
+
+/* Empty Data Container */
+.funding-empty-container {
+  text-align: center;
+  padding: var(--space-3xl) var(--space-xl);
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-primary);
+}
+
+.funding-empty-container::before {
+  content: '📊';
+  font-size: 64px;
+  display: block;
+  margin-bottom: var(--space-lg);
+  opacity: 0.5;
+}
+
+.funding-empty-message {
+  font-size: 16px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-md);
+  font-weight: 500;
+}
+
+.funding-empty-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Table Empty State */
+.funding-table-empty {
+  text-align: center;
+  padding: var(--space-3xl);
+  color: var(--text-muted);
+}
+
+.funding-table-empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-lg);
+  opacity: 0.5;
+  display: block;
+}
+
+/* ===== SUCCESS/INFO STATES ===== */
+
+/* Success State */
+.funding-success-container {
+  background: linear-gradient(135deg, 
+    rgba(16, 185, 129, 0.1), 
+    rgba(16, 185, 129, 0.05)
+  );
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin: var(--space-md) 0;
+}
+
+.funding-success-message {
+  color: var(--color-positive);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.funding-success-message::before {
+  content: '✓';
+  font-weight: 700;
+}
+
+/* Info State */
+.funding-info-container {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin: var(--space-md) 0;
+}
+
+.funding-info-message {
+  color: var(--color-info);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.funding-info-message::before {
+  content: 'ℹ';
+  font-weight: 700;
+}
+
+/* ===== FOOTER STATES ===== */
+
+/* Last Updated Footer */
+.funding-last-updated {
+  padding: var(--space-lg) var(--space-xl);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.funding-rate-info {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* Connection Status */
+.funding-connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 11px;
+  padding: 4px var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.funding-connection-status.connected {
+  color: var(--color-positive);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.funding-connection-status.disconnected {
+  color: var(--color-negative);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.funding-connection-status.connecting {
+  color: var(--color-warning);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.funding-connection-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.funding-connection-status.connecting::before {
+  animation: funding-pulse 1s ease-in-out infinite;
+}
+
+/* ===== RESPONSIVE STATES ===== */
+
+@media (max-width: 768px) {
+  .funding-loading-container,
+  .funding-error-container,
+  .funding-empty-container {
+    padding: var(--space-xl) var(--space-lg);
+    min-height: 300px;
+  }
+  
+  .funding-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 2px;
+  }
+  
+  .funding-error-container::before,
+  .funding-empty-container::before {
+    font-size: 40px;
+  }
+  
+  .funding-last-updated {
+    padding: var(--space-md);
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .funding-loading-container,
+  .funding-error-container,
+  .funding-empty-container {
+    padding: var(--space-lg) var(--space-md);
+    min-height: 250px;
+  }
+  
+  .funding-error-message,
+  .funding-empty-message {
+    font-size: 14px;
+  }
+  
+  .funding-retry-button {
+    padding: 10px var(--space-lg);
+    font-size: 13px;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+.funding-loading-container,
+.funding-error-container,
+.funding-empty-container {
+  role: status;
+}
+
+.funding-loading-spinner {
+  aria-label: "Loading funding data";
+}
+
+.funding-retry-button:focus-visible {
+  outline: 2px solid var(--color-positive);
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .funding-loading-spinner,
+  .funding-updating-indicator::before,
+  .funding-connection-status.connecting::before {
+    animation: none;
+  }
+  
+  .funding-table-loading::after {
+    animation: none;
+    background: rgba(16, 185, 129, 0.1);
+  }
+  
+  .funding-retry-button:hover {
+    transform: none;
+  }
+}

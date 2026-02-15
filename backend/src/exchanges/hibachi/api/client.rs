@@ -1,4 +1,4 @@
-use super::endpoints::{get_public_url, ApiEnvironment, PublicEndpoint};
+use super::endpoints::{ApiEnvironment, PublicEndpoint, get_public_url};
 use bytes::Bytes;
 use reqwest::Client;
 
@@ -16,7 +16,10 @@ impl HibachiClient {
             .build()
             .expect("Failed to create reqwest client");
 
-        Self { client, environment }
+        Self {
+            client,
+            environment,
+        }
     }
 
     /// Retrieves the exchange information, including all available future contracts.
@@ -30,8 +33,12 @@ impl HibachiClient {
     /// Retrieves the open interest for a specific perpetual market.
     /// GET /market/data/open-interest?symbol={symbol}
     pub async fn get_open_interest(&self, symbol: &str) -> Result<Bytes, reqwest::Error> {
-        let url = get_public_url(PublicEndpoint::OpenInterest(symbol.to_string()), self.environment);
-        let res = self.client
+        let url = get_public_url(
+            PublicEndpoint::OpenInterest(symbol.to_string()),
+            self.environment,
+        );
+        let res = self
+            .client
             .get(&url)
             .query(&[("symbol", symbol)])
             .send()
@@ -43,7 +50,8 @@ impl HibachiClient {
     /// GET /market/data/stats?symbol={symbol}
     pub async fn get_stats(&self, symbol: &str) -> Result<Bytes, reqwest::Error> {
         let url = get_public_url(PublicEndpoint::Stats(symbol.to_string()), self.environment);
-        let res = self.client
+        let res = self
+            .client
             .get(&url)
             .query(&[("symbol", symbol)])
             .send()
@@ -55,7 +63,8 @@ impl HibachiClient {
     /// GET /market/data/prices?symbol={symbol}
     pub async fn get_prices(&self, symbol: &str) -> Result<Bytes, reqwest::Error> {
         let url = get_public_url(PublicEndpoint::Prices(symbol.to_string()), self.environment);
-        let res = self.client
+        let res = self
+            .client
             .get(&url)
             .query(&[("symbol", symbol)])
             .send()

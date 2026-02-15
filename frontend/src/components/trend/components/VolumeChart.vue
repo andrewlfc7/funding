@@ -8,6 +8,9 @@
       <span class="error-icon">⚠</span>
       <span>{{ error }}</span>
     </div>
+    <div v-else-if="chartData.length === 0" class="no-data-state">
+      <span>No volume data available</span>
+    </div>
     <div v-else class="chart-wrapper">
       <canvas ref="chartCanvas"></canvas>
     </div>
@@ -15,13 +18,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
 import { Chart, registerables, type ChartConfiguration, type TooltipItem } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 
 Chart.register(...registerables);
 
-// Define a consistent data point structure for Chart.js
 interface PointData {
   x: number;
   y: number;
@@ -40,38 +42,65 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
-// Explicitly type the chart instance
 let chart: Chart<'line', PointData[]> | null = null;
 
 const chartData = computed<PointData[]>(() => {
-  return props.volumes.map((volume, index) => ({
-    x: props.labels[index].getTime(), // Convert Date to numeric timestamp
-    y: volume,
-  }));
+  if (!props.labels?.length || !props.volumes?.length) return [];
+  
+  const minLength = Math.min(props.labels.length, props.volumes.length);
+  const data: PointData[] = [];
+  
+  for (let i = 0; i < minLength; i++) {
+    const label = props.labels[i];
+    const volume = props.volumes[i];
+    
+    if (label instanceof Date && Number.isFinite(volume)) {
+      data.push({
+        x: label.getTime(),
+        y: volume
+      });
+    }
+  }
+  
+  return data.sort((a, b) => a.x - b.x);
 });
 
 const formatVolume = (volume: number): string => {
   if (volume >= 1e9) return `${(volume / 1e9).toFixed(1)}B`;
   if (volume >= 1e6) return `${(volume / 1e6).toFixed(1)}M`;
   if (volume >= 1e3) return `${(volume / 1e3).toFixed(1)}K`;
-  return volume.toString();
+  return volume.toFixed(0);
 };
 
-function createChart() {
-  if (!chartCanvas.value || chart) return;
+function destroyChart() {
+  if (chart) {
+    chart.destroy();
+    chart = null;
+  }
+}
+
+async function createChart() {
+  if (!chartCanvas.value || props.loading || props.error || chartData.value.length === 0) {
+    return;
+  }
+
+  await nextTick();
+  
   const ctx = chartCanvas.value.getContext('2d');
   if (!ctx) return;
 
+  destroyChart();
+
   const config: ChartConfiguration<'line', PointData[]> = {
-    type: 'line', // Changed from 'bar' to 'line'
+    type: 'line',
     data: {
       datasets: [{
         label: 'Volume',
         data: chartData.value,
         borderColor: '#FFA502',
-        backgroundColor: 'rgba(255, 165, 2, 0.1)', // More suitable for line chart
+        backgroundColor: 'rgba(255, 165, 2, 0.1)',
         borderWidth: 2,
-        fill: true, // Fill under the line
+        fill: true,
         tension: 0.2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -80,6 +109,7 @@ function createChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 0 },
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
@@ -94,9 +124,13 @@ function createChart() {
       scales: {
         x: {
           type: 'time',
-          time: { unit: 'day', displayFormats: { day: 'MMM dd' } },
-          grid: { display: false },
-          ticks: { color: '#ECF0F1', font: { size: 10 } }
+          time: { 
+            unit: 'day', 
+            displayFormats: { day: 'MMM dd' },
+            tooltipFormat: 'MMM dd, yyyy'
+          },
+          grid: { color: 'rgba(236, 240, 241, 0.1)' },
+          ticks: { color: '#ECF0F1' }
         },
         y: {
           type: 'linear',
@@ -104,7 +138,6 @@ function createChart() {
           grid: { color: 'rgba(236, 240, 241, 0.1)' },
           ticks: {
             color: '#ECF0F1',
-            font: { size: 10 },
             callback: (value) => formatVolume(Number(value))
           },
           title: { display: true, text: 'Volume', color: '#ECF0F1' }
@@ -117,19 +150,34 @@ function createChart() {
 }
 
 function updateChart() {
-  if (!chart) {
+  if (!chart || chartData.value.length === 0) {
     createChart();
     return;
   }
+  
   chart.data.datasets[0].data = chartData.value;
   chart.update('none');
 }
 
-onMounted(createChart);
-onUnmounted(() => {
-  chart?.destroy();
-  chart = null;
+onMounted(() => {
+  if (!props.loading && !props.error && chartData.value.length > 0) {
+    createChart();
+  }
 });
 
-watch(() => [props.labels, props.volumes], updateChart, { deep: true });
+onUnmounted(destroyChart);
+
+watch(() => chartData.value, (newData) => {
+  if (newData.length > 0 && !props.loading && !props.error) {
+    updateChart();
+  }
+}, { deep: true });
+
+watch(() => [props.loading, props.error], ([newLoading, newError]) => {
+  if (!newLoading && !newError && chartData.value.length > 0) {
+    createChart();
+  } else if (newLoading || newError) {
+    destroyChart();
+  }
+});
 </script>

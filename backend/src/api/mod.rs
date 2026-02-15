@@ -1,5 +1,5 @@
 pub mod meta;
-pub mod market;
-pub mod stats;
 pub mod statistics;
+pub mod stats;
 pub mod trend;
+pub mod trend_router;

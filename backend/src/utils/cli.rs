@@ -1,14 +1,21 @@
-use clap::{Parser, Subcommand, Args, ValueEnum};
-use anyhow::Result;
 use crate::exchanges::shared::time::TimeSpec;
+use anyhow::Result;
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(ValueEnum, Clone, Copy, Debug, Eq, PartialEq)]
-#[clap(rename_all = "kebab_case")] // accepts "spot", "perps"
-pub enum CliMarketType { Spot, Perps }
+#[clap(rename_all = "kebab_case")]
+pub enum CliMarketType {
+    Spot,
+    Perps,
+}
 
 #[derive(ValueEnum, Clone, Copy, Debug, Eq, PartialEq)]
-#[clap(rename_all = "kebab_case")] // accepts "klines", "trades", "both"
-pub enum CliSource { Klines, Trades, Both }
+#[clap(rename_all = "kebab_case")]
+pub enum CliSource {
+    Klines,
+    Trades,
+    Both,
+}
 
 #[derive(Parser, Debug)]
 #[command(name = "sync", about = "sync CLI")]
@@ -17,44 +24,36 @@ pub struct Cli {
     pub command: Command,
 }
 
-/// All top-level commands
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    /// Run predefined workflows (funding, trend, zscore)
-    Sync { #[command(subcommand)] workflow: Workflow },
+    Sync {
+        #[command(subcommand)]
+        workflow: Workflow,
+    },
 
-    /// Add a CEX exchange and run an initial sync
     CexAdd {
-        /// Exchange name, e.g. Binance
         #[clap(long, short)]
         name: String,
 
-        /// Spot or Perps
         #[clap(long, value_enum)]
         market_type: CliMarketType,
 
-        /// Which workflow to run after adding: "trend" or "zscore"
-        #[clap(long, value_parser=["trend", "zscore"], default_value="trend")]
+        #[clap(long, value_parser = ["trend", "zscore"], default_value = "trend")]
         workflow: String,
 
         #[clap(flatten)]
         time_spec: CliTimeSpec,
 
-        /// Optional: restrict to a single quote (e.g. USDT). If omitted and --all-quotes not set,
-        /// we use CEX_QUOTE or default to USDT (back-compat).
         #[clap(long)]
         quote: Option<String>,
 
-        /// Include all quotes (ignore quote filter)
         #[clap(long)]
         all_quotes: bool,
     },
 }
 
-/// Workflows for Sync
 #[derive(Subcommand, Debug)]
 pub enum Workflow {
-    /// DEX funding workflow (markets -> funding -> stats)
     Funding {
         #[clap(long)]
         exchange: Option<String>,
@@ -63,7 +62,6 @@ pub enum Workflow {
         time_spec: CliTimeSpec,
     },
 
-    /// CEX trend-following workflow
     Trend {
         #[clap(long)]
         exchange: String,
@@ -74,20 +72,16 @@ pub enum Workflow {
         #[clap(flatten)]
         time_spec: CliTimeSpec,
 
-        /// Which data to sync for this workflow
-        #[clap(long, value_enum, default_value="klines")]
+        #[clap(long, value_enum, default_value = "klines")]
         source: CliSource,
 
-        /// Optional quote filter (e.g. USDT)
         #[clap(long)]
         quote: Option<String>,
 
-        /// Include all quotes (ignore quote filter)
         #[clap(long)]
         all_quotes: bool,
     },
 
-    /// CEX z-score workflow
     Zscore {
         #[clap(long)]
         exchange: String,
@@ -98,52 +92,59 @@ pub enum Workflow {
         #[clap(flatten)]
         time_spec: CliTimeSpec,
 
-        /// Which data to sync for this workflow
-        #[clap(long, value_enum, default_value="both")]
+        #[clap(long, value_enum, default_value = "both")]
         source: CliSource,
 
-        /// Optional quote filter (e.g. USDT)
         #[clap(long)]
         quote: Option<String>,
 
-        /// Include all quotes (ignore quote filter)
         #[clap(long)]
         all_quotes: bool,
     },
 }
 
-/// TimeSpec wrapper for CLI parsing
 #[derive(Args, Debug)]
 pub struct CliTimeSpec {
-    /// Lookback hours
-    #[clap(long)]
+    #[clap(long, conflicts_with = "days")]
     pub hours: Option<u64>,
 
-    /// Between start and end ms
-    #[clap(long, num_args=2, value_names=["START_MS","END_MS"])]
+    #[clap(long, conflicts_with = "hours")]
+    pub days: Option<u64>,
+
+    #[clap(long, num_args = 2, value_names = ["START_MS", "END_MS"])]
     pub between: Option<Vec<u64>>,
 
-    /// Since last or lookback hours
-    #[clap(long)]
+    #[clap(long, conflicts_with = "since_last_days")]
     pub since_last: Option<u64>,
+
+    #[clap(long, conflicts_with = "since_last")]
+    pub since_last_days: Option<u64>,
 }
 
 impl CliTimeSpec {
     pub fn to_time_spec(&self) -> Result<TimeSpec> {
-        if let Some(h) = self.hours {
+        if let Some(h) = self
+            .hours
+            .or_else(|| self.days.map(|d| d.saturating_mul(24)))
+        {
             return Ok(TimeSpec::LookbackHours(h));
         }
         if let Some(b) = &self.between {
             if b.len() == 2 {
-                return Ok(TimeSpec::Between { start_ms: b[0], end_ms: b[1] });
+                return Ok(TimeSpec::Between {
+                    start_ms: b[0],
+                    end_ms: b[1],
+                });
             } else {
                 return Err(anyhow::anyhow!("--between requires START_MS END_MS"));
             }
         }
-        if let Some(h) = self.since_last {
+        if let Some(h) = self
+            .since_last
+            .or_else(|| self.since_last_days.map(|d| d.saturating_mul(24)))
+        {
             return Ok(TimeSpec::SinceLastOrLookbackHours(h));
         }
-        // default fallback: last 24h
         Ok(TimeSpec::SinceLastOrLookbackHours(24))
     }
 }

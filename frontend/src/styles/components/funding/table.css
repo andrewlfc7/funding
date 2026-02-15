@@ -1,0 +1,274 @@
+/* ===== COMPACT FUNDING TABLE STYLES ===== */
+
+/* Table Container - Responsive Height */
+.table-container {
+  max-height: 70vh;
+  overflow: auto;
+  position: relative;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  margin: 0;
+}
+
+/* Compact Funding Table */
+.funding-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 1000px;
+  background: transparent;
+}
+
+/* Sticky Header */
+.funding-table thead {
+  background-color: var(--bg-primary);
+  border-bottom: 2px solid var(--border-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.funding-table th {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.funding-table th.center {
+  text-align: center;
+}
+
+.funding-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--transition-fast);
+}
+
+.funding-table th.sortable:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+/* Sort Indicators */
+.sort-indicator {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 9px;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.funding-table th[aria-sort="ascending"] .sort-indicator::after {
+  content: " ↑";
+  color: var(--color-positive);
+}
+
+.funding-table th[aria-sort="descending"] .sort-indicator::after {
+  content: " ↓";
+  color: var(--color-positive);
+}
+
+/* Table Body */
+.funding-table tbody tr {
+  transition: background-color var(--transition-fast);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.funding-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Table Cells */
+.funding-table td {
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-secondary);
+  vertical-align: middle;
+  font-size: 12px;
+}
+
+.funding-table td.center {
+  text-align: center;
+}
+
+/* Column Specific Styles */
+.token-cell {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-white);
+  min-width: 80px;
+}
+
+.exchange-header {
+  min-width: 100px;
+  text-align: center;
+}
+
+.exchange-cell {
+  vertical-align: middle;
+  padding: var(--space-sm);
+  min-width: 100px;
+}
+
+.exchange-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.exchange-data:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.exchange-data:hover .open-interest-per-exchange {
+  opacity: 1;
+  color: var(--text-tertiary);
+}
+
+/* Open Interest */
+.open-interest {
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 90px;
+}
+
+.open-interest-per-exchange {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+  transition: opacity var(--transition-fast);
+  line-height: 1;
+}
+
+/* Arbitrage Columns */
+.arb-combo-header {
+  min-width: 120px;
+}
+
+.arb-spread,
+.arb-combo,
+.arb-oi {
+  min-width: 80px;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+/* Scrollbar */
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-sm);
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.table-container::-webkit-scrollbar-corner {
+  background: var(--bg-secondary);
+}
+
+.table-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) var(--bg-secondary);
+}
+
+/* States */
+.funding-table-loading {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.funding-table-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(16, 185, 129, 0.05);
+  border-radius: var(--radius-lg);
+  z-index: 15;
+}
+
+.funding-table-empty {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Performance */
+.funding-table {
+  contain: layout style;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1200px) {
+  .table-container { max-height: 65vh; }
+  .funding-table { min-width: 900px; font-size: 11px; }
+  .funding-table th, .funding-table td { padding: 6px var(--space-sm); }
+  .token-cell { font-size: 12px; min-width: 70px; }
+  .exchange-header, .exchange-cell { min-width: 90px; }
+  .arb-combo-header { min-width: 110px; }
+  .arb-spread, .arb-combo, .arb-oi { min-width: 70px; }
+}
+
+@media (max-width: 1024px) {
+  .table-container { max-height: 60vh; }
+  .funding-table { min-width: 800px; font-size: 11px; }
+  .funding-table th, .funding-table td { padding: 6px var(--space-xs); }
+  .token-cell { min-width: 60px; }
+  .exchange-header, .exchange-cell { min-width: 80px; }
+  .arb-combo-header { min-width: 100px; }
+  .arb-spread, .arb-combo, .arb-oi { min-width: 60px; font-size: 10px; }
+}
+
+@media (max-width: 768px) {
+  .table-container { max-height: 55vh; }
+  .funding-table { min-width: 700px; font-size: 10px; }
+  .funding-table th { font-size: 9px; padding: 4px 6px; }
+  .funding-table td { padding: 4px 6px; font-size: 10px; }
+  .token-cell { font-size: 11px; min-width: 55px; }
+  .exchange-header, .exchange-cell { min-width: 70px; }
+  .arb-combo-header { min-width: 90px; }
+  .arb-spread, .arb-combo, .arb-oi { min-width: 50px; font-size: 9px; }
+  .open-interest-per-exchange { font-size: 8px; }
+}
+
+@media (max-width: 480px) {
+  .table-container { max-height: 50vh; }
+  .funding-table { min-width: 600px; font-size: 9px; }
+  .funding-table th { font-size: 8px; padding: 3px 4px; }
+  .funding-table td { padding: 3px 4px; font-size: 9px; }
+  .token-cell { font-size: 10px; min-width: 50px; }
+  .exchange-header, .exchange-cell { min-width: 60px; }
+  .arb-combo-header { min-width: 80px; }
+  .arb-spread, .arb-combo { min-width: 45px; font-size: 8px; }
+  .arb-oi { display: none; } /* Hide on very small screens */
+  .open-interest-per-exchange { font-size: 7px; }
+}

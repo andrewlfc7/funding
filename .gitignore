@@ -29,3 +29,19 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+
+backend/.sqlx
+
+store
+preprocessed_configs
+tmp
+user_files
+metadata 
+metadata_dropped 
+format_schemas 
+flags 
+data 
+image.png 
+output.json 
+uuid

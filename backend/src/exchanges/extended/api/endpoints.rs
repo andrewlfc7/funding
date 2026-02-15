@@ -38,7 +38,6 @@ pub enum PublicEndpoint {
     Funding(String),
 }
 
-
 impl PublicEndpoint {
     pub fn to_path(&self) -> Cow<'static, str> {
         match self {
@@ -49,5 +48,3 @@ impl PublicEndpoint {
         }
     }
 }
-
-

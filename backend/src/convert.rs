@@ -1,6 +1,6 @@
 // src/convert.rs
-use crate::utils::cli::CliMarketType;
 use crate::cex::common::CexMarketType;
+use crate::utils::cli::CliMarketType;
 
 impl From<CliMarketType> for CexMarketType {
     fn from(cli: CliMarketType) -> Self {

@@ -3,47 +3,85 @@ use sqlx::{PgPool, Row};
 use time::{Duration, OffsetDateTime};
 
 // submodules
-pub mod zscore_overview;
-pub mod volatility_analysis;
 pub mod cross_asset;
-pub mod leaders_laggards;
 pub mod inter_asset_zscore;
-pub mod vol_liquidity;
-pub mod microstructure_flow;
-pub mod relative_strength;
-pub mod regime_momentum;
+pub mod leaders_laggards;
 pub mod market_seasonality;
-pub mod volatility_dynamics;
+pub mod microstructure_flow;
+pub mod regime_momentum;
+pub mod relative_strength;
 pub mod trades_analysis;
+pub mod vol_liquidity;
+pub mod volatility_analysis;
+pub mod volatility_dynamics;
+pub mod zscore_overview;
 
 // -------- Timeframe + period parsing --------
 #[derive(Clone, Copy, Debug)]
-pub enum Tf { H1, H4, D1 }
+pub enum Tf {
+    H1,
+    H4,
+    D1,
+}
 impl Tf {
     pub fn from_str(s: &str) -> Option<Self> {
-        match s { "1h" => Some(Tf::H1), "4h" => Some(Tf::H4), "1d" => Some(Tf::D1), _ => None }
+        match s {
+            "1h" => Some(Tf::H1),
+            "4h" => Some(Tf::H4),
+            "1d" => Some(Tf::D1),
+            _ => None,
+        }
     }
-    pub fn period_secs(&self) -> i64 { match self { Tf::H1 => 3600, Tf::H4 => 4*3600, Tf::D1 => 24*3600 } }
-    pub fn steps_per_day(&self) -> usize { match self { Tf::H1 => 24, Tf::H4 => 6, Tf::D1 => 1 } }
+    pub fn period_secs(&self) -> i64 {
+        match self {
+            Tf::H1 => 3600,
+            Tf::H4 => 4 * 3600,
+            Tf::D1 => 24 * 3600,
+        }
+    }
+    pub fn steps_per_day(&self) -> usize {
+        match self {
+            Tf::H1 => 24,
+            Tf::H4 => 6,
+            Tf::D1 => 1,
+        }
+    }
 }
 pub fn parse_period_days(s: &str) -> i64 {
-    match s { "7d" => 7, "30d" => 30, "90d" => 90, "120d" => 120, _ => 30 }
+    match s {
+        "7d" => 7,
+        "30d" => 30,
+        "90d" => 90,
+        "120d" => 120,
+        _ => 30,
+    }
 }
 
 // -------- Query helper: "A,B" or ?coins=A&coins=B --------
 pub fn de_string_or_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
-where D: Deserializer<'de> {
+where
+    D: Deserializer<'de>,
+{
     use serde::de::{Error, SeqAccess, Visitor};
     use std::fmt;
     struct StrOrVec;
     impl<'de> Visitor<'de> for StrOrVec {
         type Value = Vec<String>;
-        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result { f.write_str("string or sequence of strings") }
+        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            f.write_str("string or sequence of strings")
+        }
         fn visit_str<E: Error>(self, v: &str) -> Result<Self::Value, E> {
-            Ok(v.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+            Ok(v.split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect())
         }
         fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
-            let mut out = Vec::new(); while let Some(x) = seq.next_element::<String>()? { out.push(x); } Ok(out)
+            let mut out = Vec::new();
+            while let Some(x) = seq.next_element::<String>()? {
+                out.push(x);
+            }
+            Ok(out)
         }
     }
     deserializer.deserialize_any(StrOrVec)
@@ -64,7 +102,7 @@ async fn resolve_market_id_with_data(
     pool: &PgPool,
     exchange_name: &str,
     base_symbol: &str,
-    market_type: &str,              // "spot" | "perps"
+    market_type: &str, // "spot" | "perps"
     since_unix: i64,
 ) -> anyhow::Result<i32> {
     let ex_id = exchange_id_by_name(pool, exchange_name).await?;
@@ -86,10 +124,15 @@ async fn resolve_market_id_with_data(
         ORDER BY
           CASE m.quote_asset WHEN 'USDT' THEN 0 WHEN 'USD' THEN 1 WHEN 'USDC' THEN 2 ELSE 3 END
         LIMIT 1
-        "#
+        "#,
     )
-    .bind(ex_id).bind(market_type).bind(&base_up).bind(since_unix)
-    .fetch_optional(pool).await? {
+    .bind(ex_id)
+    .bind(market_type)
+    .bind(&base_up)
+    .bind(since_unix)
+    .fetch_optional(pool)
+    .await?
+    {
         return Ok(r.get::<i32, _>("id"));
     }
 
@@ -107,24 +150,32 @@ async fn resolve_market_id_with_data(
           )
         ORDER BY m.quote_asset ASC, m.id ASC
         LIMIT 1
-        "#
+        "#,
     )
-    .bind(ex_id).bind(market_type).bind(&base_up).bind(since_unix)
-    .fetch_one(pool).await?;
+    .bind(ex_id)
+    .bind(market_type)
+    .bind(&base_up)
+    .bind(since_unix)
+    .fetch_one(pool)
+    .await?;
 
     Ok(r.get::<i32, _>("id"))
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Ohlcv {
-    pub ts: i64,   // epoch seconds (UTC bucket start)
+    pub ts: i64, // epoch seconds (UTC bucket start)
     pub close: f64,
     pub high: f64,
     pub low: f64,
     pub volume: f64,
 }
 
-async fn fetch_hourly_by_market(pool: &PgPool, market_id: i32, since_unix: i64) -> anyhow::Result<Vec<Ohlcv>> {
+async fn fetch_hourly_by_market(
+    pool: &PgPool,
+    market_id: i32,
+    since_unix: i64,
+) -> anyhow::Result<Vec<Ohlcv>> {
     let rows = sqlx::query(
         r#"
         SELECT
@@ -136,25 +187,34 @@ async fn fetch_hourly_by_market(pool: &PgPool, market_id: i32, since_unix: i64) 
         FROM klines_hourly
         WHERE market_id = $1 AND time >= to_timestamp($2)
         ORDER BY time ASC
-        "#
+        "#,
     )
-    .bind(market_id).bind(since_unix)
-    .fetch_all(pool).await?;
+    .bind(market_id)
+    .bind(since_unix)
+    .fetch_all(pool)
+    .await?;
 
-    Ok(rows.into_iter().map(|r| Ohlcv {
-        ts: r.get("ts"),
-        close: r.get("close"),
-        high: r.get("high"),
-        low: r.get("low"),
-        volume: r.get("volume"),
-    }).collect())
+    Ok(rows
+        .into_iter()
+        .map(|r| Ohlcv {
+            ts: r.get("ts"),
+            close: r.get("close"),
+            high: r.get("high"),
+            low: r.get("low"),
+            volume: r.get("volume"),
+        })
+        .collect())
 }
 
-fn floor_to(ts: i64, period: i64) -> i64 { ts - (ts % period) }
+fn floor_to(ts: i64, period: i64) -> i64 {
+    ts - (ts % period)
+}
 
 /// Public so endpoints can reuse for multi-coin.
 pub fn resample_from_hourly(hourly: &[Ohlcv], period_secs: i64) -> Vec<Ohlcv> {
-    if hourly.is_empty() || period_secs <= 3600 { return hourly.to_vec(); }
+    if hourly.is_empty() || period_secs <= 3600 {
+        return hourly.to_vec();
+    }
     let mut out = Vec::new();
     let mut bucket = floor_to(hourly[0].ts, period_secs);
     let mut hi = f64::NEG_INFINITY;
@@ -165,15 +225,34 @@ pub fn resample_from_hourly(hourly: &[Ohlcv], period_secs: i64) -> Vec<Ohlcv> {
     for bar in hourly {
         let b = floor_to(bar.ts, period_secs);
         if b != bucket {
-            out.push(Ohlcv { ts: bucket, close: cls, high: hi, low: lo, volume: vol });
-            bucket = b; hi = f64::NEG_INFINITY; lo = f64::INFINITY; vol = 0.0;
+            out.push(Ohlcv {
+                ts: bucket,
+                close: cls,
+                high: hi,
+                low: lo,
+                volume: vol,
+            });
+            bucket = b;
+            hi = f64::NEG_INFINITY;
+            lo = f64::INFINITY;
+            vol = 0.0;
         }
-        if bar.high > hi { hi = bar.high; }
-        if bar.low  < lo { lo  = bar.low; }
+        if bar.high > hi {
+            hi = bar.high;
+        }
+        if bar.low < lo {
+            lo = bar.low;
+        }
         vol += bar.volume;
         cls = bar.close;
     }
-    out.push(Ohlcv { ts: bucket, close: cls, high: hi, low: lo, volume: vol });
+    out.push(Ohlcv {
+        ts: bucket,
+        close: cls,
+        high: hi,
+        low: lo,
+        volume: vol,
+    });
     out
 }
 
@@ -186,29 +265,41 @@ pub async fn get_ohlcv_resampled(
     days: i64,
 ) -> anyhow::Result<Vec<Ohlcv>> {
     let since_unix = (OffsetDateTime::now_utc() - Duration::days(days)).unix_timestamp();
-    let market_id = resolve_market_id_with_data(pool, exchange, base_symbol, market_type, since_unix).await?;
+    let market_id =
+        resolve_market_id_with_data(pool, exchange, base_symbol, market_type, since_unix).await?;
     let hourly = fetch_hourly_by_market(pool, market_id, since_unix).await?;
     Ok(resample_from_hourly(&hourly, tf.period_secs()))
 }
 
 // -------- math (EWMA; basic returns/vol/z) --------
 pub fn pct_returns(xs: &[f64]) -> Vec<f64> {
-    let mut out = Vec::with_capacity(xs.len()); if xs.is_empty() { return out; }
+    let mut out = Vec::with_capacity(xs.len());
+    if xs.is_empty() {
+        return out;
+    }
     out.push(0.0);
-    for w in xs.windows(2) { let (p0,p1)=(w[0],w[1]); out.push(if p0!=0.0 {(p1/p0)-1.0} else {0.0}); }
+    for w in xs.windows(2) {
+        let (p0, p1) = (w[0], w[1]);
+        out.push(if p0 != 0.0 { (p1 / p0) - 1.0 } else { 0.0 });
+    }
     out
 }
 
-
 pub fn log_returns(xs: &[f64]) -> Vec<f64> {
-    if xs.is_empty() { return vec![]; }
+    if xs.is_empty() {
+        return vec![];
+    }
 
     // 1) Compute raw log returns (seed first element with 0.0)
     let mut out = Vec::with_capacity(xs.len());
     out.push(0.0);
     for w in xs.windows(2) {
         let (p0, p1) = (w[0], w[1]);
-        let r = if p0 > 0.0 && p1 > 0.0 { (p1 / p0).ln() } else { 0.0 };
+        let r = if p0 > 0.0 && p1 > 0.0 {
+            (p1 / p0).ln()
+        } else {
+            0.0
+        };
         out.push(r);
     }
 
@@ -223,8 +314,11 @@ pub fn log_returns(xs: &[f64]) -> Vec<f64> {
 
         for v in slice.iter_mut() {
             if v.is_finite() {
-                if *v < lo { *v = lo; }
-                else if *v > hi { *v = hi; }
+                if *v < lo {
+                    *v = lo;
+                } else if *v > hi {
+                    *v = hi;
+                }
             } else {
                 *v = 0.0; // keep series clean
             }
@@ -234,52 +328,87 @@ pub fn log_returns(xs: &[f64]) -> Vec<f64> {
     out
 }
 
-
 pub fn ewma_alpha(values: &[f64], alpha: f64) -> Vec<f64> {
-    assert!((0.0..=1.0).contains(&alpha) && alpha>0.0);
-    if values.is_empty() { return vec![]; }
+    assert!((0.0..=1.0).contains(&alpha) && alpha > 0.0);
+    if values.is_empty() {
+        return vec![];
+    }
     let mut out = Vec::with_capacity(values.len());
-    let mut s = values[0]; out.push(s);
-    for &x in &values[1..] { s = alpha * x + (1.0 - alpha) * s; out.push(s); }
+    let mut s = values[0];
+    out.push(s);
+    for &x in &values[1..] {
+        s = alpha * x + (1.0 - alpha) * s;
+        out.push(s);
+    }
     out
 }
 pub fn ewma_span(values: &[f64], span: usize) -> Vec<f64> {
-    let span = span.max(1); let alpha = 2.0 / (span as f64 + 1.0); ewma_alpha(values, alpha)
+    let span = span.max(1);
+    let alpha = 2.0 / (span as f64 + 1.0);
+    ewma_alpha(values, alpha)
 }
 pub fn rolling_mean_std(xs: &[f64], win: usize) -> (Vec<f64>, Vec<f64>) {
-    let n = xs.len(); let mut m = vec![f64::NAN; n]; let mut s = vec![f64::NAN; n];
-    if win == 0 || n == 0 { return (m, s); }
+    let n = xs.len();
+    let mut m = vec![f64::NAN; n];
+    let mut s = vec![f64::NAN; n];
+    if win == 0 || n == 0 {
+        return (m, s);
+    }
     for i in 0..n {
         if i + 1 >= win {
             let sl = &xs[i + 1 - win..=i];
             let mu = sl.iter().sum::<f64>() / win as f64;
-            let var = sl.iter().map(|v| (v - mu)*(v - mu)).sum::<f64>() / (win as f64).max(1.0);
-            m[i] = mu; s[i] = var.sqrt();
+            let var = sl.iter().map(|v| (v - mu) * (v - mu)).sum::<f64>() / (win as f64).max(1.0);
+            m[i] = mu;
+            s[i] = var.sqrt();
         }
     }
     (m, s)
 }
 pub fn zscore_series(xs: &[f64], win: usize) -> Vec<f64> {
     let (m, s) = rolling_mean_std(xs, win);
-    xs.iter().enumerate().map(|(i, &v)| {
-        let sd = s[i];
-        if sd.is_finite() && sd > 0.0 && m[i].is_finite() { (v - m[i]) / sd } else { f64::NAN }
-    }).collect()
+    xs.iter()
+        .enumerate()
+        .map(|(i, &v)| {
+            let sd = s[i];
+            if sd.is_finite() && sd > 0.0 && m[i].is_finite() {
+                (v - m[i]) / sd
+            } else {
+                f64::NAN
+            }
+        })
+        .collect()
 }
 pub fn histogram_counts(xs: &[f64], bucket_centers: &[f64]) -> Vec<usize> {
-    if bucket_centers.is_empty() { return vec![]; }
-    let step = if bucket_centers.len()>1 { bucket_centers[1] - bucket_centers[0] } else { 1.0 };
-    let half = step/2.0; let mut c = vec![0usize; bucket_centers.len()];
+    if bucket_centers.is_empty() {
+        return vec![];
+    }
+    let step = if bucket_centers.len() > 1 {
+        bucket_centers[1] - bucket_centers[0]
+    } else {
+        1.0
+    };
+    let half = step / 2.0;
+    let mut c = vec![0usize; bucket_centers.len()];
     for &x in xs {
-        for (i,&b) in bucket_centers.iter().enumerate() {
-            if x >= b - half && x < b + half { c[i]+=1; break; }
+        for (i, &b) in bucket_centers.iter().enumerate() {
+            if x >= b - half && x < b + half {
+                c[i] += 1;
+                break;
+            }
         }
     }
     c
 }
 pub fn lag(xs: &[f64], k: usize) -> Vec<f64> {
-    if xs.is_empty() { return vec![]; }
-    let mut out = vec![f64::NAN; xs.len()]; for i in k..xs.len() { out[i] = xs[i-k]; } out
+    if xs.is_empty() {
+        return vec![];
+    }
+    let mut out = vec![f64::NAN; xs.len()];
+    for i in k..xs.len() {
+        out[i] = xs[i - k];
+    }
+    out
 }
 
 // =======================
@@ -365,7 +494,9 @@ pub async fn fetch_multi_hourly_ohlcv(
     market_ids: &[i32],
     since_unix: i64,
 ) -> anyhow::Result<HashMap<i32, Vec<Ohlcv>>> {
-    if market_ids.is_empty() { return Ok(HashMap::new()); }
+    if market_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
     let rows = sqlx::query(
         r#"
         SELECT
@@ -378,7 +509,7 @@ pub async fn fetch_multi_hourly_ohlcv(
         FROM klines_hourly
         WHERE market_id = ANY($1) AND time >= to_timestamp($2)
         ORDER BY market_id ASC, time ASC
-        "#
+        "#,
     )
     .bind(market_ids)
     .bind(since_unix)
@@ -388,7 +519,7 @@ pub async fn fetch_multi_hourly_ohlcv(
     let mut map: HashMap<i32, Vec<Ohlcv>> = HashMap::new();
     for r in rows {
         let mid: i32 = r.get("market_id");
-        map.entry(mid).or_default().push(Ohlcv{
+        map.entry(mid).or_default().push(Ohlcv {
             ts: r.get("ts"),
             close: r.get("close"),
             high: r.get("high"),
@@ -398,6 +529,3 @@ pub async fn fetch_multi_hourly_ohlcv(
     }
     Ok(map)
 }
-
-
-

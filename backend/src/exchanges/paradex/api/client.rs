@@ -21,7 +21,7 @@ impl ParadexClient {
         let res = self.client.get(&url).send().await?;
         res.error_for_status()?.bytes().await
     }
-    
+
     pub async fn get_markets_summary(&self, market: &str) -> Result<Bytes, reqwest::Error> {
         let url = get_public_url(PublicEndpoint::MarketsSummary, self.environment);
         let res = self
@@ -43,9 +43,9 @@ impl ParadexClient {
 
         let mut query_params = vec![
             ("market".to_string(), market.to_string()),
-            ("page_size".to_string(), "500".to_string())
+            ("page_size".to_string(), "500".to_string()),
         ];
-        
+
         if let Some(st) = start_time {
             query_params.push(("start_at".to_string(), st.to_string()));
         }
@@ -53,15 +53,8 @@ impl ParadexClient {
             query_params.push(("end_at".to_string(), et.to_string()));
         }
 
-        let res = self
-            .client
-            .get(&url)
-            .query(&query_params)
-            .send()
-            .await?;
+        let res = self.client.get(&url).query(&query_params).send().await?;
 
         res.error_for_status()?.bytes().await
     }
-
-
 }

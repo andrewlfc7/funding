@@ -24,4 +24,3 @@ pub fn get_public_url(endpoint: PublicEndpoint, environment: ApiEnvironment) -> 
         PublicEndpoint::Exchange => format!("{}/exchange", base),
     }
 }
-

@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use chrono::Utc;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,7 +13,10 @@ impl FromStr for CexMarketType {
         match s.to_lowercase().as_str() {
             "spot" => Ok(CexMarketType::Spot),
             "perps" | "perp" => Ok(CexMarketType::Perps),
-            _ => Err(anyhow!("Invalid CEX market type: '{}'. Use 'spot' or 'perps'.", s)),
+            _ => Err(anyhow!(
+                "Invalid CEX market type: '{}'. Use 'spot' or 'perps'.",
+                s
+            )),
         }
     }
 }

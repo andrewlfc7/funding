@@ -1,15 +1,25 @@
-use axum::{extract::{Query, State}, Json};
+use axum::{
+    Json,
+    extract::{Query, State},
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 use super::{
-    fetch_multi_hourly_ohlcv, histogram_counts, log_returns, parse_period_days,
-    resample_from_hourly, rolling_mean_std, top_markets_by_usd_volume_live, zscore_series, Tf,
+    Tf, fetch_multi_hourly_ohlcv, histogram_counts, log_returns, parse_period_days,
+    resample_from_hourly, rolling_mean_std, top_markets_by_usd_volume_live, zscore_series,
 };
 
-fn default_market_type() -> String { "spot".to_string() }
-fn default_timeframe() -> String { "1h".to_string() }
-#[inline] fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
+fn default_market_type() -> String {
+    "spot".to_string()
+}
+fn default_timeframe() -> String {
+    "1h".to_string()
+}
+#[inline]
+fn finite(x: f64) -> f64 {
+    if x.is_finite() { x } else { 0.0 }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct VolLiquidityRequest {
@@ -58,7 +68,7 @@ pub struct VolumeDistribution {
 pub struct VolVsRet {
     pub volZScore: f64,
     pub dailyRange: f64,
-    pub volume: f64,      // USD notional of that bar
+    pub volume: f64, // USD notional of that bar
     pub symbol: String,
 }
 
@@ -95,12 +105,12 @@ pub struct VolumeSummarySeries {
 #[derive(Debug, Serialize)]
 pub struct SpreadSummaryPoint {
     pub timestamp: i64,
-    pub spread1h: f64,   // (high-low)/mid
-    pub avg1d: f64,      // rolling mean over 1 TF-day
-    pub std1d: f64,      // rolling std over 1 TF-day
-    pub avg7d: f64,      // rolling mean over 7 TF-days
-    pub std7d: f64,      // rolling std over 7 TF-days
-    pub avgZScore: f64,  // (avg1d - avg7d)/std7d
+    pub spread1h: f64,  // (high-low)/mid
+    pub avg1d: f64,     // rolling mean over 1 TF-day
+    pub std1d: f64,     // rolling std over 1 TF-day
+    pub avg7d: f64,     // rolling mean over 7 TF-days
+    pub std7d: f64,     // rolling std over 7 TF-days
+    pub avgZScore: f64, // (avg1d - avg7d)/std7d
 }
 
 #[derive(Debug, Serialize)]
@@ -115,7 +125,8 @@ pub async fn get_vol_liquidity(
 ) -> Json<VolLiquidityResponse> {
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
-    let since_unix = (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
+    let since_unix =
+        (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
 
     // ===== Universe mode =====
     if let Some(n) = q.topN {
@@ -126,7 +137,11 @@ pub async fn get_vol_liquidity(
         if top.is_empty() {
             return Json(VolLiquidityResponse {
                 volZScoreTimeSeries: vec![],
-                volumeDistribution: VolumeDistribution { buckets: vec![], counts: vec![], currentZScore: 0.0 },
+                volumeDistribution: VolumeDistribution {
+                    buckets: vec![],
+                    counts: vec![],
+                    currentZScore: 0.0,
+                },
                 volZScoreVsReturns: vec![],
                 volumeSummaries: vec![],
                 volumeSummarySeries: vec![],
@@ -135,7 +150,9 @@ pub async fn get_vol_liquidity(
         }
 
         let mids: Vec<i32> = top.iter().map(|(_, mid, _)| *mid).collect();
-        let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix).await.unwrap_or_default();
+        let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix)
+            .await
+            .unwrap_or_default();
 
         let mut rows: Vec<VolZRow> = Vec::new();
         let mut scatter: Vec<VolVsRet> = Vec::new();
@@ -147,16 +164,25 @@ pub async fn get_vol_liquidity(
         let mut spread_series_all: Vec<SpreadSummarySeries> = Vec::new(); // NEW
 
         for (sym, mid, _) in top {
-            let Some(hourly) = by_mid.get(&mid) else { continue; };
+            let Some(hourly) = by_mid.get(&mid) else {
+                continue;
+            };
             let ser = resample_from_hourly(hourly, tf.period_secs());
-            let n = ser.len(); if n < 30 { continue; }
+            let n = ser.len();
+            if n < 30 {
+                continue;
+            }
 
-            let ts:    Vec<i64> = ser.iter().map(|r| r.ts).collect();
+            let ts: Vec<i64> = ser.iter().map(|r| r.ts).collect();
             let close: Vec<f64> = ser.iter().map(|r| r.close).collect();
-            let high:  Vec<f64> = ser.iter().map(|r| r.high).collect();
-            let low:   Vec<f64> = ser.iter().map(|r| r.low).collect();
-            let base:  Vec<f64> = ser.iter().map(|r| r.volume).collect();
-            let usd:   Vec<f64> = close.iter().zip(base.iter()).map(|(p,&v)| finite(p * v)).collect();
+            let high: Vec<f64> = ser.iter().map(|r| r.high).collect();
+            let low: Vec<f64> = ser.iter().map(|r| r.low).collect();
+            let base: Vec<f64> = ser.iter().map(|r| r.volume).collect();
+            let usd: Vec<f64> = close
+                .iter()
+                .zip(base.iter())
+                .map(|(p, &v)| finite(p * v))
+                .collect();
 
             // --- VOL metrics (existing) ---
             let lr = log_returns(&close);
@@ -164,10 +190,18 @@ pub async fn get_vol_liquidity(
             let (_, s) = rolling_mean_std(&lr, win_fast_vol);
             let win_slow_vol = (5 * win_fast_vol).max(6).min(n.max(6));
             let (m_slow, sd_slow) = rolling_mean_std(&s, win_slow_vol);
-            let volz: Vec<f64> = s.iter().enumerate().map(|(i, &v)| {
-                let sd = sd_slow[i];
-                if sd.is_finite() && sd > 0.0 && m_slow[i].is_finite() { (v - m_slow[i]) / sd } else { f64::NAN }
-            }).collect();
+            let volz: Vec<f64> = s
+                .iter()
+                .enumerate()
+                .map(|(i, &v)| {
+                    let sd = sd_slow[i];
+                    if sd.is_finite() && sd > 0.0 && m_slow[i].is_finite() {
+                        (v - m_slow[i]) / sd
+                    } else {
+                        f64::NAN
+                    }
+                })
+                .collect();
 
             // EWMA USD volume + its z (for distribution only)
             let vol_ewma = super::ewma_span(&usd, win_fast_vol.max(24));
@@ -176,7 +210,9 @@ pub async fn get_vol_liquidity(
             let start_a = volz.iter().position(|v| v.is_finite()).unwrap_or(n);
             let start_b = vol_ewma_z.iter().position(|v| v.is_finite()).unwrap_or(n);
             let start = start_a.max(start_b);
-            if start >= n { continue; }
+            if start >= n {
+                continue;
+            }
 
             // rows & scatter
             for i in start..n {
@@ -191,10 +227,16 @@ pub async fn get_vol_liquidity(
 
                 let steps_day = tf.steps_per_day();
                 let dr = if i >= steps_day {
-                    let lo = low[i - steps_day + 1 ..= i].iter().fold(f64::INFINITY, |a,&b| a.min(b));
-                    let hi = high[i - steps_day + 1 ..= i].iter().fold(f64::NEG_INFINITY, |a,&b| a.max(b));
+                    let lo = low[i - steps_day + 1..=i]
+                        .iter()
+                        .fold(f64::INFINITY, |a, &b| a.min(b));
+                    let hi = high[i - steps_day + 1..=i]
+                        .iter()
+                        .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
                     if lo > 0.0 { (hi - lo) / lo } else { 0.0 }
-                } else { 0.0 };
+                } else {
+                    0.0
+                };
 
                 scatter.push(VolVsRet {
                     volZScore: vz,
@@ -207,7 +249,10 @@ pub async fn get_vol_liquidity(
             }
 
             if let Some(&lz) = volz[start..].last() {
-                if lz.is_finite() { last_volz_sum += lz; last_volz_cnt += 1; }
+                if lz.is_finite() {
+                    last_volz_sum += lz;
+                    last_volz_cnt += 1;
+                }
             }
 
             // ===== Aggregate volume summary (unchanged) =====
@@ -215,7 +260,11 @@ pub async fn get_vol_liquidity(
             let steps_day = tf.steps_per_day();
             let steps_week = steps_day * 7;
             let start_week = end.saturating_sub(steps_week - 1).max(start);
-            let weekly_sum = usd[start_week..=end].iter().copied().filter(|v| v.is_finite()).sum::<f64>();
+            let weekly_sum = usd[start_week..=end]
+                .iter()
+                .copied()
+                .filter(|v| v.is_finite())
+                .sum::<f64>();
             let avg_daily = weekly_sum / 7.0;
             let avg_hourly = weekly_sum / (7.0 * steps_day as f64);
             let current = finite(usd[end]);
@@ -227,13 +276,23 @@ pub async fn get_vol_liquidity(
                 avgDailyDollarVolume: finite(avg_daily),
                 avgHourlyDollarVolume: finite(avg_hourly),
                 currentDollarVolume: current,
-                ratioCurrentToAvgDaily: if avg_daily > 0.0 { current / avg_daily } else { 0.0 },
-                ratioEWMAToAvgDaily: if avg_daily > 0.0 { ewma_last / avg_daily } else { 0.0 },
+                ratioCurrentToAvgDaily: if avg_daily > 0.0 {
+                    current / avg_daily
+                } else {
+                    0.0
+                },
+                ratioEWMAToAvgDaily: if avg_daily > 0.0 {
+                    ewma_last / avg_daily
+                } else {
+                    0.0
+                },
             });
 
             // ===== Volume time series (existing) =====
             let mut psum = vec![0.0f64; n + 1];
-            for i in 0..n { psum[i + 1] = psum[i] + if usd[i].is_finite() { usd[i] } else { 0.0 }; }
+            for i in 0..n {
+                psum[i + 1] = psum[i] + if usd[i].is_finite() { usd[i] } else { 0.0 };
+            }
             let mut v_series = Vec::with_capacity(n - start);
             let start_mature = start.max(steps_week.saturating_sub(1)); // ensure full 7d window
 
@@ -250,24 +309,31 @@ pub async fn get_vol_liquidity(
                     dollarVolume: finite(usd[i]),
                 });
             }
-            summary_series_all.push(VolumeSummarySeries { symbol: sym.clone(), series: v_series });
+            summary_series_all.push(VolumeSummarySeries {
+                symbol: sym.clone(),
+                series: v_series,
+            });
 
             // ===== NEW: Spread time series =====
             // spread1h = (high-low)/mid with mid=(high+low)/2
-            let spread1h: Vec<f64> = high.iter().zip(low.iter()).map(|(&h,&l)| {
-                if h.is_finite() && l.is_finite() && h > 0.0 && l > 0.0 {
-                    let mid = (h + l) * 0.5;
-                    if mid > 0.0 { (h - l) / mid } else { 0.0 }
-                } else { 0.0 }
-            }).collect();
+            let spread1h: Vec<f64> = high
+                .iter()
+                .zip(low.iter())
+                .map(|(&h, &l)| {
+                    if h.is_finite() && l.is_finite() && h > 0.0 && l > 0.0 {
+                        let mid = (h + l) * 0.5;
+                        if mid > 0.0 { (h - l) / mid } else { 0.0 }
+                    } else {
+                        0.0
+                    }
+                })
+                .collect();
 
-            let win_fast = steps_day;           // 1 TF-day
-            let win_slow = steps_day * 7;       // 7 TF-days
+            let win_fast = steps_day; // 1 TF-day
+            let win_slow = steps_day * 7; // 7 TF-days
 
             let (mean_fast, std_fast) = rolling_mean_std(&spread1h, win_fast);
             let (mean_slow, std_slow) = rolling_mean_std(&spread1h, win_slow);
-
-
 
             let start_spread = start.max(win_slow.saturating_sub(1));
             let capacity = n.saturating_sub(start_spread);
@@ -282,30 +348,43 @@ pub async fn get_vol_liquidity(
                 let s1 = std_fast[i];
                 let m7 = mean_slow[i];
                 let s7 = std_slow[i];
-                let z  = if s7.is_finite() && s7 > 0.0 && m1.is_finite() && m7.is_finite() {
+                let z = if s7.is_finite() && s7 > 0.0 && m1.is_finite() && m7.is_finite() {
                     (m1 - m7) / s7
-                } else { f64::NAN };
+                } else {
+                    f64::NAN
+                };
 
                 s_series.push(SpreadSummaryPoint {
                     timestamp: ts[i],
                     spread1h: finite(spread1h[i]),
-                    avg1d:    finite(m1),
-                    std1d:    finite(s1),
-                    avg7d:    finite(m7),
-                    std7d:    finite(s7),
+                    avg1d: finite(m1),
+                    std1d: finite(s1),
+                    avg7d: finite(m7),
+                    std7d: finite(s7),
                     avgZScore: finite(z),
                 });
             }
-            spread_series_all.push(SpreadSummarySeries { symbol: sym.clone(), series: s_series });
+            spread_series_all.push(SpreadSummarySeries {
+                symbol: sym.clone(),
+                series: s_series,
+            });
         }
 
-        let buckets = vec![-3.0,-2.0,-1.0,-0.5,0.0,0.5,1.0,2.0,3.0];
+        let buckets = vec![-3.0, -2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0, 3.0];
         let counts = histogram_counts(&vol_ewma_z_pool, &buckets);
-        let current = if last_volz_cnt>0 { last_volz_sum/(last_volz_cnt as f64) } else { 0.0 };
+        let current = if last_volz_cnt > 0 {
+            last_volz_sum / (last_volz_cnt as f64)
+        } else {
+            0.0
+        };
 
         return Json(VolLiquidityResponse {
             volZScoreTimeSeries: rows,
-            volumeDistribution: VolumeDistribution { buckets, counts, currentZScore: finite(current) },
+            volumeDistribution: VolumeDistribution {
+                buckets,
+                counts,
+                currentZScore: finite(current),
+            },
             volZScoreVsReturns: scatter,
             volumeSummaries: summaries,
             volumeSummarySeries: summary_series_all,
@@ -317,7 +396,11 @@ pub async fn get_vol_liquidity(
     let Some(sym) = q.coin.as_deref() else {
         return Json(VolLiquidityResponse {
             volZScoreTimeSeries: vec![],
-            volumeDistribution: VolumeDistribution { buckets: vec![], counts: vec![], currentZScore: 0.0 },
+            volumeDistribution: VolumeDistribution {
+                buckets: vec![],
+                counts: vec![],
+                currentZScore: 0.0,
+            },
             volZScoreVsReturns: vec![],
             volumeSummaries: vec![],
             volumeSummarySeries: vec![],
@@ -331,7 +414,11 @@ pub async fn get_vol_liquidity(
     if ohlcv.is_empty() {
         return Json(VolLiquidityResponse {
             volZScoreTimeSeries: vec![],
-            volumeDistribution: VolumeDistribution { buckets: vec![], counts: vec![], currentZScore: 0.0 },
+            volumeDistribution: VolumeDistribution {
+                buckets: vec![],
+                counts: vec![],
+                currentZScore: 0.0,
+            },
             volZScoreVsReturns: vec![],
             volumeSummaries: vec![],
             volumeSummarySeries: vec![],
@@ -340,12 +427,16 @@ pub async fn get_vol_liquidity(
     }
 
     let n = ohlcv.len();
-    let ts:    Vec<i64> = ohlcv.iter().map(|r| r.ts).collect();
+    let ts: Vec<i64> = ohlcv.iter().map(|r| r.ts).collect();
     let close: Vec<f64> = ohlcv.iter().map(|r| r.close).collect();
-    let high:  Vec<f64> = ohlcv.iter().map(|r| r.high).collect();
-    let low:   Vec<f64> = ohlcv.iter().map(|r| r.low).collect();
-    let base:  Vec<f64> = ohlcv.iter().map(|r| r.volume).collect();
-    let usd:   Vec<f64> = close.iter().zip(base.iter()).map(|(p,&v)| finite(p * v)).collect();
+    let high: Vec<f64> = ohlcv.iter().map(|r| r.high).collect();
+    let low: Vec<f64> = ohlcv.iter().map(|r| r.low).collect();
+    let base: Vec<f64> = ohlcv.iter().map(|r| r.volume).collect();
+    let usd: Vec<f64> = close
+        .iter()
+        .zip(base.iter())
+        .map(|(p, &v)| finite(p * v))
+        .collect();
 
     // VOL (existing)
     let lr = log_returns(&close);
@@ -353,10 +444,18 @@ pub async fn get_vol_liquidity(
     let (_, s) = rolling_mean_std(&lr, win_fast_vol);
     let win_slow_vol = (5 * win_fast_vol).max(6).min(n.max(6));
     let (m_slow, sd_slow) = rolling_mean_std(&s, win_slow_vol);
-    let volz: Vec<f64> = s.iter().enumerate().map(|(i, &v)| {
-        let sd = sd_slow[i];
-        if sd.is_finite() && sd > 0.0 && m_slow[i].is_finite() { (v - m_slow[i]) / sd } else { f64::NAN }
-    }).collect();
+    let volz: Vec<f64> = s
+        .iter()
+        .enumerate()
+        .map(|(i, &v)| {
+            let sd = sd_slow[i];
+            if sd.is_finite() && sd > 0.0 && m_slow[i].is_finite() {
+                (v - m_slow[i]) / sd
+            } else {
+                f64::NAN
+            }
+        })
+        .collect();
 
     let vol_ewma = super::ewma_span(&usd, win_fast_vol.max(24));
     let vol_ewma_z = zscore_series(&vol_ewma, win_slow_vol);
@@ -367,7 +466,11 @@ pub async fn get_vol_liquidity(
     if start >= n {
         return Json(VolLiquidityResponse {
             volZScoreTimeSeries: vec![],
-            volumeDistribution: VolumeDistribution { buckets: vec![], counts: vec![], currentZScore: 0.0 },
+            volumeDistribution: VolumeDistribution {
+                buckets: vec![],
+                counts: vec![],
+                currentZScore: 0.0,
+            },
             volZScoreVsReturns: vec![],
             volumeSummaries: vec![],
             volumeSummarySeries: vec![],
@@ -391,10 +494,16 @@ pub async fn get_vol_liquidity(
 
         let steps_day = tf.steps_per_day();
         let dr = if i >= steps_day {
-            let lo = low[i - steps_day + 1 ..= i].iter().fold(f64::INFINITY, |a,&b| a.min(b));
-            let hi = high[i - steps_day + 1 ..= i].iter().fold(f64::NEG_INFINITY, |a,&b| a.max(b));
+            let lo = low[i - steps_day + 1..=i]
+                .iter()
+                .fold(f64::INFINITY, |a, &b| a.min(b));
+            let hi = high[i - steps_day + 1..=i]
+                .iter()
+                .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
             if lo > 0.0 { (hi - lo) / lo } else { 0.0 }
-        } else { 0.0 };
+        } else {
+            0.0
+        };
 
         scatter.push(VolVsRet {
             volZScore: vz,
@@ -411,7 +520,11 @@ pub async fn get_vol_liquidity(
     let steps_day = tf.steps_per_day();
     let steps_week = steps_day * 7;
     let start_week = end.saturating_sub(steps_week - 1).max(start);
-    let weekly_sum = usd[start_week..=end].iter().copied().filter(|v| v.is_finite()).sum::<f64>();
+    let weekly_sum = usd[start_week..=end]
+        .iter()
+        .copied()
+        .filter(|v| v.is_finite())
+        .sum::<f64>();
     let avg_daily = weekly_sum / 7.0;
     let avg_hourly = weekly_sum / (7.0 * steps_day as f64);
     let current = finite(usd[end]);
@@ -423,13 +536,23 @@ pub async fn get_vol_liquidity(
         avgDailyDollarVolume: finite(avg_daily),
         avgHourlyDollarVolume: finite(avg_hourly),
         currentDollarVolume: current,
-        ratioCurrentToAvgDaily: if avg_daily > 0.0 { current / avg_daily } else { 0.0 },
-        ratioEWMAToAvgDaily: if avg_daily > 0.0 { ewma_last / avg_daily } else { 0.0 },
+        ratioCurrentToAvgDaily: if avg_daily > 0.0 {
+            current / avg_daily
+        } else {
+            0.0
+        },
+        ratioEWMAToAvgDaily: if avg_daily > 0.0 {
+            ewma_last / avg_daily
+        } else {
+            0.0
+        },
     }];
 
     // Volume series (existing)
     let mut psum = vec![0.0f64; n + 1];
-    for i in 0..n { psum[i + 1] = psum[i] + if usd[i].is_finite() { usd[i] } else { 0.0 }; }
+    for i in 0..n {
+        psum[i + 1] = psum[i] + if usd[i].is_finite() { usd[i] } else { 0.0 };
+    }
     let start_mature = start.max(steps_week.saturating_sub(1));
     let mut v_series = Vec::with_capacity(n - start_mature);
     for i in start_mature..n {
@@ -447,12 +570,18 @@ pub async fn get_vol_liquidity(
     }
 
     // NEW: Spread series
-    let spread1h: Vec<f64> = high.iter().zip(low.iter()).map(|(&h,&l)| {
-        if h.is_finite() && l.is_finite() && h > 0.0 && l > 0.0 {
-            let mid = (h + l) * 0.5;
-            if mid > 0.0 { (h - l) / mid } else { 0.0 }
-        } else { 0.0 }
-    }).collect();
+    let spread1h: Vec<f64> = high
+        .iter()
+        .zip(low.iter())
+        .map(|(&h, &l)| {
+            if h.is_finite() && l.is_finite() && h > 0.0 && l > 0.0 {
+                let mid = (h + l) * 0.5;
+                if mid > 0.0 { (h - l) / mid } else { 0.0 }
+            } else {
+                0.0
+            }
+        })
+        .collect();
 
     let win_fast = steps_day;
     let win_slow = steps_day * 7;
@@ -466,31 +595,49 @@ pub async fn get_vol_liquidity(
         let s1 = std_fast[i];
         let m7 = mean_slow[i];
         let s7 = std_slow[i];
-        let z  = if s7.is_finite() && s7 > 0.0 && m1.is_finite() && m7.is_finite() {
+        let z = if s7.is_finite() && s7 > 0.0 && m1.is_finite() && m7.is_finite() {
             (m1 - m7) / s7
-        } else { f64::NAN };
+        } else {
+            f64::NAN
+        };
 
         s_series.push(SpreadSummaryPoint {
             timestamp: ts[i],
             spread1h: finite(spread1h[i]),
-            avg1d:    finite(m1),
-            std1d:    finite(s1),
-            avg7d:    finite(m7),
-            std7d:    finite(s7),
+            avg1d: finite(m1),
+            std1d: finite(s1),
+            avg7d: finite(m7),
+            std7d: finite(s7),
             avgZScore: finite(z),
         });
     }
 
-    let buckets = vec![-3.0,-2.0,-1.0,-0.5,0.0,0.5,1.0,2.0,3.0];
+    let buckets = vec![-3.0, -2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0, 3.0];
     let counts = histogram_counts(&vol_ewma_z_pool, &buckets);
-    let current_z = volz.iter().skip(start).rev().find(|v| v.is_finite()).copied().unwrap_or(0.0);
+    let current_z = volz
+        .iter()
+        .skip(start)
+        .rev()
+        .find(|v| v.is_finite())
+        .copied()
+        .unwrap_or(0.0);
 
     Json(VolLiquidityResponse {
         volZScoreTimeSeries: rows,
-        volumeDistribution: VolumeDistribution { buckets, counts, currentZScore: finite(current_z) },
+        volumeDistribution: VolumeDistribution {
+            buckets,
+            counts,
+            currentZScore: finite(current_z),
+        },
         volZScoreVsReturns: scatter,
         volumeSummaries: summaries,
-        volumeSummarySeries: vec![VolumeSummarySeries { symbol: sym.to_string(), series: v_series }],
-        spreadSummarySeries: vec![SpreadSummarySeries { symbol: sym.to_string(), series: s_series }], // NEW
+        volumeSummarySeries: vec![VolumeSummarySeries {
+            symbol: sym.to_string(),
+            series: v_series,
+        }],
+        spreadSummarySeries: vec![SpreadSummarySeries {
+            symbol: sym.to_string(),
+            series: s_series,
+        }], // NEW
     })
 }

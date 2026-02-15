@@ -27,7 +27,7 @@ pub struct BinanceTrade {
     #[serde(alias = "q")]
     pub qty: String,
     #[serde(default)]
-    pub quoteQty: Option<String>,   // may be absent on aggTrades
+    pub quoteQty: Option<String>, // may be absent on aggTrades
     #[serde(alias = "T")]
     pub time: i64,
     #[serde(alias = "m")]

@@ -15,4 +15,3 @@ pub const KLINES_PATH: &str = "/api/v3/klines";
 pub const FUTURES_KLINES_PATH: &str = "/fapi/v1/klines";
 pub const TRADES_PATH: &str = "/api/v3/trades";
 pub const FUTURES_TRADES_PATH: &str = "/fapi/v1/trades";
-

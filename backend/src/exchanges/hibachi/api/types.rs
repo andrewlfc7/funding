@@ -22,10 +22,10 @@ pub struct HibachiExchangeInfoResponse {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HibachiFutureContract {
-    pub symbol: String,           // e.g., "ETH/USDT-P"
+    pub symbol: String,            // e.g., "ETH/USDT-P"
     pub underlying_symbol: String, // e.g., "ETH"
     pub settlement_symbol: String, // e.g., "USDT"
-    pub status: String,           // e.g., "LIVE"
+    pub status: String,            // e.g., "LIVE"
 }
 
 // ----- For `get_open_interest` -> /market/data/open-interest -----

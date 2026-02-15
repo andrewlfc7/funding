@@ -1,28 +1,21 @@
-use anyhow::{anyhow, Result};
-use futures::{stream::iter, StreamExt, TryStreamExt};
-use sqlx::PgPool;
-use std::time::Duration;
-use tracing::info;
+use ::clickhouse::Client;
+use anyhow::{Result, anyhow};
+use futures::{StreamExt, TryStreamExt, stream::iter};
 use std::env;
+use std::time::Duration;
+use tracing::{info, warn};
 
-use crate::exchanges::shared::time::TimeSpec;
 use crate::cex::common::CexMarketType;
-use crate::db::insert::insert_cex_trades;
-use crate::exchanges::shared::types::NormalizedTrade;
-
+use crate::db::{clickhouse, insert::insert_cex_trades};
 use crate::exchanges::binance::api::{
-    client::BinanceClient,
-    endpoints::MarketType as BinanceMarketType,
-};
-use crate::exchanges::bybit::api::{
-    client::BybitClient,
-    endpoints::Category as BybitCategory,
+    client::BinanceClient, endpoints::MarketType as BinanceMarketType,
 };
 use crate::exchanges::binance::handler::handler::parse_binance_trades;
+use crate::exchanges::bybit::api::{client::BybitClient, endpoints::Category as BybitCategory};
 use crate::exchanges::bybit::handler::handler::parse_bybit_trades;
+use crate::exchanges::shared::time::TimeSpec;
+use crate::exchanges::shared::types::NormalizedTrade;
 
-/// Fetch trades for a single market by **market_symbol** (e.g., "BTCUSDT").
-/// We use `market_symbol` both for the exchange API call and for tagging in parsing.
 async fn fetch_trades_for_market(
     exchange_name: &str,
     market_symbol: &str,
@@ -32,18 +25,21 @@ async fn fetch_trades_for_market(
 ) -> Result<Vec<NormalizedTrade>> {
     let mut all_trades = Vec::new();
     let mut current_start = start_ms;
-    let api_symbol = market_symbol; // IMPORTANT: use market_symbol directly
+    let api_symbol = market_symbol;
+    let exchange = exchange_name.to_ascii_lowercase();
+    let max_retries = http_retry_attempts();
 
     loop {
-        let (raw_bytes, delay_ms) = match exchange_name {
+        let (raw_bytes, delay_ms) = match exchange.as_str() {
             "binance" => {
                 let mt = if market_type == CexMarketType::Perps {
                     BinanceMarketType::UsdFutures
                 } else {
                     BinanceMarketType::Spot
                 };
-                (
-                    BinanceClient::new()
+                let mut attempt = 0usize;
+                let bytes = loop {
+                    let resp = BinanceClient::new()
                         .get_historical_trades(
                             mt,
                             api_symbol,
@@ -51,9 +47,22 @@ async fn fetch_trades_for_market(
                             Some(end_ms),
                             Some(1000),
                         )
-                        .await?,
-                    100u64,
-                )
+                        .await;
+                    match resp {
+                        Ok(b) => break b,
+                        Err(e) if is_rate_limited(&e) && attempt < max_retries => {
+                            attempt += 1;
+                            let backoff_ms = retry_backoff_ms(attempt);
+                            warn!(
+                                "binance trades rate-limited symbol={} attempt={}/{} backoff_ms={}",
+                                api_symbol, attempt, max_retries, backoff_ms
+                            );
+                            tokio::time::sleep(Duration::from_millis(backoff_ms)).await;
+                        }
+                        Err(e) => return Err(e.into()),
+                    }
+                };
+                (bytes, 100u64)
             }
             "bybit" => {
                 let cat = if market_type == CexMarketType::Perps {
@@ -61,8 +70,9 @@ async fn fetch_trades_for_market(
                 } else {
                     BybitCategory::Spot
                 };
-                (
-                    BybitClient::new()
+                let mut attempt = 0usize;
+                let bytes = loop {
+                    let resp = BybitClient::new()
                         .get_historical_trades(
                             cat,
                             api_symbol,
@@ -70,20 +80,32 @@ async fn fetch_trades_for_market(
                             Some(end_ms),
                             Some(1000),
                         )
-                        .await?,
-                    150u64,
-                )
+                        .await;
+                    match resp {
+                        Ok(b) => break b,
+                        Err(e) if is_rate_limited(&e) && attempt < max_retries => {
+                            attempt += 1;
+                            let backoff_ms = retry_backoff_ms(attempt);
+                            warn!(
+                                "bybit trades rate-limited symbol={} attempt={}/{} backoff_ms={}",
+                                api_symbol, attempt, max_retries, backoff_ms
+                            );
+                            tokio::time::sleep(Duration::from_millis(backoff_ms)).await;
+                        }
+                        Err(e) => return Err(e.into()),
+                    }
+                };
+                (bytes, 150u64)
             }
             _ => {
                 return Err(anyhow!(
                     "Trade sync not supported for CEX '{}'",
                     exchange_name
-                ))
+                ));
             }
         };
 
-        // Parse into your normalized trade type, tagged with market_symbol.
-        let trades_batch = match exchange_name {
+        let trades_batch = match exchange.as_str() {
             "binance" => parse_binance_trades(&raw_bytes, market_symbol)?,
             "bybit" => parse_bybit_trades(&raw_bytes, market_symbol)?,
             _ => unreachable!(),
@@ -93,14 +115,7 @@ async fn fetch_trades_for_market(
             break;
         }
 
-        // Advance the window to just after the last trade time we received.
-        // (Assumes NormalizedTrade.trade_time is a chrono/time type.)
-        current_start = trades_batch
-            .last()
-            .unwrap()
-            .trade_time
-            .timestamp_millis() as u64
-            + 1;
+        current_start = trades_batch.last().unwrap().trade_time.timestamp_millis() as u64 + 1;
 
         all_trades.extend(trades_batch);
 
@@ -112,78 +127,47 @@ async fn fetch_trades_for_market(
     Ok(all_trades)
 }
 
-/// Sync trades for all markets of the given exchange + market_type within the given time_spec.
 pub async fn sync_trades_with_spec(
-    pool: &PgPool,
+    client: &Client,
     exchange_name: &str,
     market_type: CexMarketType,
     time_spec: TimeSpec,
 ) -> Result<()> {
+    let exchange_name = exchange_name.trim().to_ascii_lowercase();
     info!(
         "Starting CEX trade sync for {} ({:?})",
         exchange_name, market_type
     );
 
-    // Resolve the exchange id.
-    let exch = sqlx::query!(
-        "SELECT id FROM cex_exchanges WHERE name = $1",
-        exchange_name
-    )
-    .fetch_one(pool)
-    .await?;
+    let exchange_id = clickhouse::cex_exchange_id(&exchange_name);
+    let markets =
+        clickhouse::list_active_cex_markets(client, exchange_id, market_type.as_str()).await?;
 
-    // Load ONLY id + market_symbol (never the base) so we can't accidentally pass "BTC".
-    let markets = sqlx::query!(
-        r#"
-        SELECT id, market_symbol
-        FROM cex_markets
-        WHERE exchange_id = $1
-          AND market_type = $2
-          AND is_active = TRUE
-        ORDER BY market_symbol
-        "#,
-        exch.id,
-        market_type.as_str()
-    )
-    .fetch_all(pool)
-    .await?;
-
-    let max_concurrency = env::var("SYNC_CONC_MARKETS")
+    let max_concurrency = env::var("CEX_SYNC_CONC_MARKETS")
+        .or_else(|_| env::var("SYNC_CONC_MARKETS"))
         .unwrap_or_else(|_| "4".to_string())
         .parse::<usize>()
-        .unwrap_or(4);
+        .unwrap_or(4)
+        .clamp(1, 8);
 
-    // Fetch per-market concurrently, bounded by max_concurrency.
     let per_market_batches = iter(markets)
-        .map(|m| {
-            let pool = pool.clone();
+        .map(|(market_id, market_symbol)| {
+            let client = client.clone();
             let exchange_name = exchange_name.to_string();
             let time_spec = time_spec.clone();
 
             async move {
-
-                let last_ts_ms_opt = sqlx::query_scalar!(
-                    "SELECT MAX(trade_time) FROM trades WHERE market_id = $1",
-                    m.id
-                )
-                .fetch_one(&pool)
-                .await?
-                .map(|dt: time::OffsetDateTime| dt.unix_timestamp() * 1000); // i64
+                let last_ts_ms_opt = clickhouse::latest_trade_ts_ms(&client, market_id).await?;
 
                 let (start_ms, end_ms) = time_spec.resolve(last_ts_ms_opt);
 
-
-
-
                 if start_ms >= end_ms {
-                    // Nothing to pull for this market.
                     return Ok::<_, anyhow::Error>(Vec::new());
                 }
 
-                // CRITICAL: pass `m.market_symbol` for both API and labeling.
                 let trades = fetch_trades_for_market(
                     &exchange_name,
-                    &m.market_symbol,
+                    &market_symbol,
                     market_type,
                     start_ms,
                     end_ms,
@@ -192,7 +176,7 @@ pub async fn sync_trades_with_spec(
 
                 Ok(trades
                     .into_iter()
-                    .map(|t| (m.id, t))
+                    .map(|t| (market_id, t))
                     .collect::<Vec<(i32, NormalizedTrade)>>())
             }
         })
@@ -205,11 +189,28 @@ pub async fn sync_trades_with_spec(
 
     if !all_trades.is_empty() {
         let count = all_trades.len();
-        insert_cex_trades(pool, all_trades).await?;
+        insert_cex_trades(client, all_trades).await?;
         info!("Inserted {} trade records for {}", count, exchange_name);
     } else {
         info!("No new trade records for {}", exchange_name);
     }
 
     Ok(())
+}
+
+fn is_rate_limited(e: &reqwest::Error) -> bool {
+    e.status().map(|s| s.as_u16() == 429).unwrap_or(false)
+}
+
+fn retry_backoff_ms(attempt: usize) -> u64 {
+    let base = 500u64;
+    let max_backoff = 10_000u64;
+    (base.saturating_mul(1u64 << attempt.min(6) as u32)).min(max_backoff)
+}
+
+fn http_retry_attempts() -> usize {
+    env::var("SYNC_HTTP_RETRIES")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(6)
 }

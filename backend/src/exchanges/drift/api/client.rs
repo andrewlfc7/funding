@@ -1,4 +1,4 @@
-use super::endpoints::{get_public_url, ApiEnvironment, PublicEndpoint};
+use super::endpoints::{ApiEnvironment, PublicEndpoint, get_public_url};
 use bytes::Bytes;
 use reqwest::Client;
 
@@ -16,7 +16,10 @@ impl DriftClient {
             .build()
             .expect("Failed to create reqwest client");
 
-        Self { client, environment }
+        Self {
+            client,
+            environment,
+        }
     }
 
     /// Retrieves information for all available contracts (markets).
@@ -43,7 +46,8 @@ impl DriftClient {
             PublicEndpoint::FundingRates(market_name.to_string()),
             self.environment,
         );
-        let res = self.client
+        let res = self
+            .client
             .get(&url)
             .query(&[("marketName", market_name)])
             .send()

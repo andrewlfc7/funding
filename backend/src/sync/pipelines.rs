@@ -1,42 +1,46 @@
+use ::clickhouse::Client;
 use anyhow::{Context, Result};
-use sqlx::PgPool;
 use tracing::info;
 
 use crate::cex::common::CexMarketType;
 use crate::exchanges::shared::time::TimeSpec;
 use crate::sync::{
+    cex::{CexSyncTask, run_cex_sync},
     funding::sync_funding,
     markets::sync_markets,
     stats::sync_stats,
-    cex::{run_cex_sync, CexSyncTask},
 };
 use crate::utils::cli::CliSource;
 
-// ---------------------------
-// Workflow 1: Funding (DEX)
-// ---------------------------
-pub async fn run_funding_pipeline(pool: &PgPool, exchange: Option<String>, spec: TimeSpec) -> Result<()> {
+pub async fn run_funding_pipeline(
+    client: &Client,
+    exchange: Option<String>,
+    spec: TimeSpec,
+) -> Result<()> {
     info!("--- STARTING FUNDING WORKFLOW ---");
     let target = exchange.clone().unwrap_or_else(|| "all DEXs".to_string());
 
     info!("[1/3] Syncing DEX Markets for {}...", &target);
-    sync_markets(pool, exchange.clone()).await.context("DEX markets sync failed")?;
+    sync_markets(client, exchange.clone())
+        .await
+        .context("DEX markets sync failed")?;
 
     info!("[2/3] Syncing Funding Rates for {}...", &target);
-    sync_funding(pool, exchange.clone(), spec).await.context("Funding sync failed")?;
+    sync_funding(client, exchange.clone(), spec)
+        .await
+        .context("Funding sync failed")?;
 
     info!("[3/3] Syncing Market Stats for {}...", &target);
-    sync_stats(pool, exchange).await.context("Stats sync failed")?;
+    sync_stats(client, exchange)
+        .await
+        .context("Stats sync failed")?;
 
     info!("--- FUNDING WORKFLOW COMPLETED ---");
     Ok(())
 }
 
-// ---------------------------
-// Workflow 2: Trend (CEX)
-// ---------------------------
 pub async fn run_trend_pipeline(
-    pool: &PgPool,
+    client: &Client,
     exchange: String,
     market_type: CexMarketType,
     spec: TimeSpec,
@@ -44,18 +48,23 @@ pub async fn run_trend_pipeline(
     quote: Option<String>,
     all_quotes: bool,
 ) -> Result<()> {
-    info!("--- STARTING TREND WORKFLOW for {} ({:?}) ---", &exchange, market_type);
+    info!(
+        "--- STARTING TREND WORKFLOW for {} ({:?}) ---",
+        &exchange, market_type
+    );
 
-    // Optional quote filter (None = ALL quotes)
-    let selected_quote: Option<String> = if all_quotes {
-        None
-    } else {
-        Some(quote.unwrap_or_else(|| std::env::var("CEX_QUOTE").unwrap_or_else(|_| "USDT".to_string())))
-    };
+    let selected_quote: Option<String> =
+        if all_quotes {
+            None
+        } else {
+            Some(quote.unwrap_or_else(|| {
+                std::env::var("CEX_QUOTE").unwrap_or_else(|_| "USDT".to_string())
+            }))
+        };
 
     info!("[1/2] Syncing CEX Markets...");
     run_cex_sync(
-        pool,
+        client,
         CexSyncTask::RefreshMarkets {
             exchange: exchange.clone(),
             selected_quote,
@@ -65,11 +74,10 @@ pub async fn run_trend_pipeline(
     .await
     .context("CEX markets sync failed")?;
 
-    // Trend uses daily klines; honor source==Klines|Both
     if matches!(source, CliSource::Klines | CliSource::Both) {
         info!("[2/2] Syncing Daily Klines for {}...", &exchange);
         run_cex_sync(
-            pool,
+            client,
             CexSyncTask::SyncKlines {
                 exchange: exchange.clone(),
                 market_type,
@@ -86,11 +94,8 @@ pub async fn run_trend_pipeline(
     Ok(())
 }
 
-// ---------------------------
-// Workflow 3: Z-Score (CEX)
-// ---------------------------
 pub async fn run_zscore_pipeline(
-    pool: &PgPool,
+    client: &Client,
     exchange: String,
     market_type: CexMarketType,
     spec: TimeSpec,
@@ -98,17 +103,23 @@ pub async fn run_zscore_pipeline(
     quote: Option<String>,
     all_quotes: bool,
 ) -> Result<()> {
-    info!("--- STARTING Z-SCORE WORKFLOW for {} ({:?}) ---", &exchange, market_type);
+    info!(
+        "--- STARTING Z-SCORE WORKFLOW for {} ({:?}) ---",
+        &exchange, market_type
+    );
 
-    let selected_quote: Option<String> = if all_quotes {
-        None
-    } else {
-        Some(quote.unwrap_or_else(|| std::env::var("CEX_QUOTE").unwrap_or_else(|_| "USDT".to_string())))
-    };
+    let selected_quote: Option<String> =
+        if all_quotes {
+            None
+        } else {
+            Some(quote.unwrap_or_else(|| {
+                std::env::var("CEX_QUOTE").unwrap_or_else(|_| "USDT".to_string())
+            }))
+        };
 
     info!("[1/3] Syncing CEX Markets...");
     run_cex_sync(
-        pool,
+        client,
         CexSyncTask::RefreshMarkets {
             exchange: exchange.clone(),
             selected_quote,
@@ -121,7 +132,7 @@ pub async fn run_zscore_pipeline(
     if matches!(source, CliSource::Klines | CliSource::Both) {
         info!("[2/3] Syncing Hourly Klines for {}...", &exchange);
         run_cex_sync(
-            pool,
+            client,
             CexSyncTask::SyncKlines {
                 exchange: exchange.clone(),
                 market_type,
@@ -137,7 +148,7 @@ pub async fn run_zscore_pipeline(
     if matches!(source, CliSource::Trades | CliSource::Both) {
         info!("[3/3] Syncing Trades for {}...", &exchange);
         run_cex_sync(
-            pool,
+            client,
             CexSyncTask::SyncTrades {
                 exchange,
                 market_type,

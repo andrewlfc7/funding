@@ -1,5 +1,5 @@
-use serde::Deserialize;
 use rust_decimal::Decimal;
+use serde::Deserialize;
 
 /// GET /info/markets
 #[derive(Debug, Deserialize)]
@@ -9,8 +9,8 @@ pub struct ExtendedMarketsResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct ExtendedMarket {
-    pub name: String,        // "BTC-USD"
-    pub assetName: String,   // "BTC"
+    pub name: String,      // "BTC-USD"
+    pub assetName: String, // "BTC"
     pub active: bool,
     pub marketStats: Option<ExtendedInlineMarketStats>,
 }
@@ -34,7 +34,7 @@ pub struct ExtendedFundingData {
     pub m: String, // market symbol
     #[serde(deserialize_with = "deserialize_decimal_from_str")]
     pub f: Decimal, // funding rate
-    pub T: i64,     // timestamp (ms)
+    pub T: i64,    // timestamp (ms)
 }
 
 /// GET /markets/{symbol}/stats

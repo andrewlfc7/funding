@@ -22,9 +22,7 @@ export interface ArbOpportunity {
   combinedOI: number;
 }
 
-export type DisplayMode = 'rate' | 'annualized';
-export type SpreadUnit = 'percentage' | 'bps';
-export type SortDirection = 'asc' | 'desc';
+
 
 export type LineDataset = {
   label: string;
@@ -141,5 +139,47 @@ export interface LeadLagMatrix {
   coins: string[];
   lags: number[];
   matrix: number[][][];
+}
+
+
+
+
+export interface ArbOpportunity {
+  longExchange: string
+  shortExchange: string
+  longRate: number
+  shortRate: number
+  spread: number
+  combinedOI: number
+}
+
+export interface ExchangeData {
+  funding_rate: number
+  open_interest: number
+}
+
+export interface TokenRow {
+  token: string
+  exchanges: Record<string, ExchangeData>
+}
+
+export type DisplayMode = 'rate' | 'annualized'
+export type SpreadUnit = 'percentage' | 'bps'
+export type SortDirection = 'asc' | 'desc'
+
+
+export interface KlineDTO {
+  ts: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+}
+
+export interface RvPoint {
+  ts: number
+  ret: number
+  vol?: number
 }
 

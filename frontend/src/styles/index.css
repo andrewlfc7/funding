@@ -9,11 +9,9 @@
 @import './layout/dashboard.css';
 
 /* Components */
-@import './components/states.css';
 @import './components/controls.css';
-@import './components/table.css';
-@import './components/funding-rates.css';
-@import './components/arbitrage.css';
+
+@import './components/funding/index.css';
 
 /* Z-Score Components */
 @import './components/zscore.css';
@@ -23,26 +21,16 @@
 @import './components/zscore/liquidity.css';
 @import './components/zscore/inter-asset.css';
 @import './components/zscore/leaders.css';
-
-@import './utils/animations.css';
-@import './utils/responsive.css';
-
 @import './components/zscore/heatmap.css';
-
 @import './components/zscore/microstructure.css'; 
-
 @import './components/zscore/relative-strength.css'; 
 @import './components/zscore/market-regime.css';
-
 @import './components/zscore/trades-analysis.css';
 @import './components/zscore/volatility-dynamics.css';
-
 @import './components/zscore/market-seasonality.css';
-
 
 /* Trend components */
 @import './components/trend.css';
-
 @import './components/trend/correlation-matrix.css';
 @import './components/trend/exposure-heatmap.css';
 @import './components/trend/market-signals.css';
@@ -51,5 +39,8 @@
 @import './components/trend/portfolio-construction.css';
 @import './components/trend/signal-performance.css';
 @import './components/trend/performance-attribution.css';
-
 @import './components/trend/shared-charts.css';
+
+/* Utilities */
+@import './utils/animations.css';
+@import './utils/responsive.css';

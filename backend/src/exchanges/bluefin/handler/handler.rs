@@ -5,9 +5,9 @@ use chrono::{LocalResult, TimeZone, Utc};
 use crate::exchanges::bluefin::api::types::{
     BluefinExchangeInfoResponse, BluefinFundingRate, BluefinTicker,
 };
-use crate::exchanges::shared::types::{NormalizedFundingRate, NormalizedMarket, NormalizedMarketStats};
-
-
+use crate::exchanges::shared::types::{
+    NormalizedFundingRate, NormalizedMarket, NormalizedMarketStats,
+};
 
 #[inline]
 fn ts_utc(ms: i64) -> chrono::DateTime<Utc> {

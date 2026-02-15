@@ -1,4 +1,4 @@
-// 
+//
 use super::endpoints::{ApiEnvironment, PublicEndpoint, get_public_url};
 use bytes::Bytes;
 use reqwest::Client;
@@ -22,7 +22,6 @@ impl ExtendedClient {
         }
     }
 
-
     pub async fn get_markets(&self, market: Option<&str>) -> Result<Bytes, reqwest::Error> {
         let url = get_public_url(PublicEndpoint::Markets, self.environment);
         let mut request = self.client.get(&url);
@@ -32,14 +31,15 @@ impl ExtendedClient {
         let res = request.send().await?;
         res.error_for_status()?.bytes().await
     }
-    
 
     pub async fn get_market_stats(&self, market: &str) -> Result<Bytes, reqwest::Error> {
-        let url = get_public_url(PublicEndpoint::MarketStats(market.to_string()), self.environment);
+        let url = get_public_url(
+            PublicEndpoint::MarketStats(market.to_string()),
+            self.environment,
+        );
         let res = self.client.get(&url).send().await?;
         res.error_for_status()?.bytes().await
     }
-
 
     pub async fn get_open_interest(
         &self,
@@ -48,7 +48,10 @@ impl ExtendedClient {
         start_time: Option<u64>,
         end_time: Option<u64>,
     ) -> Result<Bytes, reqwest::Error> {
-        let url = get_public_url(PublicEndpoint::OpenInterest(market.to_string()), self.environment);
+        let url = get_public_url(
+            PublicEndpoint::OpenInterest(market.to_string()),
+            self.environment,
+        );
 
         let mut query_params = Vec::new();
         if let Some(interval) = interval {
@@ -70,14 +73,16 @@ impl ExtendedClient {
         res.error_for_status()?.bytes().await
     }
 
-
     pub async fn get_funding(
         &self,
         market: &str,
         start_time: Option<u64>,
         end_time: Option<u64>,
     ) -> Result<Bytes, reqwest::Error> {
-        let url = get_public_url(PublicEndpoint::Funding(market.to_string()), self.environment);
+        let url = get_public_url(
+            PublicEndpoint::Funding(market.to_string()),
+            self.environment,
+        );
 
         let mut query_params = Vec::new();
         if let Some(st) = start_time {
@@ -96,6 +101,3 @@ impl ExtendedClient {
         res.error_for_status()?.bytes().await
     }
 }
-
-
-

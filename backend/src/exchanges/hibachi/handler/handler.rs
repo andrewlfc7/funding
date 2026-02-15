@@ -3,11 +3,13 @@ use bytes::Bytes;
 use chrono::{Duration, TimeZone, Utc}; // Add Duration and TimeZone
 
 use crate::exchanges::hibachi::api::types::{
-    HibachiExchangeInfoResponse, HibachiOpenInterestResponse, HibachiPricesResponse, HibachiStatsResponse,
+    HibachiExchangeInfoResponse, HibachiOpenInterestResponse, HibachiPricesResponse,
+    HibachiStatsResponse,
 };
-use crate::exchanges::shared::types::{NormalizedMarket, NormalizedMarketStats, NormalizedFundingRate};
+use crate::exchanges::shared::types::{
+    NormalizedFundingRate, NormalizedMarket, NormalizedMarketStats,
+};
 use anyhow::anyhow;
-
 
 /// Parses the response from `get_exchange_info` into a list of normalized markets.
 pub fn parse_hibachi_markets(raw: &Bytes) -> Result<Vec<NormalizedMarket>> {
@@ -26,7 +28,6 @@ pub fn parse_hibachi_markets(raw: &Bytes) -> Result<Vec<NormalizedMarket>> {
         })
         .collect())
 }
-
 
 pub fn parse_hibachi_market_stats(
     raw_open_interest: &Bytes,
@@ -52,10 +53,15 @@ pub fn parse_hibachi_latest_funding(raw_prices: &Bytes) -> Result<NormalizedFund
 
     let funding_info = resp.funding_rate_estimation;
 
-
-    let next_funding_time = Utc.timestamp_opt(funding_info.next_funding_timestamp, 0)
+    let next_funding_time = Utc
+        .timestamp_opt(funding_info.next_funding_timestamp, 0)
         .single()
-        .ok_or_else(|| anyhow!("Invalid next_funding_timestamp from API: {}", funding_info.next_funding_timestamp))?;
+        .ok_or_else(|| {
+            anyhow!(
+                "Invalid next_funding_timestamp from API: {}",
+                funding_info.next_funding_timestamp
+            )
+        })?;
 
     // The timestamp for our normalized model represents the start of the period.
     let current_period_start_time = next_funding_time - Duration::hours(8);

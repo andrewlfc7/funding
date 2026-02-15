@@ -2,11 +2,14 @@
   <div class="returns-chart-container">
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <span>Loading returns data...</span>
+      <span>Loading returns & volatility...</span>
     </div>
     <div v-else-if="error" class="error-state">
       <span class="error-icon">⚠</span>
       <span>{{ error }}</span>
+    </div>
+    <div v-else-if="returnsData.length === 0 && volatilityData.length === 0" class="no-data-state">
+      <span>No returns data available</span>
     </div>
     <div v-else class="chart-wrapper">
       <canvas ref="chartCanvas"></canvas>
@@ -15,132 +18,149 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { Chart, registerables, type ChartConfiguration, type ScriptableContext, type TooltipItem, type LegendItem } from 'chart.js';
-import 'chartjs-adapter-date-fns';
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
+import { Chart, registerables, type ChartConfiguration, type TooltipItem } from 'chart.js'
+import 'chartjs-adapter-date-fns'
 
-Chart.register(...registerables);
+Chart.register(...registerables)
 
-// Define a consistent data point structure for Chart.js
-interface PointData {
-  x: number;
-  y: number;
+interface PointData { 
+  x: number; 
+  y: number; 
 }
 
 interface Props {
-  labels: Date[];
-  returns: number[];
-  volatility: number[];
-  loading?: boolean;
-  error?: string | null;
+  labels: Date[]
+  returns: number[]
+  volatility: number[]
+  loading?: boolean
+  error?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   error: null,
-});
+})
 
-const chartCanvas = ref<HTMLCanvasElement | null>(null);
-// Explicitly type the chart instance for mixed chart types
-let chart: Chart<'line' | 'bar', PointData[]> | null = null;
+const chartCanvas = ref<HTMLCanvasElement | null>(null)
+let chart: Chart<'line', PointData[]> | null = null
 
+// Process and align data with proper validation
 const returnsData = computed<PointData[]>(() => {
-  return props.returns.map((ret, index) => ({
-    x: props.labels[index].getTime(), // Convert Date to numeric timestamp
-    y: ret * 100,
-  }));
+  if (!props.labels?.length || !props.returns?.length) return [];
+  
+  const minLength = Math.min(props.labels.length, props.returns.length);
+  const data: PointData[] = [];
+  
+  for (let i = 0; i < minLength; i++) {
+    const label = props.labels[i];
+    const returnValue = props.returns[i];
+    
+    if (label instanceof Date && Number.isFinite(returnValue)) {
+      data.push({
+        x: label.getTime(),
+        y: returnValue * 100 // Convert to percentage
+      });
+    }
+  }
+  
+  return data.sort((a, b) => a.x - b.x);
 });
 
 const volatilityData = computed<PointData[]>(() => {
-  return props.volatility.map((vol, index) => ({
-    x: props.labels[index].getTime(), // Convert Date to numeric timestamp
-    y: vol * 100,
-  }));
-});
-
-const volatilityBands = computed(() => {
-  const sortedVols = [...props.volatility].sort((a, b) => a - b);
-  const p25 = (sortedVols[Math.floor(sortedVols.length * 0.25)] || 0) * 100;
-  const p75 = (sortedVols[Math.floor(sortedVols.length * 0.75)] || 0) * 100;
+  if (!props.labels?.length || !props.volatility?.length) return [];
   
-  return {
-    p25: props.labels.map(label => ({ x: label.getTime(), y: p25 })),
-    p75: props.labels.map(label => ({ x: label.getTime(), y: p75 })),
-  };
+  const minLength = Math.min(props.labels.length, props.volatility.length);
+  const data: PointData[] = [];
+  
+  for (let i = 0; i < minLength; i++) {
+    const label = props.labels[i];
+    const volValue = props.volatility[i];
+    
+    if (label instanceof Date && Number.isFinite(volValue)) {
+      data.push({
+        x: label.getTime(),
+        y: volValue * 100 // Convert to percentage
+      });
+    }
+  }
+  
+  return data.sort((a, b) => a.x - b.x);
 });
 
-function createChart() {
-  if (!chartCanvas.value || chart) return;
+function destroyChart() {
+  if (chart) {
+    chart.destroy();
+    chart = null;
+  }
+}
+
+async function createChart() {
+  if (!chartCanvas.value || props.loading || props.error) {
+    return;
+  }
+
+  if (returnsData.value.length === 0 && volatilityData.value.length === 0) {
+    return;
+  }
+
+  await nextTick();
+  
   const ctx = chartCanvas.value.getContext('2d');
   if (!ctx) return;
 
-  const config: ChartConfiguration<'line' | 'bar', PointData[]> = {
+  destroyChart();
+
+  const config: ChartConfiguration<'line', PointData[]> = {
     type: 'line',
     data: {
       datasets: [
         {
           label: 'Daily Returns',
           data: returnsData.value,
-          type: 'bar',
-          // Explicitly type context for scriptable options
-          backgroundColor: (context: ScriptableContext<'bar'>) => 
-            (context.parsed?.y ?? 0) > 0 ? 'rgba(0, 191, 99, 0.6)' : 'rgba(255, 71, 87, 0.6)',
-          borderColor: (context: ScriptableContext<'bar'>) => 
-            (context.parsed?.y ?? 0) > 0 ? '#00BF63' : '#FF4757',
-          borderWidth: 1,
+          borderColor: '#00BF63',
+          backgroundColor: 'rgba(0, 191, 99, 0.12)',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.2,
           yAxisID: 'returns',
+          fill: false,
         },
         {
-          label: 'Rolling Volatility',
+          label: 'Volatility',
           data: volatilityData.value,
           borderColor: '#FFA502',
-          backgroundColor: 'rgba(255, 165, 2, 0.1)',
+          backgroundColor: 'rgba(255, 165, 2, 0.10)',
           borderWidth: 2,
-          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 4,
           tension: 0.2,
-          pointRadius: 0,
           yAxisID: 'volatility',
-        },
-        {
-          label: 'Vol 75th Percentile',
-          data: volatilityBands.value.p75,
-          borderColor: 'rgba(255, 165, 2, 0.5)',
-          borderWidth: 1,
-          borderDash: [5, 5],
-          pointRadius: 0,
-          yAxisID: 'volatility',
-        },
-        {
-          label: 'Vol 25th Percentile',
-          data: volatilityBands.value.p25,
-          borderColor: 'rgba(255, 165, 2, 0.3)',
-          borderWidth: 1,
-          borderDash: [5, 5],
-          pointRadius: 0,
-          yAxisID: 'volatility',
+          fill: false,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 0 },
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
+        legend: { 
+          display: true,
           labels: {
-            // Explicitly type legend item
-            filter: (item: LegendItem) => !item.text.includes('Percentile'),
-          },
+            color: '#ECF0F1',
+            usePointStyle: true,
+            padding: 15
+          }
         },
         tooltip: {
           callbacks: {
-            // Explicitly type tooltip item
-            label: (context: TooltipItem<'line' | 'bar'>) => {
-              const label = context.dataset.label || '';
-              const value = context.parsed.y.toFixed(2);
-              if (label === 'Daily Returns') return `Returns: ${value}%`;
-              if (label === 'Rolling Volatility') return `Volatility: ${value}%`;
-              return `${label}: ${value}%`;
+            label: (ctx: TooltipItem<'line'>) => {
+              const label = ctx.dataset.label ?? '';
+              const val = Number(ctx.parsed.y).toFixed(2);
+              return `${label}: ${val}%`;
             },
           },
         },
@@ -148,20 +168,33 @@ function createChart() {
       scales: {
         x: {
           type: 'time',
-          time: { unit: 'day', displayFormats: { day: 'MMM dd' } },
+          time: { 
+            unit: 'day', 
+            displayFormats: { day: 'MMM dd' },
+            tooltipFormat: 'MMM dd, yyyy'
+          },
+          grid: { color: 'rgba(236, 240, 241, 0.1)' },
+          ticks: { color: '#ECF0F1' }
         },
         returns: {
           type: 'linear',
           position: 'left',
-          title: { display: true, text: 'Daily Returns (%)' },
-          ticks: { callback: (value) => `${Number(value).toFixed(1)}%` },
+          title: { display: true, text: 'Returns (%)', color: '#ECF0F1' },
+          grid: { color: 'rgba(236, 240, 241, 0.1)' },
+          ticks: { 
+            color: '#ECF0F1',
+            callback: (v) => `${Number(v).toFixed(1)}%` 
+          },
         },
         volatility: {
           type: 'linear',
           position: 'right',
           grid: { display: false },
-          title: { display: true, text: 'Volatility (%)' },
-          ticks: { callback: (value) => `${Number(value).toFixed(1)}%` },
+          title: { display: true, text: 'Volatility (%)', color: '#ECF0F1' },
+          ticks: { 
+            color: '#ECF0F1',
+            callback: (v) => `${Number(v).toFixed(1)}%` 
+          },
         },
       },
     },
@@ -175,18 +208,31 @@ function updateChart() {
     createChart();
     return;
   }
+  
   chart.data.datasets[0].data = returnsData.value;
   chart.data.datasets[1].data = volatilityData.value;
-  chart.data.datasets[2].data = volatilityBands.value.p75;
-  chart.data.datasets[3].data = volatilityBands.value.p25;
   chart.update('none');
 }
 
-onMounted(createChart);
-onUnmounted(() => {
-  chart?.destroy();
-  chart = null;
+onMounted(() => {
+  if (!props.loading && !props.error && (returnsData.value.length > 0 || volatilityData.value.length > 0)) {
+    createChart();
+  }
 });
 
-watch(() => [props.labels, props.returns, props.volatility], updateChart, { deep: true });
+onUnmounted(destroyChart);
+
+watch(() => [returnsData.value, volatilityData.value], () => {
+  if (!props.loading && !props.error && (returnsData.value.length > 0 || volatilityData.value.length > 0)) {
+    updateChart();
+  }
+}, { deep: true });
+
+watch(() => [props.loading, props.error], ([newLoading, newError]) => {
+  if (!newLoading && !newError && (returnsData.value.length > 0 || volatilityData.value.length > 0)) {
+    createChart();
+  } else if (newLoading || newError) {
+    destroyChart();
+  }
+});
 </script>

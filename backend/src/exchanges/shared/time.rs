@@ -24,10 +24,9 @@ impl TimeSpec {
         match self {
             TimeSpec::Between { start_ms, end_ms } => (*start_ms, *end_ms),
 
-            TimeSpec::LookbackHours(h) => (
-                now_ms.saturating_sub(h.saturating_mul(3_600_000)),
-                now_ms,
-            ),
+            TimeSpec::LookbackHours(h) => {
+                (now_ms.saturating_sub(h.saturating_mul(3_600_000)), now_ms)
+            }
 
             TimeSpec::SinceLastOrLookbackHours(h) => {
                 if let Some(last_ms) = last_ts_ms {
@@ -39,26 +38,12 @@ impl TimeSpec {
 
             // For interval mode, you typically pass this to the API layer
             // but if you need a resolve() output, provide a default window.
-            TimeSpec::Interval(interval) => {
-                match interval.as_str() {
-                    "1m" => (
-                        now_ms.saturating_sub(60_000),
-                        now_ms
-                    ),
-                    "1h" => (
-                        now_ms.saturating_sub(3_600_000),
-                        now_ms
-                    ),
-                    "1d" => (
-                        now_ms.saturating_sub(86_400_000),
-                        now_ms
-                    ),
-                    _ => (
-                        now_ms.saturating_sub(3_600_000),
-                        now_ms
-                    ),
-                }
-            }
+            TimeSpec::Interval(interval) => match interval.as_str() {
+                "1m" => (now_ms.saturating_sub(60_000), now_ms),
+                "1h" => (now_ms.saturating_sub(3_600_000), now_ms),
+                "1d" => (now_ms.saturating_sub(86_400_000), now_ms),
+                _ => (now_ms.saturating_sub(3_600_000), now_ms),
+            },
         }
     }
 }

@@ -2,23 +2,15 @@
 import axios from 'axios'
 import {
   API_BASE_URL,
-  KLINES_ENDPOINT,        // '/api/klines/daily'
-  RETURNS_ENDPOINT,       // '/api/signals/returns'
-  VOLATILITY_ENDPOINT,    // '/api/signals/volatility'
+  TREND_SERIES_PRICE_ENDPOINT,
+  TREND_SERIES_RETURNS_ENDPOINT,
+  TREND_SERIES_VOL_ENDPOINT,
+  joinUrl,
 } from '@/utils/constants'
 import { handleApiError } from './error'
 
 // ---- Types ----
 export type MarketType = 'spot' | 'perps'
-
-export interface KlineDTO {
-  ts: number
-  open: number
-  high: number
-  low: number
-  close: number
-  volume: number
-}
 
 export type ReturnPoint = { ts: number; value: number }
 export type VolPoint    = { ts: number; value: number }
@@ -35,29 +27,43 @@ export interface RVParams extends BaseParams {
   vol_window?: number
 }
 
-// Ensure we only send uppercase base symbols (no auto-quote/pairing)
+// Ensure we only send uppercase base symbols
 function toBase(symbol: string): string {
   return symbol.toUpperCase().trim()
 }
 
-// ---- API calls ----
-export async function fetchDailyKlines(params: BaseParams): Promise<KlineDTO[]> {
+// ---- Series helpers ----
+type SeriesResponse = { ts: number[]; values: number[] }
+
+function mapSeries<T extends { ts: number; value: number }>(
+  data: SeriesResponse
+): T[] {
+  const n = Math.min(data.ts.length, data.values.length)
+  const out: T[] = new Array(n)
+  for (let i = 0; i < n; i++) {
+    out[i] = { ts: Number(data.ts[i]), value: Number(data.values[i]) } as T
+  }
+  return out
+}
+
+// ---- API calls (series) ----
+export async function fetchPriceSeries(params: BaseParams): Promise<ReturnPoint[]> {
   try {
-    const url = `${API_BASE_URL}${KLINES_ENDPOINT}`
+    const url = joinUrl(API_BASE_URL, TREND_SERIES_PRICE_ENDPOINT)
     const p = { ...params, symbol: toBase(params.symbol) }
-    const { data } = await axios.get<KlineDTO[]>(url, { params: p })
-    return data
+    const { data } = await axios.get<SeriesResponse>(url, { params: p })
+    return mapSeries<ReturnPoint>(data)
   } catch (e) {
-    throw new Error(handleApiError(e, 'fetchDailyKlines'))
+    throw new Error(handleApiError(e, 'fetchPriceSeries'))
   }
 }
 
 export async function fetchReturns(params: RVParams): Promise<ReturnPoint[]> {
   try {
-    const url = `${API_BASE_URL}${RETURNS_ENDPOINT}`
+    const url = joinUrl(API_BASE_URL, TREND_SERIES_RETURNS_ENDPOINT)
     const p = { ...params, symbol: toBase(params.symbol) }
-    const { data } = await axios.get<ReturnPoint[]>(url, { params: p })
-    return data.map(d => ({ ts: Number(d.ts), value: Number(d.value) }))
+    const { data } = await axios.get<SeriesResponse>(url, { params: p })
+    return mapSeries<ReturnPoint>(data)
   } catch (e) {
     throw new Error(handleApiError(e, 'fetchReturns'))
   }
@@ -65,10 +71,10 @@ export async function fetchReturns(params: RVParams): Promise<ReturnPoint[]> {
 
 export async function fetchVolatility(params: RVParams): Promise<VolPoint[]> {
   try {
-    const url = `${API_BASE_URL}${VOLATILITY_ENDPOINT}`
-    const p = { ...params, symbol: toBase(params.symbol) }
-    const { data } = await axios.get<VolPoint[]>(url, { params: p })
-    return data.map(d => ({ ts: Number(d.ts), value: Number(d.value) }))
+    const url = joinUrl(API_BASE_URL, TREND_SERIES_VOL_ENDPOINT)
+    const p = { ...params, symbol: toBase(params.symbol), annualize: true }
+    const { data } = await axios.get<SeriesResponse>(url, { params: p })
+    return mapSeries<VolPoint>(data)
   } catch (e) {
     throw new Error(handleApiError(e, 'fetchVolatility'))
   }
@@ -76,15 +82,15 @@ export async function fetchVolatility(params: RVParams): Promise<VolPoint[]> {
 
 // ---- Convenience grab-all ----
 export async function fetchMarketInfo(params: RVParams): Promise<{
-  klines: KlineDTO[]
+  prices: ReturnPoint[]       // close price series
   returns: ReturnPoint[]
   volatility: VolPoint[]
 }> {
   const p = { ...params, symbol: toBase(params.symbol) }
-  const [klines, returns, volatility] = await Promise.all([
-    fetchDailyKlines(p),
+  const [prices, returns, volatility] = await Promise.all([
+    fetchPriceSeries(p),
     fetchReturns(p),
     fetchVolatility(p),
   ])
-  return { klines, returns, volatility }
+  return { prices, returns, volatility }
 }

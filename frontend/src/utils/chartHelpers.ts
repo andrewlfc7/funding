@@ -1,5 +1,5 @@
+import type { ChartConfiguration } from 'chart.js';
 import type { MarketData, TrendData, LineDataset, CombinedSignals } from './types'
-import { ChartConfiguration } from 'chart.js';
 
 // Utility function to adjust color opacity
 function adjustColorOpacity(color: string, opacity: number): string {

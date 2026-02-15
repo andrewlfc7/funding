@@ -2,7 +2,9 @@ use rust_decimal::Decimal;
 use serde::Deserialize;
 
 /// Deserializes a string that may be null or invalid into an Option<Decimal>.
-pub fn deserialize_decimal_from_str_opt<'de, D>(deserializer: D) -> Result<Option<Decimal>, D::Error>
+pub fn deserialize_decimal_from_str_opt<'de, D>(
+    deserializer: D,
+) -> Result<Option<Decimal>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -50,7 +52,7 @@ pub struct DriftContract {
     pub base_currency: String,
     pub quote_currency: String,
     pub product_type: String,
-    
+
     #[serde(deserialize_with = "deserialize_decimal_from_str_opt")]
     pub open_interest: Option<Decimal>,
     #[serde(deserialize_with = "deserialize_decimal_from_str_opt")]

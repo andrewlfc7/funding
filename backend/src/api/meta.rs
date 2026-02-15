@@ -1,5 +1,10 @@
 // src/api/meta.rs
-use axum::{extract::{Query, State}, response::Json, routing::get, Router};
+use axum::{
+    Router,
+    extract::{Query, State},
+    response::Json,
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use tracing::error;
@@ -24,7 +29,7 @@ async fn get_trend_options(
 ) -> Json<OptionsResponse> {
     // normalize inputs
     let mt = params.market_type.to_lowercase(); // "spot" | "perps"
-    let quote = params.quote.to_uppercase();    // "USDT" | "USDC"
+    let quote = params.quote.to_uppercase(); // "USDT" | "USDC"
 
     // Coins (base assets)
     let coins_res = sqlx::query_scalar!(
@@ -80,6 +85,5 @@ async fn get_trend_options(
 }
 
 pub fn router() -> Router<PgPool> {
-    Router::<PgPool>::new()
-        .route("/api/meta-data/options", get(get_trend_options))
+    Router::<PgPool>::new().route("/api/meta-data/options", get(get_trend_options))
 }

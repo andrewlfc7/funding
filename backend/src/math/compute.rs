@@ -1,11 +1,12 @@
 // src/math/compute.rs
 use std::f64;
-use std::cmp::min;
 
 /// Numerically stable EMA (alpha in (0,1], seed = first value)
 fn ema(values: &[f64], alpha: f64) -> Vec<f64> {
     assert!(alpha > 0.0 && alpha <= 1.0);
-    if values.is_empty() { return vec![]; }
+    if values.is_empty() {
+        return vec![];
+    }
     let mut out = Vec::with_capacity(values.len());
     let mut s = values[0];
     out.push(s);
@@ -16,7 +17,6 @@ fn ema(values: &[f64], alpha: f64) -> Vec<f64> {
     out
 }
 
-
 pub fn ewmac(
     prices: &[f64],
     lfast: usize,
@@ -26,9 +26,13 @@ pub fn ewmac(
     capmin: f64,
     capmax: f64,
 ) -> Vec<Option<f64>> {
-    if prices.len() < 2 || lfast == 0 { return vec![None; prices.len()]; }
+    if prices.len() < 2 || lfast == 0 {
+        return vec![None; prices.len()];
+    }
     let lslow = lslow.unwrap_or(4 * lfast);
-    if lslow <= lfast { return vec![None; prices.len()]; }
+    if lslow <= lfast {
+        return vec![None; prices.len()];
+    }
 
     // EMA alphas
     let alpha_f = 2.0 / (lfast as f64 + 1.0);
@@ -64,7 +68,9 @@ pub fn ewmac(
     // Optional scalar
     let scalar = if usescalar {
         ((lfast as f64 * lslow as f64) / (2.0 * ((lslow - lfast) as f64))).sqrt()
-    } else { 1.0 };
+    } else {
+        1.0
+    };
 
     // Build output with Nones where slow EMA/vol aren’t “mature” yet.
     // We’ll be conservative and start giving values only after lslow.
@@ -83,7 +89,9 @@ pub fn ewmac(
 ///   half - days_since_high
 /// where half = (window-1)/2, so +half means new high today, -half means high at window-1 days ago.
 pub fn breakout(close: &[f64], window: usize) -> Vec<Option<f64>> {
-    if window == 0 || close.is_empty() { return vec![None; close.len()]; }
+    if window == 0 || close.is_empty() {
+        return vec![None; close.len()];
+    }
     let half = (window as f64 - 1.0) / 2.0;
     let mut out = vec![None; close.len()];
     for i in 0..close.len() {
@@ -110,7 +118,9 @@ pub fn breakout(close: &[f64], window: usize) -> Vec<Option<f64>> {
 /// Exponential weights of length n with a given half-life (Python's exp_weights).
 fn exp_weights(n: usize, half_life: usize) -> Vec<f64> {
     // w_t ∝ exp( -ln(2) * (n-1 - t) / half_life ), newest has largest weight
-    if n == 0 { return vec![]; }
+    if n == 0 {
+        return vec![];
+    }
     let hl = half_life.max(1) as f64;
     let lambda = (2.0f64).ln() / hl;
     let mut w = Vec::with_capacity(n);
@@ -121,7 +131,9 @@ fn exp_weights(n: usize, half_life: usize) -> Vec<f64> {
     // normalize
     let sum: f64 = w.iter().sum();
     if sum > 0.0 {
-        for x in &mut w { *x /= sum; }
+        for x in &mut w {
+            *x /= sum;
+        }
     }
     w
 }
@@ -134,11 +146,17 @@ pub fn momentum(
     half_life: usize,
     lag: usize,
 ) -> Vec<Option<f64>> {
-    if trailing_days == 0 || returns.is_empty() { return vec![None; returns.len()]; }
+    if trailing_days == 0 || returns.is_empty() {
+        return vec![None; returns.len()];
+    }
     // apply lag
     let mut r = vec![0.0; returns.len()];
     for i in 0..returns.len() {
-        if i >= lag { r[i] = returns[i - lag]; } else { r[i] = 0.0; }
+        if i >= lag {
+            r[i] = returns[i - lag];
+        } else {
+            r[i] = 0.0;
+        }
     }
 
     let w = exp_weights(trailing_days, half_life);

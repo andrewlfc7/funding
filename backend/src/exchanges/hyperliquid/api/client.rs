@@ -1,4 +1,4 @@
-use super::endpoints::{get_public_url, ApiEnvironment, PublicEndpoint};
+use super::endpoints::{ApiEnvironment, PublicEndpoint, get_public_url};
 use bytes::Bytes;
 use reqwest::Client;
 use serde_json::{Map, Value};
@@ -19,7 +19,10 @@ impl HyperliquidClient {
             .build()
             .expect("Failed to create reqwest client");
 
-        Self { client, environment }
+        Self {
+            client,
+            environment,
+        }
     }
 
     /// Internal helper method to make a POST request to the public info endpoint.
@@ -47,9 +50,15 @@ impl HyperliquidClient {
     /// Retrieves perpetuals asset contexts (mark price, current funding, OI, etc.).
     ///
     /// POST /info with { "type": "metaAndAssetCtxs", "dex": "<optional>" }
-    pub async fn get_meta_and_asset_ctxs(&self, dex: Option<&str>) -> Result<Bytes, reqwest::Error> {
+    pub async fn get_meta_and_asset_ctxs(
+        &self,
+        dex: Option<&str>,
+    ) -> Result<Bytes, reqwest::Error> {
         let mut body = Map::new();
-        body.insert("type".to_string(), Value::String("metaAndAssetCtxs".to_string()));
+        body.insert(
+            "type".to_string(),
+            Value::String("metaAndAssetCtxs".to_string()),
+        );
         if let Some(d) = dex {
             body.insert("dex".to_string(), Value::String(d.to_string()));
         }
@@ -66,7 +75,10 @@ impl HyperliquidClient {
         end_time_ms: Option<u64>,
     ) -> Result<Bytes, reqwest::Error> {
         let mut body = Map::new();
-        body.insert("type".to_string(), Value::String("fundingHistory".to_string()));
+        body.insert(
+            "type".to_string(),
+            Value::String("fundingHistory".to_string()),
+        );
         body.insert("coin".to_string(), Value::String(coin.to_string()));
         body.insert("startTime".to_string(), Value::from(start_time_ms));
         if let Some(end) = end_time_ms {

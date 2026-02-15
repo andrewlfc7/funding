@@ -1,8 +1,11 @@
+use crate::data::{
+    coin::refresh_all_markets, funding::collect_funding_for_exchange,
+    stats::collect_daily_market_stats,
+};
 use anyhow::Result;
 use sqlx::PgPool;
-use tokio_cron_scheduler::{JobScheduler, Job};
-use tracing::{info, error};
-use crate::data::{coin::refresh_all_markets, stats::collect_daily_market_stats, funding::collect_funding_for_exchange};
+use tokio_cron_scheduler::{Job, JobScheduler};
+use tracing::{error, info};
 
 #[derive(Debug)]
 struct ExchangeCfg {
@@ -89,12 +92,10 @@ pub async fn start_scheduler(pool: PgPool) -> Result<()> {
     Ok(())
 }
 
-
-
 fn minutes_to_cron(minutes: i32) -> Result<String> {
     match minutes {
-        60 => Ok("0 0 * * * *".to_string()),        // hourly
-        480 => Ok("0 0 */8 * * *".to_string()),     // every 8 hours
+        60 => Ok("0 0 * * * *".to_string()),    // hourly
+        480 => Ok("0 0 */8 * * *".to_string()), // every 8 hours
         m if m < 60 => Ok(format!("0 */{} * * * *", m)),
         m if m % 60 == 0 => Ok(format!("0 0 */{} * * *", m / 60)),
         m => Err(anyhow::anyhow!("Unsupported funding interval: {}", m)),

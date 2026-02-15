@@ -34,27 +34,26 @@ pub struct BluefinMarket {
 #[serde(rename_all = "camelCase")]
 pub struct BluefinTicker {
     pub symbol: String,
-    
+
     #[serde(deserialize_with = "deserialize_decimal_from_e9_str")]
     pub mark_price_e9: Decimal,
-    
+
     #[serde(deserialize_with = "deserialize_decimal_from_e9_str")]
     pub open_interest_e9: Decimal, // This is the NOTIONAL value (USD)
-    
+
     #[serde(deserialize_with = "deserialize_decimal_from_e9_str")]
     pub quote_volume_24hr_e9: Decimal,
-    
+
     pub updated_at_millis: i64,
 }
-
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BluefinFundingRate {
     pub symbol: String,
-    
+
     #[serde(deserialize_with = "deserialize_decimal_from_e9_str")]
     pub funding_rate_e9: Decimal,
-    
+
     pub funding_time_at_millis: i64,
 }

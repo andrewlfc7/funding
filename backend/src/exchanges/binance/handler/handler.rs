@@ -1,12 +1,10 @@
 use anyhow::Result;
-use bytes::Bytes;
-use chrono::{TimeZone, Utc, LocalResult};
+use chrono::{LocalResult, TimeZone, Utc};
 
-use crate::exchanges::shared::types::{NormalizedKline,CexMarket, NormalizedTrade};
-use crate::exchanges::binance::api::types::{BinanceTrade,BinanceExchangeInfoResponse};
-use anyhow::Context;
+use crate::exchanges::binance::api::types::BinanceTrade;
+use crate::exchanges::shared::types::{CexMarket, NormalizedKline, NormalizedTrade};
 use crate::utils::utils::is_usd_stable;
-
+use anyhow::Context;
 
 pub fn parse_binance_markets(raw_data: &[u8], exchange_name: &str) -> Result<Vec<CexMarket>> {
     #[derive(serde::Deserialize)]
@@ -35,13 +33,17 @@ pub fn parse_binance_markets(raw_data: &[u8], exchange_name: &str) -> Result<Vec
         // keep only USDT/USDC quote
         .filter(|s| is_usd_stable(&s.quoteAsset))
         .map(|s| {
-            let market_type_db = if s.contractType.is_some() { "perps" } else { "spot" };
+            let market_type_db = if s.contractType.is_some() {
+                "perps"
+            } else {
+                "spot"
+            };
             CexMarket {
                 exchange: exchange_name.to_string(),
-                symbol: s.baseAsset.clone(),       // base only, keep case
-                market_symbol: s.symbol.clone(),   // e.g. "BTCUSDT"
+                symbol: s.baseAsset.clone(),     // base only, keep case
+                market_symbol: s.symbol.clone(), // e.g. "BTCUSDT"
                 base_currency: s.baseAsset,
-                quote_currency: s.quoteAsset,      // USDT/USDC only due to filter
+                quote_currency: s.quoteAsset, // USDT/USDC only due to filter
                 market_type: market_type_db.to_string(),
                 is_active: true,
             }
@@ -51,34 +53,42 @@ pub fn parse_binance_markets(raw_data: &[u8], exchange_name: &str) -> Result<Vec
     Ok(markets)
 }
 
-
 pub fn parse_binance_klines(raw_data: &[u8], market_symbol: &str) -> Result<Vec<NormalizedKline>> {
-    let response: Vec<Vec<serde_json::Value>> = serde_json::from_slice(raw_data)
-        .context("Failed to parse Binance klines")?;
+    let response: Vec<Vec<serde_json::Value>> =
+        serde_json::from_slice(raw_data).context("Failed to parse Binance klines")?;
 
-    response.into_iter().map(|kline| {
-        Ok(NormalizedKline {
-            market_symbol: market_symbol.to_string(),
-            open_time: Utc.timestamp_millis_opt(kline[0].as_i64().context("Invalid open_time")?).unwrap(),
-            open: kline[1].as_str().context("Invalid open price")?.parse()?,
-            high: kline[2].as_str().context("Invalid high price")?.parse()?,
-            low: kline[3].as_str().context("Invalid low price")?.parse()?,
-            close: kline[4].as_str().context("Invalid close price")?.parse()?,
-            volume: kline[5].as_str().context("Invalid volume")?.parse()?,
+    response
+        .into_iter()
+        .map(|kline| {
+            Ok(NormalizedKline {
+                market_symbol: market_symbol.to_string(),
+                open_time: Utc
+                    .timestamp_millis_opt(kline[0].as_i64().context("Invalid open_time")?)
+                    .unwrap(),
+                open: kline[1].as_str().context("Invalid open price")?.parse()?,
+                high: kline[2].as_str().context("Invalid high price")?.parse()?,
+                low: kline[3].as_str().context("Invalid low price")?.parse()?,
+                close: kline[4].as_str().context("Invalid close price")?.parse()?,
+                volume: kline[5].as_str().context("Invalid volume")?.parse()?,
+            })
         })
-    }).collect()
+        .collect()
 }
 
 pub fn parse_binance_trades(raw_data: &[u8], market_symbol: &str) -> Result<Vec<NormalizedTrade>> {
     // If top-level is an error object, surface it clearly (no extra deps)
     if raw_data.first() == Some(&b'{') {
         #[derive(serde::Deserialize)]
-        struct ErrObj { code: Option<i64>, msg: Option<String> }
+        struct ErrObj {
+            code: Option<i64>,
+            msg: Option<String>,
+        }
         if let Ok(e) = serde_json::from_slice::<ErrObj>(raw_data) {
             if e.code.is_some() || e.msg.is_some() {
                 return Err(anyhow::anyhow!(
                     "Binance API error: code={:?} msg={:?}",
-                    e.code, e.msg
+                    e.code,
+                    e.msg
                 ));
             }
         }

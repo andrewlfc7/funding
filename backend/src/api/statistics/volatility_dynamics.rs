@@ -1,4 +1,7 @@
-use axum::{extract::{Query, State}, Json};
+use axum::{
+    Json,
+    extract::{Query, State},
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::collections::{BTreeMap, BTreeSet};
@@ -9,50 +12,85 @@ use std::sync::OnceLock;
 use crate::infra::task_pools::{EndpointPool, threads_from_env};
 
 use super::{
-    fetch_multi_hourly_ohlcv, log_returns, parse_period_days, resample_from_hourly,
-    top_markets_by_usd_volume_live, Tf,
+    Tf, fetch_multi_hourly_ohlcv, log_returns, parse_period_days, resample_from_hourly,
+    top_markets_by_usd_volume_live,
 };
 
 // ============== Helpers & Config ==============
 
-fn default_market_type() -> String { "spot".to_string() }
-fn default_timeframe() -> String { "1h".to_string() }
-fn default_topn() -> i64 { 20 }
-fn default_vol_win() -> usize { 24 }    // 1 day on 1h
-fn default_vov_win() -> usize { 96 }    // 4 days on 1h
-fn default_moment_win() -> usize { 48 } // 2 days on 1h
-fn default_cov_win() -> usize { 24 }
-fn default_bin_step() -> f64 { 5.0 }    // 5% bins
+fn default_market_type() -> String {
+    "spot".to_string()
+}
+fn default_timeframe() -> String {
+    "1h".to_string()
+}
+fn default_topn() -> i64 {
+    20
+}
+fn default_vol_win() -> usize {
+    24
+} // 1 day on 1h
+fn default_vov_win() -> usize {
+    96
+} // 4 days on 1h
+fn default_moment_win() -> usize {
+    48
+} // 2 days on 1h
+fn default_cov_win() -> usize {
+    24
+}
+fn default_bin_step() -> f64 {
+    5.0
+} // 5% bins
 
 #[inline]
-fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
+fn finite(x: f64) -> f64 {
+    if x.is_finite() { x } else { 0.0 }
+}
 
 #[inline]
-fn ms(ts_sec: i64) -> i64 { ts_sec.saturating_mul(1000) }
+fn ms(ts_sec: i64) -> i64 {
+    ts_sec.saturating_mul(1000)
+}
 
 fn normal_pdf(x: f64, mu: f64, sd: f64) -> f64 {
-    if !(sd > 0.0) { return 0.0; }
+    if !(sd > 0.0) {
+        return 0.0;
+    }
     let z = (x - mu) / sd;
     let inv_sqrt_2pi = 1.0 / (2.0 * PI).sqrt();
     inv_sqrt_2pi / sd * (-0.5 * z * z).exp()
 }
 
 fn sample_mean(xs: &[f64]) -> f64 {
-    if xs.is_empty() { return 0.0; }
+    if xs.is_empty() {
+        return 0.0;
+    }
     finite(xs.iter().copied().filter(|v| v.is_finite()).sum::<f64>() / (xs.len() as f64))
 }
 
 fn sample_std(xs: &[f64]) -> f64 {
     let n = xs.len();
-    if n < 2 { return 0.0; }
+    if n < 2 {
+        return 0.0;
+    }
     let mu = sample_mean(xs);
-    let var = xs.iter().map(|&v| { let d = finite(v) - mu; d * d }).sum::<f64>() / (n as f64);
+    let var = xs
+        .iter()
+        .map(|&v| {
+            let d = finite(v) - mu;
+            d * d
+        })
+        .sum::<f64>()
+        / (n as f64);
     finite(var.sqrt())
 }
 
 fn sample_skewness(xs: &[f64]) -> f64 {
     let n = xs.len();
-    if n < 3 { return 0.0; }
+    if n < 3 {
+        return 0.0;
+    }
     let mu = sample_mean(xs);
     let mut m2 = 0.0;
     let mut m3 = 0.0;
@@ -61,14 +99,18 @@ fn sample_skewness(xs: &[f64]) -> f64 {
         m2 += d * d;
         m3 += d * d * d;
     }
-    if m2 == 0.0 { return 0.0; }
+    if m2 == 0.0 {
+        return 0.0;
+    }
     let n_f = n as f64;
     finite(n_f / (n_f - 1.0) / (n_f - 2.0) * (m3 / (m2 / n_f).sqrt().powi(3)))
 }
 
 fn sample_excess_kurtosis(xs: &[f64]) -> f64 {
     let n = xs.len();
-    if n < 4 { return 0.0; }
+    if n < 4 {
+        return 0.0;
+    }
     let mu = sample_mean(xs);
     let mut m2 = 0.0;
     let mut m4 = 0.0;
@@ -77,7 +119,9 @@ fn sample_excess_kurtosis(xs: &[f64]) -> f64 {
         m2 += d * d;
         m4 += d.powi(4);
     }
-    if m2 == 0.0 { return 0.0; }
+    if m2 == 0.0 {
+        return 0.0;
+    }
     let n_f = n as f64;
     let g2 = (n_f * (n_f + 1.0) * m4 / (m2 * m2) - 3.0 * (n_f - 1.0))
         * ((n_f - 1.0) / ((n_f - 2.0) * (n_f - 3.0)));
@@ -86,7 +130,9 @@ fn sample_excess_kurtosis(xs: &[f64]) -> f64 {
 
 fn covariance(xs: &[f64], ys: &[f64]) -> f64 {
     let n = xs.len().min(ys.len());
-    if n < 2 { return 0.0; }
+    if n < 2 {
+        return 0.0;
+    }
     let xmu = sample_mean(&xs[..n]);
     let ymu = sample_mean(&ys[..n]);
     let mut acc = 0.0;
@@ -98,17 +144,21 @@ fn covariance(xs: &[f64], ys: &[f64]) -> f64 {
 
 fn rolling_std(xs: &[f64], win: usize) -> Vec<f64> {
     let n = xs.len();
-    if win == 0 || n < win { return vec![]; }
+    if win == 0 || n < win {
+        return vec![];
+    }
     let mut out = Vec::with_capacity(n - win + 1);
     for i in (win - 1)..n {
-        let w = &xs[i + 1 - win ..= i];
+        let w = &xs[i + 1 - win..=i];
         out.push(sample_std(w));
     }
     out
 }
 
 fn percentile(sorted: &[f64], p: f64) -> f64 {
-    if sorted.is_empty() { return 0.0; }
+    if sorted.is_empty() {
+        return 0.0;
+    }
     let p = p.clamp(0.0, 1.0);
     let idx = ((sorted.len() as f64 - 1.0) * p).round() as usize;
     finite(sorted[idx])
@@ -116,7 +166,9 @@ fn percentile(sorted: &[f64], p: f64) -> f64 {
 
 fn linreg_beta_r2(x: &[f64], y: &[f64]) -> (f64, f64) {
     let n = x.len().min(y.len());
-    if n < 2 { return (0.0, 0.0) };
+    if n < 2 {
+        return (0.0, 0.0);
+    };
     let x = &x[..n];
     let y = &y[..n];
     let xmu = sample_mean(x);
@@ -175,10 +227,16 @@ pub struct VolatilityDynamicsRequest {
 }
 
 #[derive(Debug, Serialize)]
-pub struct Point { pub timestamp: i64, pub value: f64 }
+pub struct Point {
+    pub timestamp: i64,
+    pub value: f64,
+}
 
 #[derive(Debug, Serialize)]
-pub struct Series1D { pub symbol: String, pub data: Vec<Point> }
+pub struct Series1D {
+    pub symbol: String,
+    pub data: Vec<Point>,
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -196,19 +254,32 @@ pub struct VolatilityDynamicsResponse {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ScatterSK { pub symbol: String, pub skewness: f64, pub kurtosis: f64 }
+pub struct ScatterSK {
+    pub symbol: String,
+    pub skewness: f64,
+    pub kurtosis: f64,
+}
 
 #[derive(Debug, Serialize)]
-pub struct VolDistribution { pub bins: Vec<f64>, pub frequencies: Vec<usize>, pub normal_curve: Vec<f64> }
+pub struct VolDistribution {
+    pub bins: Vec<f64>,
+    pub frequencies: Vec<usize>,
+    pub normal_curve: Vec<f64>,
+}
 
 #[derive(Debug, Serialize)]
-pub struct DistStat { pub label: String, pub value: f64, pub line: bool, pub color: Option<String> }
+pub struct DistStat {
+    pub label: String,
+    pub value: f64,
+    pub line: bool,
+    pub color: Option<String>,
+}
 
 #[derive(Debug, Serialize)]
 pub struct RegimeClassRow {
     pub symbol: String,
-    pub regime: String,    // 'normal' | 'stressed' | 'euphoric' | 'compressed' | 'unstable'
-    pub volatility: f64,   // %
+    pub regime: String, // 'normal' | 'stressed' | 'euphoric' | 'compressed' | 'unstable'
+    pub volatility: f64, // %
     pub skewness: f64,
     pub kurtosis: f64,
 }
@@ -218,12 +289,16 @@ pub struct InstabilityRow {
     pub symbol: String,
     pub vov: f64,
     pub skewness: f64,
-    pub status: String,    // 'critical' | 'warning' | 'normal'
+    pub status: String, // 'critical' | 'warning' | 'normal'
     pub status_label: String,
 }
 
 #[derive(Debug, Serialize)]
-pub struct FlowVolBeta { pub symbol: String, pub beta: f64, pub r_squared: f64 }
+pub struct FlowVolBeta {
+    pub symbol: String,
+    pub beta: f64,
+    pub r_squared: f64,
+}
 
 #[derive(Debug, Serialize)]
 pub struct VolStatsRow {
@@ -238,7 +313,10 @@ pub struct VolStatsRow {
 
 // ================= Task-pool wiring =================
 
-struct Job { pool: PgPool, q: VolatilityDynamicsRequest }
+struct Job {
+    pool: PgPool,
+    q: VolatilityDynamicsRequest,
+}
 
 static VOL_DYN_POOL: OnceLock<EndpointPool<Job, VolatilityDynamicsResponse>> = OnceLock::new();
 
@@ -257,7 +335,12 @@ pub async fn get_volatility_dynamics(
     State(db): State<PgPool>,
     Query(q): Query<VolatilityDynamicsRequest>,
 ) -> Json<VolatilityDynamicsResponse> {
-    let res = vol_dyn_pool().run(Job { pool: db.clone(), q }).await;
+    let res = vol_dyn_pool()
+        .run(Job {
+            pool: db.clone(),
+            q,
+        })
+        .await;
     Json(res)
 }
 
@@ -269,14 +352,22 @@ async fn compute_volatility_dynamics(
 ) -> VolatilityDynamicsResponse {
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
-    let since_unix = (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
+    let since_unix =
+        (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
 
     // universe
     let mut symset: BTreeSet<String> = BTreeSet::new();
-    if let Ok(top) = top_markets_by_usd_volume_live(&pool, &q.exchange, &q.market_type, days as i32, q.top_n).await {
-        for (s, _, _) in top { symset.insert(s.to_uppercase()); }
+    if let Ok(top) =
+        top_markets_by_usd_volume_live(&pool, &q.exchange, &q.market_type, days as i32, q.top_n)
+            .await
+    {
+        for (s, _, _) in top {
+            symset.insert(s.to_uppercase());
+        }
     }
-    if let Some(idx) = q.index_coin.as_ref() { symset.insert(idx.to_uppercase()); }
+    if let Some(idx) = q.index_coin.as_ref() {
+        symset.insert(idx.to_uppercase());
+    }
     let syms: Vec<String> = symset.into_iter().collect();
     if syms.is_empty() {
         return empty_response();
@@ -286,7 +377,10 @@ async fn compute_volatility_dynamics(
     let mut mids = Vec::new();
     let mut sym_mid = Vec::new();
     for s in &syms {
-        if let Ok(mid) = super::resolve_market_id_with_data(&pool, &q.exchange, s, &q.market_type, since_unix).await {
+        if let Ok(mid) =
+            super::resolve_market_id_with_data(&pool, &q.exchange, s, &q.market_type, since_unix)
+                .await
+        {
             mids.push(mid);
             sym_mid.push((s.clone(), mid));
         }
@@ -294,33 +388,50 @@ async fn compute_volatility_dynamics(
     if sym_mid.is_empty() {
         return empty_response();
     }
-    let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix).await.unwrap_or_default();
+    let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix)
+        .await
+        .unwrap_or_default();
 
     // prepare per-asset series (ts, returns, usd)
     #[derive(Clone)]
     struct ASer {
         sym: String,
-        ts: Vec<i64>,       // seconds
+        ts: Vec<i64>, // seconds
         close: Vec<f64>,
         usd: Vec<f64>,
-        lr: Vec<f64>,       // log returns
-        lr_ts: Vec<i64>,    // ts aligned to lr (ts[1..])
+        lr: Vec<f64>,    // log returns
+        lr_ts: Vec<i64>, // ts aligned to lr (ts[1..])
     }
     let mut aset: Vec<ASer> = Vec::new();
     for (sym, mid) in &sym_mid {
         if let Some(h) = by_mid.get(mid) {
             let s = resample_from_hourly(h, tf.period_secs());
-            if s.len() < 10 { continue; }
+            if s.len() < 10 {
+                continue;
+            }
             let ts: Vec<i64> = s.iter().map(|r| r.ts).collect();
             let close: Vec<f64> = s.iter().map(|r| finite(r.close)).collect();
-            let base: Vec<f64>  = s.iter().map(|r| finite(r.volume)).collect();
-            let usd: Vec<f64>   = close.iter().zip(base.iter()).map(|(p, v)| finite(p * v)).collect();
+            let base: Vec<f64> = s.iter().map(|r| finite(r.volume)).collect();
+            let usd: Vec<f64> = close
+                .iter()
+                .zip(base.iter())
+                .map(|(p, v)| finite(p * v))
+                .collect();
 
             let lr = log_returns(&close);
-            if lr.is_empty() { continue; }
+            if lr.is_empty() {
+                continue;
+            }
             let lr_ts = ts.iter().copied().skip(1).collect::<Vec<_>>();
 
-            aset.push(ASer { sym: sym.clone(), ts, close, usd, lr, lr_ts });
+            aset.push(ASer {
+                sym: sym.clone(),
+                ts,
+                close,
+                usd,
+                lr,
+                lr_ts,
+            });
         }
     }
     if aset.is_empty() {
@@ -341,50 +452,85 @@ async fn compute_volatility_dynamics(
 
     for s in &aset {
         // rolling vol of returns
-        let vol = rolling_std(&s.lr, q.vol_window);              // length V
+        let vol = rolling_std(&s.lr, q.vol_window); // length V
         let vol_ts = if s.lr_ts.len() >= q.vol_window {
-            s.lr_ts.iter().copied().skip(q.vol_window - 1).collect::<Vec<_>>() // V timestamps
-        } else { vec![] };
+            s.lr_ts
+                .iter()
+                .copied()
+                .skip(q.vol_window - 1)
+                .collect::<Vec<_>>() // V timestamps
+        } else {
+            vec![]
+        };
 
         // vov over vol
-        let vov = rolling_std(&vol, q.vov_window);               // length W
+        let vov = rolling_std(&vol, q.vov_window); // length W
         let vov_ts = if vol_ts.len() >= q.vov_window {
-            vol_ts.iter().copied().skip(q.vov_window - 1).collect::<Vec<_>>() // W timestamps
-        } else { vec![] };
+            vol_ts
+                .iter()
+                .copied()
+                .skip(q.vov_window - 1)
+                .collect::<Vec<_>>() // W timestamps
+        } else {
+            vec![]
+        };
 
         // clamp by min length
         let w = vov.len().min(vov_ts.len());
         let mut vov_points = Vec::with_capacity(w);
         for i in 0..w {
-            vov_points.push(Point { timestamp: ms(vov_ts[i]), value: finite(vov[i]) });
+            vov_points.push(Point {
+                timestamp: ms(vov_ts[i]),
+                value: finite(vov[i]),
+            });
         }
-        vov_ts_all.push(Series1D { symbol: s.sym.clone(), data: vov_points });
+        vov_ts_all.push(Series1D {
+            symbol: s.sym.clone(),
+            data: vov_points,
+        });
 
         // skewness over returns
         let mut skew_points = Vec::new();
         if s.lr.len() >= q.moment_window && s.lr_ts.len() >= q.moment_window {
             let end = s.lr.len().min(s.lr_ts.len());
             for i in (q.moment_window - 1)..end {
-                let win = &s.lr[i + 1 - q.moment_window ..= i];
+                let win = &s.lr[i + 1 - q.moment_window..=i];
                 let sk = finite(sample_skewness(win));
-                skew_points.push(Point { timestamp: ms(s.lr_ts[i]), value: sk });
+                skew_points.push(Point {
+                    timestamp: ms(s.lr_ts[i]),
+                    value: sk,
+                });
             }
         }
-        skew_ts_all.push(Series1D { symbol: s.sym.clone(), data: skew_points });
+        skew_ts_all.push(Series1D {
+            symbol: s.sym.clone(),
+            data: skew_points,
+        });
     }
 
     // ---------------- Scatter (current skew/kurt) ----------------
     let mut scatter: Vec<ScatterSK> = Vec::new();
     for s in &aset {
         let (sk, ku) = if s.lr.len() >= q.moment_window {
-            let win = &s.lr[s.lr.len() - q.moment_window ..];
-            (finite(sample_skewness(win)), finite(sample_excess_kurtosis(win)))
-        } else { (0.0, 0.0) };
-        scatter.push(ScatterSK { symbol: s.sym.clone(), skewness: sk, kurtosis: ku });
+            let win = &s.lr[s.lr.len() - q.moment_window..];
+            (
+                finite(sample_skewness(win)),
+                finite(sample_excess_kurtosis(win)),
+            )
+        } else {
+            (0.0, 0.0)
+        };
+        scatter.push(ScatterSK {
+            symbol: s.sym.clone(),
+            skewness: sk,
+            kurtosis: ku,
+        });
     }
 
     // ---------------- Vol Distribution (for selected coin or index) ----------------
-    let dist_sym = q.histogram_coin.as_ref()
+    let dist_sym = q
+        .histogram_coin
+        .as_ref()
         .and_then(|x| aset.iter().find(|a| &a.sym == x))
         .cloned()
         .unwrap_or_else(|| idx.clone());
@@ -392,7 +538,9 @@ async fn compute_volatility_dynamics(
     // rolling vol (%)
     let vol_pct = {
         let v = rolling_std(&dist_sym.lr, q.vol_window)
-            .into_iter().map(|x| finite(x * 100.0)).collect::<Vec<_>>();
+            .into_iter()
+            .map(|x| finite(x * 100.0))
+            .collect::<Vec<_>>();
         v
     };
     // bins
@@ -434,20 +582,52 @@ async fn compute_volatility_dynamics(
     let mut sorted = vol_pct.clone();
     sorted.sort_by(|a, b| a.total_cmp(b));
     let stats = vec![
-        DistStat { label: "Mean".into(),  value: finite(mu), line: true,  color: Some("#60a5fa".into()) },
-        DistStat { label: "−1σ".into(),   value: finite(mu - sd), line: true,  color: Some("#f59e0b".into()) },
-        DistStat { label: "+1σ".into(),   value: finite(mu + sd), line: true,  color: Some("#f59e0b".into()) },
-        DistStat { label: "95th %ile".into(), value: finite(percentile(&sorted, 0.95)), line: true, color: Some("#ef4444".into()) },
+        DistStat {
+            label: "Mean".into(),
+            value: finite(mu),
+            line: true,
+            color: Some("#60a5fa".into()),
+        },
+        DistStat {
+            label: "−1σ".into(),
+            value: finite(mu - sd),
+            line: true,
+            color: Some("#f59e0b".into()),
+        },
+        DistStat {
+            label: "+1σ".into(),
+            value: finite(mu + sd),
+            line: true,
+            color: Some("#f59e0b".into()),
+        },
+        DistStat {
+            label: "95th %ile".into(),
+            value: finite(percentile(&sorted, 0.95)),
+            line: true,
+            color: Some("#ef4444".into()),
+        },
     ];
 
     // ---------------- Rolling Covariance (vs index) ----------------
-    let idx_map: BTreeMap<i64, f64> = idx.lr_ts.iter().copied().zip(idx.lr.iter().copied().map(finite)).collect();
+    let idx_map: BTreeMap<i64, f64> = idx
+        .lr_ts
+        .iter()
+        .copied()
+        .zip(idx.lr.iter().copied().map(finite))
+        .collect();
     let mut cov_series_all: Vec<Series1D> = Vec::new();
 
     for s in &aset {
-        if s.sym == idx.sym { continue; }
+        if s.sym == idx.sym {
+            continue;
+        }
         let mut pairs: Vec<(i64, f64, f64)> = Vec::new();
-        for (t, r) in s.lr_ts.iter().copied().zip(s.lr.iter().copied().map(finite)) {
+        for (t, r) in s
+            .lr_ts
+            .iter()
+            .copied()
+            .zip(s.lr.iter().copied().map(finite))
+        {
             if let Some(&ri) = idx_map.get(&t) {
                 pairs.push((t, ri, r));
             }
@@ -469,11 +649,17 @@ async fn compute_volatility_dynamics(
                 if buf_x.len() == q.cov_window {
                     let t = pairs[i].0;
                     let c = finite(covariance(&buf_x, &buf_y));
-                    pts.push(Point { timestamp: ms(t), value: c });
+                    pts.push(Point {
+                        timestamp: ms(t),
+                        value: c,
+                    });
                 }
             }
         }
-        cov_series_all.push(Series1D { symbol: s.sym.clone(), data: pts });
+        cov_series_all.push(Series1D {
+            symbol: s.sym.clone(),
+            data: pts,
+        });
     }
 
     // ---------------- Regime classification & instability ----------------
@@ -484,10 +670,21 @@ async fn compute_volatility_dynamics(
 
     for s in &aset {
         // rolling vol (%)
-        let vol_pct_s = rolling_std(&s.lr, q.vol_window).into_iter().map(|x| finite(x * 100.0)).collect::<Vec<_>>();
+        let vol_pct_s = rolling_std(&s.lr, q.vol_window)
+            .into_iter()
+            .map(|x| finite(x * 100.0))
+            .collect::<Vec<_>>();
         let cur_vol = vol_pct_s.last().copied().unwrap_or(0.0);
-        let avg_vol = if !vol_pct_s.is_empty() { sample_mean(&vol_pct_s) } else { 0.0 };
-        let sd_vol  = if vol_pct_s.len() > 1 { sample_std(&vol_pct_s) } else { 0.0 };
+        let avg_vol = if !vol_pct_s.is_empty() {
+            sample_mean(&vol_pct_s)
+        } else {
+            0.0
+        };
+        let sd_vol = if vol_pct_s.len() > 1 {
+            sample_std(&vol_pct_s)
+        } else {
+            0.0
+        };
         let mut sorted = vol_pct_s.clone();
         sorted.sort_by(|a, b| a.total_cmp(b));
         let pct = if !sorted.is_empty() {
@@ -496,18 +693,30 @@ async fn compute_volatility_dynamics(
                 Err(i) => i,
             };
             finite((pos as f64) / (sorted.len() as f64) * 100.0)
-        } else { 0.0 };
+        } else {
+            0.0
+        };
 
         // skew/kurt
         let (sk, ku) = if s.lr.len() >= q.moment_window {
-            let w = &s.lr[s.lr.len() - q.moment_window ..];
-            (finite(sample_skewness(w)), finite(sample_excess_kurtosis(w)))
-        } else { (0.0, 0.0) };
+            let w = &s.lr[s.lr.len() - q.moment_window..];
+            (
+                finite(sample_skewness(w)),
+                finite(sample_excess_kurtosis(w)),
+            )
+        } else {
+            (0.0, 0.0)
+        };
 
         // VoV latest
         let v = rolling_std(&s.lr, q.vol_window);
         let vov_vec = rolling_std(&v, q.vov_window);
-        let latest_vov = vov_vec.iter().rev().find(|x| x.is_finite()).copied().unwrap_or(0.0);
+        let latest_vov = vov_vec
+            .iter()
+            .rev()
+            .find(|x| x.is_finite())
+            .copied()
+            .unwrap_or(0.0);
 
         // regime rule-of-thumb
         let regime = if cur_vol > avg_vol + 2.0 * sd_vol {
@@ -520,7 +729,8 @@ async fn compute_volatility_dynamics(
             "unstable"
         } else {
             "normal"
-        }.to_string();
+        }
+        .to_string();
 
         regime_rows.push(RegimeClassRow {
             symbol: s.sym.clone(),
@@ -531,14 +741,19 @@ async fn compute_volatility_dynamics(
         });
 
         // instability grading from VoV + skew
-        let status = if latest_vov > 0.02 && sk.abs() > 1.0 { "critical" }
-                     else if latest_vov > 0.01 || sk.abs() > 0.7 { "warning" }
-                     else { "normal" };
+        let status = if latest_vov > 0.02 && sk.abs() > 1.0 {
+            "critical"
+        } else if latest_vov > 0.01 || sk.abs() > 0.7 {
+            "warning"
+        } else {
+            "normal"
+        };
         let status_label = match status {
             "critical" => "Critical",
-            "warning"  => "Warning",
-            _          => "Stable",
-        }.to_string();
+            "warning" => "Warning",
+            _ => "Stable",
+        }
+        .to_string();
 
         inst_rows.push(InstabilityRow {
             symbol: s.sym.clone(),
@@ -552,12 +767,18 @@ async fn compute_volatility_dynamics(
         let (beta, r2) = {
             let n = vol_pct_s.len().min(s.usd.len());
             if n >= 10 {
-                let xs = &s.usd[s.usd.len() - n ..];
-                let ys = &vol_pct_s[vol_pct_s.len() - n ..];
+                let xs = &s.usd[s.usd.len() - n..];
+                let ys = &vol_pct_s[vol_pct_s.len() - n..];
                 linreg_beta_r2(xs, ys)
-            } else { (0.0, 0.0) }
+            } else {
+                (0.0, 0.0)
+            }
         };
-        flow_beta_rows.push(FlowVolBeta { symbol: s.sym.clone(), beta: finite(beta), r_squared: finite(r2) });
+        flow_beta_rows.push(FlowVolBeta {
+            symbol: s.sym.clone(),
+            beta: finite(beta),
+            r_squared: finite(r2),
+        });
 
         summary_rows.push(VolStatsRow {
             symbol: s.sym.clone(),
@@ -574,7 +795,11 @@ async fn compute_volatility_dynamics(
         vov_time_series: vov_ts_all,
         skewness_time_series: skew_ts_all,
         skew_kurtosis_scatter: scatter,
-        vol_distribution: VolDistribution { bins, frequencies: freqs, normal_curve: curve },
+        vol_distribution: VolDistribution {
+            bins,
+            frequencies: freqs,
+            normal_curve: curve,
+        },
         distribution_stats: stats,
         covariance_time_series: cov_series_all,
         regime_classification: regime_rows,
@@ -589,7 +814,11 @@ fn empty_response() -> VolatilityDynamicsResponse {
         vov_time_series: vec![],
         skewness_time_series: vec![],
         skew_kurtosis_scatter: vec![],
-        vol_distribution: VolDistribution { bins: vec![], frequencies: vec![], normal_curve: vec![] },
+        vol_distribution: VolDistribution {
+            bins: vec![],
+            frequencies: vec![],
+            normal_curve: vec![],
+        },
         distribution_stats: vec![],
         covariance_time_series: vec![],
         regime_classification: vec![],

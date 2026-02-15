@@ -13,7 +13,7 @@ export function calculateArbSpread(exchanges: Record<string, ExchangeData>): num
   const maxRate = Math.max(...rates)
   const minRate = Math.min(...rates)
   
-  return (maxRate - minRate) * 10000 // Convert to basis points
+  return (maxRate - minRate) * 10000 
 }
 
 export function findBestArbOpportunity(exchanges: Record<string, ExchangeData>): ArbOpportunity | null {
@@ -29,7 +29,7 @@ export function findBestArbOpportunity(exchanges: Record<string, ExchangeData>):
       const [ex1Name, ex1Data] = exchangeList[i]
       const [ex2Name, ex2Data] = exchangeList[j]
       
-      const spread = Math.abs(ex1Data.funding_rate - ex2Data.funding_rate) * 10000
+      const spread = Math.abs(ex1Data.funding_rate - ex2Data.funding_rate)
       
       if (spread > maxSpread && spread >= MIN_SPREAD_THRESHOLD_BPS) {
         const isEx1Higher = ex1Data.funding_rate > ex2Data.funding_rate

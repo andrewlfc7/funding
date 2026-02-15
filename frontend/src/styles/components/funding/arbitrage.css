@@ -1,0 +1,466 @@
+/* ===== FUNDING ARBITRAGE STYLES ===== */
+
+/* ===== ARBITRAGE SPREAD CLASSIFICATION ===== */
+
+.arb-spread {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  min-width: 80px;
+  transition: all var(--transition-fast);
+}
+
+/* Extreme Arbitrage (50+ bps) */
+.arb-extreme {
+  color: #fff;
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  border: 2px solid #7f1d1d;
+  font-weight: 800;
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+  animation: pulse-arb-extreme 2s ease-in-out infinite;
+  position: relative;
+}
+
+/* Very High Arbitrage (25+ bps) */
+.arb-very-high {
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 2px solid #b45309;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+/* High Arbitrage (15+ bps) */
+.arb-high {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-weight: 600;
+}
+
+/* Medium Arbitrage (8+ bps) */
+.arb-medium {
+  color: #0891b2;
+  background: rgba(8, 145, 178, 0.12);
+  border: 1px solid rgba(8, 145, 178, 0.25);
+  font-weight: 500;
+}
+
+/* Low Arbitrage (< 8 bps) */
+.arb-low {
+  color: var(--text-muted);
+  background: rgba(156, 163, 175, 0.08);
+  border: 1px solid rgba(156, 163, 175, 0.2);
+  font-weight: 400;
+}
+
+/* ===== ARBITRAGE COMBINATION STYLES WITH HALF/HALF COLORING ===== */
+
+.arb-combo-header {
+  min-width: 160px;
+}
+
+.arb-combo {
+  text-align: center;
+  vertical-align: middle;
+  padding: 0; /* Remove padding for proper half/half effect */
+}
+
+.arb-combo-display {
+  position: relative;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  overflow: hidden;
+  min-width: 140px;
+}
+
+/* Half/Half Background for Arbitrage Pairs */
+.arb-combo-display::before,
+.arb-combo-display::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: -1;
+}
+
+.arb-combo-display::before {
+  left: 0;
+  background-color: var(--arb-long-color, #10b981); /* Green for long */
+  opacity: 0.25;
+}
+
+.arb-combo-display::after {
+  right: 0;
+  background-color: var(--arb-short-color, #ef4444); /* Red for short */
+  opacity: 0.25;
+}
+
+/* Text styling for better contrast */
+.arb-strategy {
+  position: relative;
+  z-index: 1;
+  font-weight: 700;
+  color: var(--text-white);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* Exchange name indicators in arb strategy */
+.arb-strategy .long-exchange,
+.arb-strategy .short-exchange {
+  position: relative;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.arb-strategy .long-exchange {
+  background-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.arb-strategy .short-exchange {
+  background-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+/* Excellent Arbitrage Opportunity (20+ bps) - Enhanced half/half */
+.arb-combo-excellent .arb-combo-display {
+  border: 2px solid #047857;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.arb-combo-excellent .arb-combo-display::before {
+  background: linear-gradient(135deg, #10b981, #059669);
+  opacity: 0.4;
+}
+
+.arb-combo-excellent .arb-combo-display::after {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  opacity: 0.4;
+}
+
+/* Good Arbitrage Opportunity (15+ bps) */
+.arb-combo-good .arb-combo-display {
+  border: 2px solid #1d4ed8;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
+}
+
+.arb-combo-good .arb-combo-display::before {
+  background: #10b981;
+  opacity: 0.3;
+}
+
+.arb-combo-good .arb-combo-display::after {
+  background: #ef4444;
+  opacity: 0.3;
+}
+
+/* Decent Arbitrage Opportunity (10+ bps) */
+.arb-combo-decent .arb-combo-display {
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.arb-combo-decent .arb-combo-display::before {
+  background: #10b981;
+  opacity: 0.2;
+}
+
+.arb-combo-decent .arb-combo-display::after {
+  background: #ef4444;
+  opacity: 0.2;
+}
+
+.arb-combo-decent .arb-strategy {
+  color: #d97706;
+  text-shadow: none;
+}
+
+/* Minimal Arbitrage Opportunity (< 10 bps) */
+.arb-combo-minimal .arb-combo-display {
+  border: 1px solid rgba(156, 163, 175, 0.2);
+}
+
+.arb-combo-minimal .arb-combo-display::before,
+.arb-combo-minimal .arb-combo-display::after {
+  opacity: 0.1;
+}
+
+.arb-combo-minimal .arb-strategy {
+  color: var(--color-neutral);
+  text-shadow: none;
+}
+
+/* ===== EXTREME CAPTURE OPPORTUNITIES ===== */
+
+/* Extreme Capture - Both rates same sign with large spread */
+.arb-combo-extreme-capture .arb-combo-display {
+  border: 3px solid #6d28d9;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+  animation: pulse-extreme-capture 2s ease-in-out infinite;
+}
+
+/* Different coloring for same-sign opportunities */
+.arb-combo-extreme-capture.both-positive .arb-combo-display::before,
+.arb-combo-extreme-capture.both-positive .arb-combo-display::after {
+  background: linear-gradient(135deg, #dc2626, #991b1b); /* Both red for both positive */
+}
+
+.arb-combo-extreme-capture.both-negative .arb-combo-display::before,
+.arb-combo-extreme-capture.both-negative .arb-combo-display::after {
+  background: linear-gradient(135deg, #059669, #047857); /* Both green for both negative */
+}
+
+/* Capture Info Display */
+.arb-capture-info {
+  font-size: 10px;
+  color: #a78bfa;
+  font-weight: 500;
+  margin-top: var(--space-xs);
+  font-style: italic;
+  line-height: 1.2;
+}
+
+.arb-combo-extreme-capture .arb-capture-info {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ===== HOVER EFFECTS ===== */
+
+.arb-combo-display:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.arb-combo-display:hover::before {
+  opacity: 0.4;
+}
+
+.arb-combo-display:hover::after {
+  opacity: 0.4;
+}
+
+.arb-combo-excellent .arb-combo-display:hover::before,
+.arb-combo-excellent .arb-combo-display:hover::after {
+  opacity: 0.5;
+}
+
+/* ===== VERTICAL DIVIDER FOR VISUAL SEPARATION ===== */
+
+.arb-combo-display::before {
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Pair Open Interest */
+.arb-oi {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  min-width: 100px;
+  font-weight: 500;
+}
+
+/* ===== PULSE ANIMATIONS ===== */
+
+@keyframes pulse-arb-extreme {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(220, 38, 38, 0.6);
+  }
+}
+
+@keyframes pulse-extreme-capture {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 5px rgba(139, 92, 246, 0.5);
+  }
+}
+
+/* ===== TABLE ROW HIGHLIGHTING ===== */
+
+/* Highlight rows with extreme opportunities */
+.row-extreme-capture {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.08), transparent);
+  border-left: 4px solid #8b5cf6;
+}
+
+.row-high-capture {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.06), transparent);
+  border-left: 3px solid #f59e0b;
+}
+
+.row-high-spread {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.05), transparent);
+  border-left: 2px solid #10b981;
+}
+
+/* ===== RESPONSIVE ARBITRAGE STYLES ===== */
+
+@media (max-width: 1024px) {
+  .arb-spread {
+    font-size: 13px;
+    min-width: 70px;
+    padding: 6px var(--space-sm);
+  }
+  
+  .arb-combo-display {
+    font-size: 12px;
+    padding: var(--space-xs) var(--space-sm);
+    min-width: 120px;
+  }
+  
+  .arb-oi {
+    font-size: 12px;
+    min-width: 80px;
+  }
+  
+  .arb-capture-info {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 768px) {
+  .arb-spread {
+    font-size: 12px;
+    min-width: 60px;
+    padding: 4px 6px;
+  }
+  
+  .arb-combo-display {
+    font-size: 11px;
+    padding: 6px var(--space-xs);
+    min-width: 100px;
+  }
+  
+  .arb-combo-header {
+    min-width: 120px;
+  }
+  
+  .arb-oi {
+    font-size: 11px;
+    min-width: 70px;
+  }
+  
+  .arb-capture-info {
+    font-size: 8px;
+  }
+  
+  .arb-strategy .long-exchange,
+  .arb-strategy .short-exchange {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .arb-spread {
+    font-size: 11px;
+    min-width: 50px;
+    padding: 3px 4px;
+  }
+  
+  .arb-combo-display {
+    font-size: 10px;
+    padding: 4px 6px;
+    min-width: 80px;
+  }
+  
+  .arb-combo-header {
+    min-width: 100px;
+  }
+  
+  .arb-oi {
+    font-size: 10px;
+    min-width: 60px;
+  }
+  
+  .arb-capture-info {
+    display: none;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+.arb-combo-display[role="button"] {
+  cursor: pointer;
+}
+
+.arb-combo-display[role="button"]:focus {
+  outline: 2px solid var(--color-positive);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .arb-extreme,
+  .arb-very-high,
+  .arb-combo-excellent .arb-combo-display,
+  .arb-combo-good .arb-combo-display,
+  .arb-combo-extreme-capture .arb-combo-display {
+    border-width: 3px;
+  }
+  
+  .arb-combo-display::before,
+  .arb-combo-display::after {
+    opacity: 0.5 !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .arb-combo-display,
+  .arb-spread {
+    transition: none;
+  }
+  
+  .arb-extreme,
+  .arb-combo-extreme-capture .arb-combo-display {
+    animation: none;
+  }
+  
+  .arb-combo-display:hover {
+    transform: none;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+
+@media print {
+  .arb-extreme,
+  .arb-very-high,
+  .arb-combo-display {
+    background: white !important;
+    color: black !important;
+    border: 2px solid black !important;
+    box-shadow: none !important;
+  }
+  
+  .arb-combo-display::before,
+  .arb-combo-display::after {
+    display: none;
+  }
+}

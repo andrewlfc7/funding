@@ -1,6 +1,5 @@
-use serde::{Deserialize, Deserializer};
 use rust_decimal::Decimal;
-
+use serde::{Deserialize, Deserializer};
 
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -45,7 +44,6 @@ where
     })
 }
 
-
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum I64OrStr {
@@ -85,9 +83,6 @@ pub struct ParadexSummaryResponse {
     pub results: Vec<ParadexMarketSummary>,
 }
 
-
-
-
 #[derive(Debug, Deserialize)]
 pub struct ParadexMarketSummary {
     pub symbol: String,
@@ -108,7 +103,6 @@ pub struct ParadexMarketSummary {
     pub last_traded_price: Option<Decimal>,
 }
 
-
 /* /funding */
 #[derive(Debug, Deserialize)]
 pub struct ParadexFunding {
@@ -122,6 +116,9 @@ pub struct ParadexFunding {
 
     #[serde(deserialize_with = "de_opt_decimal")]
     pub funding_rate: Option<Decimal>,
+
+    #[serde(deserialize_with = "de_opt_decimal")]
+    pub funding_rate_8h: Option<Decimal>,
 
     #[serde(deserialize_with = "de_ms_i64")]
     pub created_at: i64,

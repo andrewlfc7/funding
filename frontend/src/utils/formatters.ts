@@ -1,5 +1,5 @@
 import { FUNDING_PERIODS_PER_DAY, DAYS_PER_YEAR } from './constants'
-import type { DisplayMode, SpreadUnit } from './types'
+import type { DisplayMode, SpreadUnit, ArbOpportunity } from './types'
 
 export function formatNumber(value: number): string {
   if (value >= 1e9) return (value / 1e9).toFixed(2) + 'B'
@@ -35,35 +35,11 @@ export function formatSpread(spreadValue: number, spreadUnit: SpreadUnit): strin
   return spreadValue.toFixed(0) + ' bps'
 }
 
-export function formatArbOpportunity(arb: { 
-  longExchange: string; 
-  shortExchange: string;
-  longRate: number;
-  shortRate: number;
-  spread: number;
-} | null): string {
+export function formatArbOpportunity(arb: ArbOpportunity | null): string {
   if (!arb) return '–'
   
-  const shortName = (ex: string) => ex.substring(0, 3).toUpperCase()
-  
-  // Check if it's a same-sign opportunity
-  const bothPositive = arb.longRate > 0 && arb.shortRate > 0
-  const bothNegative = arb.longRate < 0 && arb.shortRate < 0
-  
-  if ((bothPositive || bothNegative) && arb.spread >= 50) {  
-    return `L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
-  }
-  
-  if ((bothPositive || bothNegative) && arb.spread >= 25) {  // 25+ bps
-    return `L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
-  }
-  
-  if (arb.spread >= 25) {
-    return `⚡ L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
-  }
-  
-  // Standard format
-  return `L:${shortName(arb.longExchange)} S:${shortName(arb.shortExchange)}`
+  // Return just the exchange names, the styling will be handled by CSS
+  return `${arb.longExchange} → ${arb.shortExchange}`
 }
 
 export function formatVolumeForChart(value: number): string {
@@ -73,7 +49,6 @@ export function formatVolumeForChart(value: number): string {
   if (value >= 1e3) return '$' + (value / 1e3).toFixed(1) + 'K'
   return '$' + value.toFixed(0)
 }
-
 
 export function formatPercentile(value: number): string {
   return value.toFixed(1);

@@ -33,7 +33,7 @@
       <TimeSeriesChart
         :series="chartSeries"
         :height="chartHeight"
-        y-label="Signal Strength (Z-Score)"
+        y-label="Signal Strength"
         :y-format="(value) => value.toFixed(2)"
       />
     </div>
@@ -65,12 +65,14 @@ const props = withDefaults(defineProps<Props>(), {
     { id: 'momentum', name: 'Momentum', color: '#00BF63' },
     { id: 'ewmac', name: 'EWMAC', color: '#00D4FF' },
     { id: 'breakout', name: 'Breakout', color: '#FF6B6B' },
+    { id: 'trend', name: 'Trend', color: '#7C5CFF' },
     { id: 'composite', name: 'Composite', color: '#FFA502' }
   ],
   activeSignals: () => ({
     momentum: true,
     ewmac: true,
     breakout: true,
+    trend: true,
     composite: true
   }),
   loading: false,

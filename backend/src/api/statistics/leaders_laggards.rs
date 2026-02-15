@@ -1,4 +1,7 @@
-use axum::{extract::{Query, State}, Json};
+use axum::{
+    Json,
+    extract::{Query, State},
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::sync::OnceLock;
@@ -6,27 +9,36 @@ use std::sync::OnceLock;
 use crate::infra::task_pools::{EndpointPool, threads_from_env};
 
 use super::{
-    fetch_multi_hourly_ohlcv, histogram_counts, log_returns, parse_period_days,
-    resample_from_hourly, rolling_mean_std, top_markets_by_usd_volume_live, zscore_series, Tf,
+    Tf, fetch_multi_hourly_ohlcv, log_returns, parse_period_days, resample_from_hourly,
+    top_markets_by_usd_volume_live, zscore_series,
 };
 
-fn default_market_type() -> String { "spot".to_string() }
-fn default_timeframe() -> String { "1h".to_string() }
-fn default_xsec() -> String { "24h".to_string() }
-#[inline] fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
+fn default_market_type() -> String {
+    "spot".to_string()
+}
+fn default_timeframe() -> String {
+    "1h".to_string()
+}
+fn default_xsec() -> String {
+    "24h".to_string()
+}
+#[inline]
+fn finite(x: f64) -> f64 {
+    if x.is_finite() { x } else { 0.0 }
+}
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct LeadersLaggardsRequest {
     pub exchange: String,
-    pub period: String,                       // data lookback, e.g. "30d"
+    pub period: String, // data lookback, e.g. "30d"
     #[serde(default = "default_market_type")]
     pub marketType: String,
     #[serde(default)]
-    pub topN: Option<i64>,                    // universe size (default 30)
+    pub topN: Option<i64>, // universe size (default 30)
     #[serde(default = "default_timeframe")]
-    pub timeframe: String,                    // "1h"|"4h"|"1d"
+    pub timeframe: String, // "1h"|"4h"|"1d"
     #[serde(default = "default_xsec")]
-    pub xsec: String,                         // "1h"|"24h"|"7d" for cross-section horizon
+    pub xsec: String, // "1h"|"24h"|"7d" for cross-section horizon
 }
 
 #[derive(Debug, Serialize)]
@@ -50,8 +62,8 @@ pub struct XRow {
 #[derive(Debug, Serialize)]
 pub struct VolSpike {
     pub symbol: String,
-    pub volumeZScore: f64,  // z of EWMA(USD vol)
-    pub priceChange: f64,   // last 1-bar return
+    pub volumeZScore: f64, // z of EWMA(USD vol)
+    pub priceChange: f64,  // last 1-bar return
 }
 
 #[derive(Debug, Serialize)]
@@ -64,50 +76,76 @@ pub struct DecorRow {
 #[derive(Debug, Serialize)]
 pub struct LeadLagMatrix {
     pub coins: Vec<String>,
-    pub lags: Vec<i32>,                 // hours, e.g. [-6,-3,0,3,6]
-    pub matrix: Vec<Vec<Vec<f64>>>,     // [lag][i][j]
+    pub lags: Vec<i32>,             // hours, e.g. [-6,-3,0,3,6]
+    pub matrix: Vec<Vec<Vec<f64>>>, // [lag][i][j]
 }
 
 fn steps_for_xsec(tf: Tf, xsec: &str) -> usize {
     match xsec {
         "1h" => 1.max(1),
         "7d" => tf.steps_per_day() * 7,
-        _    => tf.steps_per_day(), // "24h" default
+        _ => tf.steps_per_day(), // "24h" default
     }
 }
 
 fn pearson(x: &[f64], y: &[f64]) -> f64 {
     let n = x.len().min(y.len());
-    if n == 0 { return 0.0; }
-    let (mut sx,mut sy,mut sxx,mut syy,mut sxy)=(0.0,0.0,0.0,0.0,0.0);
-    let mut m=0usize;
-    for i in 0..n {
-        let (a,b)=(x[i],y[i]);
-        if a.is_finite() && b.is_finite() { sx+=a; sy+=b; sxx+=a*a; syy+=b*b; sxy+=a*b; m+=1; }
+    if n == 0 {
+        return 0.0;
     }
-    if m<=1 { return 0.0; }
+    let (mut sx, mut sy, mut sxx, mut syy, mut sxy) = (0.0, 0.0, 0.0, 0.0, 0.0);
+    let mut m = 0usize;
+    for i in 0..n {
+        let (a, b) = (x[i], y[i]);
+        if a.is_finite() && b.is_finite() {
+            sx += a;
+            sy += b;
+            sxx += a * a;
+            syy += b * b;
+            sxy += a * b;
+            m += 1;
+        }
+    }
+    if m <= 1 {
+        return 0.0;
+    }
     let mf = m as f64;
-    let cov = sxy - sx*sy/mf;
-    let vx  = sxx - sx*sx/mf;
-    let vy  = syy - sy*sy/mf;
-    if vx<=0.0 || vy<=0.0 { 0.0 } else { finite(cov/(vx.sqrt()*vy.sqrt())) }
+    let cov = sxy - sx * sy / mf;
+    let vx = sxx - sx * sx / mf;
+    let vy = syy - sy * sy / mf;
+    if vx <= 0.0 || vy <= 0.0 {
+        0.0
+    } else {
+        finite(cov / (vx.sqrt() * vy.sqrt()))
+    }
 }
 
 // corr( x_t , y_{t+lag} ), positive lag = y leads
 fn shift_corr(x: &[f64], y: &[f64], lag: isize) -> f64 {
-    if x.is_empty() || y.is_empty() { return 0.0; }
+    if x.is_empty() || y.is_empty() {
+        return 0.0;
+    }
     let (mut a, mut b) = (Vec::new(), Vec::new());
     if lag > 0 {
         let l = lag as usize;
         let n = x.len().min(y.len().saturating_sub(l));
-        for i in 0..n { a.push(x[i]); b.push(y[i+l]); }
+        for i in 0..n {
+            a.push(x[i]);
+            b.push(y[i + l]);
+        }
     } else if lag < 0 {
         let l = (-lag) as usize;
         let n = x.len().saturating_sub(l).min(y.len());
-        for i in 0..n { a.push(x[i+l]); b.push(y[i]); }
+        for i in 0..n {
+            a.push(x[i + l]);
+            b.push(y[i]);
+        }
     } else {
         let n = x.len().min(y.len());
-        for i in 0..n { a.push(x[i]); b.push(y[i]); }
+        for i in 0..n {
+            a.push(x[i]);
+            b.push(y[i]);
+        }
     }
     pearson(&a, &b)
 }
@@ -115,7 +153,10 @@ fn shift_corr(x: &[f64], y: &[f64], lag: isize) -> f64 {
 // ---------- Task pool plumbing ----------
 
 #[derive(Clone)]
-struct Job { pool: PgPool, q: LeadersLaggardsRequest }
+struct Job {
+    pool: PgPool,
+    q: LeadersLaggardsRequest,
+}
 
 static LL_POOL: OnceLock<EndpointPool<Job, LeadersLaggardsResponse>> = OnceLock::new();
 
@@ -134,7 +175,12 @@ pub async fn get_leaders_laggards(
     State(pool_state): State<PgPool>,
     Query(q): Query<LeadersLaggardsRequest>,
 ) -> Json<LeadersLaggardsResponse> {
-    let res = pool().run(Job { pool: pool_state.clone(), q }).await;
+    let res = pool()
+        .run(Job {
+            pool: pool_state.clone(),
+            q,
+        })
+        .await;
     Json(res)
 }
 
@@ -146,7 +192,8 @@ async fn compute_leaders_laggards(
 ) -> LeadersLaggardsResponse {
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
-    let since_unix = (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
+    let since_unix =
+        (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
     let topn = q.topN.unwrap_or(30);
 
     // Universe by USD notional
@@ -155,13 +202,22 @@ async fn compute_leaders_laggards(
         .unwrap_or_default();
     if top.is_empty() {
         return LeadersLaggardsResponse {
-            leaders: vec![], laggards: vec![], volumeSpikes: vec![],
-            decorrelated: vec![], leadLagMatrix: LeadLagMatrix { coins: vec![], lags: vec![], matrix: vec![] },
+            leaders: vec![],
+            laggards: vec![],
+            volumeSpikes: vec![],
+            decorrelated: vec![],
+            leadLagMatrix: LeadLagMatrix {
+                coins: vec![],
+                lags: vec![],
+                matrix: vec![],
+            },
         };
     }
 
     let mids: Vec<i32> = top.iter().map(|(_, mid, _)| *mid).collect();
-    let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix).await.unwrap_or_default();
+    let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix)
+        .await
+        .unwrap_or_default();
 
     // Collect per-coin metrics
     struct PerCoin {
@@ -180,20 +236,32 @@ async fn compute_leaders_laggards(
     let horizon = steps_for_xsec(tf, &q.xsec);
 
     for (sym, mid, _) in top {
-        let Some(hourly) = by_mid.get(&mid) else { continue; };
+        let Some(hourly) = by_mid.get(&mid) else {
+            continue;
+        };
         let s = resample_from_hourly(hourly, tf.period_secs());
-        if s.len() < (horizon + 30) { continue; }
+        if s.len() < (horizon + 30) {
+            continue;
+        }
 
         let ts: Vec<i64> = s.iter().map(|r| r.ts).collect();
         let close: Vec<f64> = s.iter().map(|r| r.close).collect();
         let base: Vec<f64> = s.iter().map(|r| r.volume).collect();
-        let usd: Vec<f64> = close.iter().zip(base.iter()).map(|(p,&v)| finite(p*v)).collect();
+        let usd: Vec<f64> = close
+            .iter()
+            .zip(base.iter())
+            .map(|(p, &v)| finite(p * v))
+            .collect();
 
         // price zscore
-        let win = (tf.steps_per_day()*5).max(24).min(close.len().saturating_sub(1));
+        let win = (tf.steps_per_day() * 5)
+            .max(24)
+            .min(close.len().saturating_sub(1));
         let z = zscore_series(&close, win);
         let start = z.iter().position(|v| v.is_finite()).unwrap_or(z.len());
-        if start >= z.len() { continue; }
+        if start >= z.len() {
+            continue;
+        }
 
         // log returns
         let lr = log_returns(&close);
@@ -207,10 +275,16 @@ async fn compute_leaders_laggards(
         let last_idx = n - 1;
         let ret_h = if last_idx >= horizon {
             let p0 = close[last_idx - horizon];
-            if p0 > 0.0 { (close[last_idx] / p0) - 1.0 } else { 0.0 }
-        } else { 0.0 };
+            if p0 > 0.0 {
+                (close[last_idx] / p0) - 1.0
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        };
 
-        coins.push(PerCoin{
+        coins.push(PerCoin {
             sym,
             ts: ts[start..].to_vec(),
             close: close[start..].to_vec(),
@@ -225,33 +299,48 @@ async fn compute_leaders_laggards(
 
     if coins.is_empty() {
         return LeadersLaggardsResponse {
-            leaders: vec![], laggards: vec![], volumeSpikes: vec![],
-            decorrelated: vec![], leadLagMatrix: LeadLagMatrix { coins: vec![], lags: vec![], matrix: vec![] },
+            leaders: vec![],
+            laggards: vec![],
+            volumeSpikes: vec![],
+            decorrelated: vec![],
+            leadLagMatrix: LeadLagMatrix {
+                coins: vec![],
+                lags: vec![],
+                matrix: vec![],
+            },
         };
     }
 
     // Leaders/Laggards by last z
-    let mut rows: Vec<XRow> = coins.iter().map(|c| XRow {
-        symbol: c.sym.clone(),
-        zscore: c.last_z,
-        returns: c.last_ret_h,
-        volume: c.last_usd,
-        rank: 0,
-    }).collect();
+    let mut rows: Vec<XRow> = coins
+        .iter()
+        .map(|c| XRow {
+            symbol: c.sym.clone(),
+            zscore: c.last_z,
+            returns: c.last_ret_h,
+            volume: c.last_usd,
+            rank: 0,
+        })
+        .collect();
 
-    rows.sort_by(|a,b| b.zscore.total_cmp(&a.zscore));
-    for (i, r) in rows.iter_mut().enumerate() { r.rank = i + 1; }
+    rows.sort_by(|a, b| b.zscore.total_cmp(&a.zscore));
+    for (i, r) in rows.iter_mut().enumerate() {
+        r.rank = i + 1;
+    }
 
     let leaders = rows.iter().take(10).cloned().collect::<Vec<_>>();
     let laggards = rows.iter().rev().take(10).cloned().collect::<Vec<_>>();
 
     // Volume spikes
-    let mut spikes: Vec<VolSpike> = coins.iter().map(|c| VolSpike {
-        symbol: c.sym.clone(),
-        volumeZScore: c.volz_last,
-        priceChange: c.lr.last().copied().unwrap_or(0.0),
-    }).collect();
-    spikes.sort_by(|a,b| b.volumeZScore.total_cmp(&a.volumeZScore));
+    let mut spikes: Vec<VolSpike> = coins
+        .iter()
+        .map(|c| VolSpike {
+            symbol: c.sym.clone(),
+            volumeZScore: c.volz_last,
+            priceChange: c.lr.last().copied().unwrap_or(0.0),
+        })
+        .collect();
+    spikes.sort_by(|a, b| b.volumeZScore.total_cmp(&a.volumeZScore));
     spikes.truncate(15);
 
     // Market Index: custom weighted index of BTC, ETH, and SOL.
@@ -264,7 +353,8 @@ async fn compute_leaders_laggards(
     let eth_coin = coins.iter().find(|c| c.sym.starts_with("eth"));
     let sol_coin = coins.iter().find(|c| c.sym.starts_with("sol"));
 
-    let market: Vec<f64> = if let (Some(btc), Some(eth), Some(sol)) = (btc_coin, eth_coin, sol_coin) {
+    let market: Vec<f64> = if let (Some(btc), Some(eth), Some(sol)) = (btc_coin, eth_coin, sol_coin)
+    {
         let min_len_idx = btc.lr.len().min(eth.lr.len()).min(sol.lr.len());
         if min_len_idx > 0 {
             let btc_lr = &btc.lr[btc.lr.len() - min_len_idx..];
@@ -318,7 +408,9 @@ async fn compute_leaders_laggards(
         let mut sum_corr = 0.0;
         let mut count = 0;
         for d in &coins {
-            if std::ptr::eq(c, d) { continue; } // Skip self-correlation
+            if std::ptr::eq(c, d) {
+                continue;
+            } // Skip self-correlation
             let common_len_pair = c.lr.len().min(d.lr.len());
             if common_len_pair > 0 {
                 let lr_c_pair = &c.lr[c.lr.len() - common_len_pair..];
@@ -327,7 +419,11 @@ async fn compute_leaders_laggards(
                 count += 1;
             }
         }
-        let avg_corr = if count > 0 { sum_corr / (count as f64) } else { 0.0 };
+        let avg_corr = if count > 0 {
+            sum_corr / (count as f64)
+        } else {
+            0.0
+        };
 
         decor.push(DecorRow {
             symbol: c.sym.clone(),
@@ -338,7 +434,6 @@ async fn compute_leaders_laggards(
     decor.sort_by(|a, b| a.correlationWithMarket.total_cmp(&a.correlationWithMarket));
     decor.truncate(15);
 
-
     // Lead-lag matrix (limit to 10 coins)
     let mut top_syms: Vec<String> = rows.iter().map(|r| r.symbol.clone()).collect();
     let keep = top_syms.len().min(10);
@@ -346,7 +441,9 @@ async fn compute_leaders_laggards(
 
     let mut sub: Vec<&PerCoin> = Vec::new();
     for s in &top_syms {
-        if let Some(c) = coins.iter().find(|x| &x.sym == s) { sub.push(c); }
+        if let Some(c) = coins.iter().find(|x| &x.sym == s) {
+            sub.push(c);
+        }
     }
     let lags: Vec<i32> = vec![-6, -3, 0, 3, 6];
     let mut matrix: Vec<Vec<Vec<f64>>> = Vec::new(); // [lag][i][j]
@@ -367,6 +464,10 @@ async fn compute_leaders_laggards(
         laggards,
         volumeSpikes: spikes,
         decorrelated: decor,
-        leadLagMatrix: LeadLagMatrix { coins: top_syms, lags, matrix },
+        leadLagMatrix: LeadLagMatrix {
+            coins: top_syms,
+            lags,
+            matrix,
+        },
     }
 }

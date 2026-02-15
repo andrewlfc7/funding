@@ -1,4 +1,4 @@
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
 use sqlx::PgPool;
 
 pub fn router() -> Router<PgPool> {
@@ -31,7 +31,6 @@ pub fn router() -> Router<PgPool> {
             "/api/statistics/microstructure/flow",
             get(crate::api::statistics::microstructure_flow::get_microstructure_flow),
         )
-
         .route(
             "/api/statistics/relative-strength/overview",
             get(crate::api::statistics::relative_strength::get_relative_strength),
@@ -40,19 +39,18 @@ pub fn router() -> Router<PgPool> {
             "/api/statistics/momentum/regime",
             get(crate::api::statistics::regime_momentum::get_regime_momentum),
         )
-
         .route(
             "/api/zscore/market-seasonality",
             axum::routing::get(crate::api::statistics::market_seasonality::get_market_seasonality),
         )
         .route(
             "/api/zscore/volatility-dynamics",
-            axum::routing::get(crate::api::statistics::volatility_dynamics::get_volatility_dynamics),
+            axum::routing::get(
+                crate::api::statistics::volatility_dynamics::get_volatility_dynamics,
+            ),
         )
-
         .route(
             "/api/zscore/trades-analysis",
             get(crate::api::statistics::trades_analysis::get_trades_analysis),
         )
-
 }

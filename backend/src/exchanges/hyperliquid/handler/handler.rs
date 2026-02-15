@@ -6,7 +6,9 @@ use crate::exchanges::hyperliquid::api::types::{
     HyperliquidAssetCtx, HyperliquidFundingHistoryEntry, HyperliquidMetaResponse,
     HyperliquidUniverseWrapper,
 };
-use crate::exchanges::shared::types::{NormalizedFundingRate, NormalizedMarket, NormalizedMarketStats};
+use crate::exchanges::shared::types::{
+    NormalizedFundingRate, NormalizedMarket, NormalizedMarketStats,
+};
 
 #[inline]
 fn ts_utc(ms: i64) -> chrono::DateTime<Utc> {
@@ -25,7 +27,7 @@ pub fn parse_hyperliquid_markets(raw: &Bytes) -> Result<Vec<NormalizedMarket>> {
         .map(|m| NormalizedMarket {
             exchange: "hyperliquid".to_string(),
             symbol: m.name.clone(),
-            market_symbol: m.name.clone(), 
+            market_symbol: m.name.clone(),
             base_currency: m.name,
             quote_currency: "USD".to_string(), // Hyperliquid perps are quoted in USD
             is_active: !m.is_delisted,
@@ -33,31 +35,28 @@ pub fn parse_hyperliquid_markets(raw: &Bytes) -> Result<Vec<NormalizedMarket>> {
         .collect())
 }
 
-
 pub fn parse_hyperliquid_market_stats(raw: &Bytes) -> Result<Vec<NormalizedMarketStats>> {
     let (universe_wrapper, ctxs): (HyperliquidUniverseWrapper, Vec<HyperliquidAssetCtx>) =
         serde_json::from_slice(raw)?;
 
-    let now = Utc::now(); 
-    
+    let now = Utc::now();
+
     Ok(universe_wrapper
         .universe
         .into_iter()
         .zip(ctxs.into_iter())
         .map(|(market_info, stats)| {
-
             let open_interest_usd = stats.open_interest * stats.mark_px;
 
             NormalizedMarketStats {
                 market_symbol: market_info.name,
-                open_interest: Some(open_interest_usd), 
-                volume_24h: Some(stats.day_ntl_vlm), 
+                open_interest: Some(open_interest_usd),
+                volume_24h: Some(stats.day_ntl_vlm),
                 timestamp: now,
             }
         })
         .collect())
 }
-
 
 pub fn parse_hyperliquid_funding(raw: &Bytes) -> Result<Vec<NormalizedFundingRate>> {
     let resp: Vec<HyperliquidFundingHistoryEntry> = serde_json::from_slice(raw)?;
@@ -71,8 +70,3 @@ pub fn parse_hyperliquid_funding(raw: &Bytes) -> Result<Vec<NormalizedFundingRat
         })
         .collect())
 }
-
-
-
-
-

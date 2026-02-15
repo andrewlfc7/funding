@@ -3,7 +3,7 @@
 
 
 # Prerequisites
-- **PostgreSQL**.
+- **ClickHouse**.
 - **Rust**.
 - **Node.js and npm**.
 
@@ -12,42 +12,39 @@
 # Setup Instructions
 1. Database Configuration
 
-1. Install PostgreSQL and create a database.
+1. Install ClickHouse and create a database (or use the auto-create defaults below).
 
-2. Create a `.env` file in the project root with your database URL:
+2. Create a `.env` file in the project root:
 
 ```env
 
 # .env file
-DATABASE_URL=postgresql://user:password@localhost:5432/your_database
+CLICKHOUSE_URL=http://localhost:8123
+CLICKHOUSE_DATABASE=crypto_db
+CLICKHOUSE_USER=default
+CLICKHOUSE_PASSWORD=
+
 SYNC_CONC_MARKETS=30
 SYNC_DB_CHUNK=60000
 
 ```
 
-Run the following commands to set up the database:
-
-```bash
-sqlx database create
-sqlx migrate run
-```
-
 
 ### 2. Backfilling the Database
 
-To populate the database tables, use the `sync` binary. You can backfill all tables or target specific exchanges and time ranges.
+To populate ClickHouse tables, use the `sync` binary.
 
 ```bash
 Quick Backfill (All Tables)
-cargo run --bin sync
+cargo run --bin sync -- sync funding
 
 Backfill for the Last 24 Hours
-cargo run --bin sync init --hours 24
+cargo run --bin sync -- sync funding --hours 24
 
 Backfill Between Specific Timestamps
 Use Unix timestamps (in milliseconds) to specify a range:
 
-cargo run --bin sync init --between 1724544000000 1724630400000
+cargo run --bin sync -- sync funding --between 1724544000000 1724630400000
 ```
 
 
@@ -55,18 +52,35 @@ Target a Single Exchange
 Add the `--exchange` flag to target a specific exchange (case-insensitive).
 
 
-Backfill markets for the paradex exchange:
+Backfill funding for one exchange:
 ```bash
-cargo run --bin sync markets --exchange paradex
+cargo run --bin sync -- sync funding --exchange paradex --hours 168
+```
 
+Backfill trend data (daily klines):
+```bash
+cargo run --bin sync -- \
+  sync trend \
+  --exchange binance \
+  --market-type perps \
+  --days 120 \
+  --source klines \
+  --quote USDT
+```
 
-Backfill funding for the extended exchange for the last 168 hours:
-
-cargo run --bin sync funding --exchange extended --since-last 168
+Backfill zscore data (hourly klines + trades):
+```bash
+cargo run --bin sync -- \
+  sync zscore \
+  --exchange binance \
+  --market-type perps \
+  --hours 36000 \
+  --source both \
+  --quote USDT
 ```
 
 
-**Recommendation**: Use `cargo run --bin sync` to backfill all tables unless specific data is needed.
+**Recommendation**: Use `cargo run --bin sync -- sync funding` for a full funding backfill unless specific data is needed.
 
 # 3. Running the Backend
 Start the backend after backfilling the database:
@@ -85,7 +99,7 @@ cargo run --bin backend
 
 # .env file
 VITE_API_URL=http://localhost:8080
-VITE_API_ENDPOINT=/api/funding-matrix
+VITE_API_ENDPOINT=/api/funding/matrix
 VITE_REFRESH_INTERVAL=30000
 
 ```
@@ -112,7 +126,9 @@ To add support for a new exchange:
 
 # Notes
 - Exchange names are case-insensitive.
-- Verify the `.env` file has the correct database URL.
+- Verify the `.env` file has the correct ClickHouse settings.
+- Sync workflows available: `funding`, `trend`, `zscore`, and `cex-add`.
+- Writes are inserted in large chunks controlled by `SYNC_DB_CHUNK` and executed via async background insert workers.
 - Refer to the project documentation or open an issue for support.
 
 
@@ -124,5 +140,4 @@ To add support for a new exchange:
 3. Commit your changes (`git commit -m "Add feature"`).
 4. Push to the branch (`git push origin feature-name`).
 5. Open a pull request.
-
 

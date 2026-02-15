@@ -1,3 +1,4 @@
+
 <template>
   <div class="table-container">
     <table class="funding-table">
@@ -44,9 +45,15 @@
             {{ formatArbSpread(calculateArbSpread(row.exchanges)) }}
           </td>
           <td class="center arb-combo" :class="getArbOpportunityClass(findBestArbOpportunity(row.exchanges))">
-            <div class="arb-combo-display" v-if="findBestArbOpportunity(row.exchanges)">
+            <div 
+              class="arb-combo-display" 
+              v-if="findBestArbOpportunity(row.exchanges)"
+              :class="getArbComboDisplayClass(findBestArbOpportunity(row.exchanges))"
+            >
               <div class="arb-strategy">
-                {{ formatArbOpportunity(findBestArbOpportunity(row.exchanges)) }}
+                <span class="long-exchange">{{ findBestArbOpportunity(row.exchanges)?.longExchange }}</span>
+                <span>→</span>
+                <span class="short-exchange">{{ findBestArbOpportunity(row.exchanges)?.shortExchange }}</span>
               </div>
               <div v-if="showCaptureInfo(findBestArbOpportunity(row.exchanges))" class="arb-capture-info">
                 {{ getCaptureInfo(findBestArbOpportunity(row.exchanges)) }}
@@ -64,7 +71,8 @@
             <div v-if="row.exchanges[ex]" class="exchange-data">
               <span
                 class="funding-rate"
-                :class="getRateClass(row.exchanges[ex].funding_rate, row.exchanges, ex)"
+                :class="getFundingRateClass(row.exchanges[ex].funding_rate, row.exchanges, ex)"
+                :title="getFundingRateTooltip(row.exchanges[ex], ex)"
               >
                 {{ formatRate(row.exchanges[ex].funding_rate, displayMode, spreadUnit) }}
               </span>
@@ -81,11 +89,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { formatNumber, formatRate, formatSpread, formatArbOpportunity } from '../../utils/formatters'
+import { computed, withDefaults } from 'vue'
+import { formatNumber, formatRate, formatSpread } from '../../utils/formatters'
 import { sumOpenInterest, calculateArbSpread, findBestArbOpportunity } from '../../utils/calculations'
-import { getArbClass, getArbOpportunityClass, getRateClass } from '../../utils/styles'
-import type { TokenRow, DisplayMode, SpreadUnit, SortDirection, ArbOpportunity } from '../../utils/types'
+import { getArbClass, getArbOpportunityClass } from '../../utils/styles'
+import type { TokenRow, DisplayMode, SpreadUnit, SortDirection, ArbOpportunity, ExchangeData } from '../../utils/types'
 
 interface Props {
   tokens: TokenRow[]
@@ -96,11 +104,66 @@ interface Props {
   sortDirection: SortDirection
 }
 
-const props = defineProps<Props>()
-
+const props = withDefaults(defineProps<Props>(), {
+  tokens: () => [],
+  exchanges: () => [],
+  displayMode: 'rate',
+  spreadUnit: 'percentage',
+  sortColumn: '',
+  sortDirection: 'desc'
+})
 const emit = defineEmits<{
   sort: [column: string]
 }>()
+
+// Enhanced funding rate classification with new color system
+function getFundingRateClass(rate: number, exchanges: Record<string, ExchangeData>, currentExchange: string): string {
+  const rates = Object.values(exchanges).map(ex => ex.funding_rate).sort((a, b) => b - a)
+  
+  if (rates.length < 2) {
+    // Single exchange or no comparison - use basic color coding
+    if (rate > 0) return 'rate-positive'
+    if (rate < 0) return 'rate-negative'
+    return 'rate-neutral'
+  }
+  
+  const maxRate = rates[0]
+  const minRate = rates[rates.length - 1]
+  const spreadBps = (maxRate - minRate) * 10000
+  const rateBps = Math.abs(rate) * 10000
+  
+  // Check for extreme conditions
+  const allPositive = minRate > 0
+  const allNegative = maxRate < 0
+  
+  // Extreme opportunities when spread is large (25+ bps) and all same sign
+  if ((allPositive || allNegative) && spreadBps >= 100) {
+    if (rate === maxRate) return 'rate-extreme-short'
+    if (rate === minRate) return 'rate-extreme-long'
+  }
+  
+  // Very high magnitude individual rates (50+ bps)
+  if (rateBps >= 100) {
+    return rate > 0 ? 'rate-extreme-short' : 'rate-extreme-long'
+  }
+  
+  // Regular arbitrage opportunities
+  if (spreadBps >= 15) { // 15+ bps spread threshold
+    if (rate === maxRate) return 'rate-short-candidate'
+    if (rate === minRate) return 'rate-long-candidate'
+  }
+  
+  if (spreadBps >= 1) { // 8+ bps spread threshold  
+    if (rate === maxRate) return 'rate-short-opportunity'
+    if (rate === minRate) return 'rate-long-opportunity'
+  }
+  
+  // Basic color coding based on sign
+  if (rate > 0) return 'rate-positive'
+  if (rate < 0) return 'rate-negative'
+  
+  return 'rate-neutral'
+}
 
 // Helper function to determine row class
 function getRowClass(row: TokenRow): string {
@@ -110,14 +173,13 @@ function getRowClass(row: TokenRow): string {
   const bothPositive = arb.longRate > 0 && arb.shortRate > 0
   const bothNegative = arb.longRate < 0 && arb.shortRate < 0
   
-  // Highlight rows with extreme same-sign spreads
-  if ((bothPositive || bothNegative) && arb.spread >= 50) {
+  if ((bothPositive || bothNegative) && arb.spread >= 100) {
     return 'row-extreme-capture'
   }
-  if ((bothPositive || bothNegative) && arb.spread >= 25) {
+  if ((bothPositive || bothNegative) && arb.spread >= 100) {
     return 'row-high-capture'
   }
-  if (arb.spread >= 25) {
+  if (arb.spread >= 100) {
     return 'row-high-spread'
   }
   
@@ -144,7 +206,6 @@ function showCaptureInfo(arb: ArbOpportunity | null): boolean {
   return (bothPositive || bothNegative) && arb.spread >= 25  // 25+ bps threshold
 }
 
-
 function getCaptureInfo(arb: ArbOpportunity | null): string {
   if (!arb) return ''
   const bothPositive = arb.longRate > 0 && arb.shortRate > 0
@@ -160,4 +221,33 @@ function getCaptureInfo(arb: ArbOpportunity | null): string {
   }
 }
 
+function getArbComboDisplayClass(arb: ArbOpportunity | null): string {
+  if (!arb) return '';
+  const bothPositive = arb.longRate > 0 && arb.shortRate > 0;
+  const bothNegative = arb.longRate < 0 && arb.shortRate < 0;
+  
+  if ((bothPositive || bothNegative) && arb.spread >= 25) {
+    return 'arb-capture-highlight'; // A descriptive class for styling these special cases
+  }
+  
+  return '';
+}
+
+// Enhanced tooltip for funding rates
+function getFundingRateTooltip(exchangeData: ExchangeData, exchange: string): string {
+  const rate = (exchangeData.funding_rate * 100).toFixed(4)
+  const annualized = (exchangeData.funding_rate * 365 * 3 * 100).toFixed(2)
+  const oi = formatNumber(exchangeData.open_interest)
+  
+  let interpretation = ''
+  if (exchangeData.funding_rate > 0) {
+    interpretation = 'Longs pay shorts'
+  } else if (exchangeData.funding_rate < 0) {
+    interpretation = 'Shorts pay longs'
+  } else {
+    interpretation = 'Neutral funding'
+  }
+  
+  return `${exchange}: ${rate}% (8h) | ${annualized}% (annualized) | ${interpretation} | OI: $${oi}`
+}
 </script>

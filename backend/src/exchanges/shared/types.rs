@@ -27,7 +27,6 @@ pub struct NormalizedMarketStats {
     pub timestamp: DateTime<Utc>,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NormalizedKline {
     pub market_symbol: String,
@@ -50,15 +49,13 @@ pub struct NormalizedTrade {
     pub quote_qty: Decimal,
 }
 
-
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CexMarket {
     pub exchange: String,
     pub symbol: String,
-    pub market_symbol: String, 
+    pub market_symbol: String,
     pub base_currency: String,
     pub quote_currency: String,
-    pub market_type: String, 
+    pub market_type: String,
     pub is_active: bool,
 }

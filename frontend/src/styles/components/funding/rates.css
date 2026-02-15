@@ -1,0 +1,342 @@
+/* ===== FUNDING RATE STYLES ===== */
+
+/* Base Rate Display */
+.funding-rate {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  text-align: center;
+  min-width: 80px;
+}
+
+/* Color System: 
+   RED = Positive rates (longs pay shorts)
+   GREEN = Negative rates (shorts pay longs) 
+*/
+
+/* Positive Rates - Longs Pay Shorts (RED) */
+.rate-positive {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.rate-positive:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Negative Rates - Shorts Pay Longs (GREEN) */
+.rate-negative {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.rate-negative:hover {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Neutral/Zero Rates */
+.rate-neutral {
+  color: var(--color-neutral);
+  background: rgba(156, 163, 175, 0.1);
+  border: 1px solid rgba(156, 163, 175, 0.2);
+}
+
+/* Missing/Unavailable Rates */
+.rate-missing {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-style: italic;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+}
+
+/* ===== ARBITRAGE OPPORTUNITY CLASSES ===== */
+
+/* Long Candidate - Negative rate, good for longing */
+.rate-long-candidate {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  font-weight: 700;
+  border: 2px solid #059669;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+  position: relative;
+}
+
+.rate-long-candidate::after {
+  content: 'LONG';
+  position: absolute;
+  top: -10px;
+  right: -6px;
+  font-size: 8px;
+  background: #059669;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Short Candidate - Positive rate, good for shorting */
+.rate-short-candidate {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-weight: 700;
+  border: 2px solid #dc2626;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+  position: relative;
+}
+
+.rate-short-candidate::after {
+  content: 'SHORT';
+  position: absolute;
+  top: -10px;
+  right: -6px;
+  font-size: 8px;
+  background: #dc2626;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Long Opportunity - Moderate negative rate */
+.rate-long-opportunity {
+  background: rgba(16, 185, 129, 0.25);
+  color: #059669;
+  font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+/* Short Opportunity - Moderate positive rate */
+.rate-short-opportunity {
+  background: rgba(239, 68, 68, 0.25);
+  color: #dc2626;
+  font-weight: 600;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* ===== EXTREME RATE HIGHLIGHTING ===== */
+
+/* Extreme Short - Very high positive rate */
+.rate-extreme-short {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+  font-weight: 800;
+  border: 2px solid #991b1b;
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+  animation: pulse-extreme-short 2s ease-in-out infinite;
+  position: relative;
+}
+
+.rate-extreme-short::after {
+  content: 'EXTREME SHORT';
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  font-size: 7px;
+  background: #991b1b;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Extreme Long - Very low negative rate */
+.rate-extreme-long {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: white;
+  font-weight: 800;
+  border: 2px solid #065f46;
+  box-shadow: 0 0 12px rgba(5, 150, 105, 0.4);
+  animation: pulse-extreme-long 2s ease-in-out infinite;
+  position: relative;
+}
+
+.rate-extreme-long::after {
+  content: 'EXTREME LONG';
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  font-size: 7px;
+  background: #065f46;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Pulse animations for extreme rates */
+@keyframes pulse-extreme-short {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(220, 38, 38, 0.6);
+  }
+}
+
+@keyframes pulse-extreme-long {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 12px rgba(5, 150, 105, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(5, 150, 105, 0.6);
+  }
+}
+
+/* ===== OPEN INTEREST STYLING ===== */
+
+.open-interest {
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.open-interest-per-exchange {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  display: block;
+  margin-top: var(--space-xs);
+  opacity: 0.8;
+  transition: opacity var(--transition-fast);
+}
+
+/* Hover Effects for Exchange Data */
+.exchange-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.exchange-data:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.exchange-data:hover .open-interest-per-exchange {
+  opacity: 1;
+  color: var(--color-neutral);
+}
+
+/* ===== RATE MAGNITUDE INDICATORS ===== */
+
+/* High magnitude rates (regardless of sign) */
+.rate-high-magnitude {
+  font-weight: 700;
+  border-width: 2px;
+}
+
+/* Very high magnitude rates */
+.rate-very-high-magnitude {
+  font-weight: 800;
+  border-width: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== RESPONSIVE RATE DISPLAY ===== */
+
+@media (max-width: 1024px) {
+  .funding-rate {
+    font-size: 13px;
+    min-width: 70px;
+    padding: 6px var(--space-sm);
+  }
+  
+  .open-interest-per-exchange {
+    font-size: 10px;
+  }
+  
+  .rate-extreme-short::after,
+  .rate-extreme-long::after,
+  .rate-long-candidate::after,
+  .rate-short-candidate::after {
+    font-size: 6px;
+    padding: 1px 3px;
+  }
+}
+
+@media (max-width: 768px) {
+  .funding-rate {
+    font-size: 12px;
+    min-width: 60px;
+    padding: 4px 6px;
+  }
+  
+  .open-interest-per-exchange {
+    font-size: 9px;
+  }
+  
+  .exchange-data {
+    padding: var(--space-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .funding-rate {
+    font-size: 11px;
+    min-width: 50px;
+    padding: 3px 4px;
+  }
+  
+  /* Hide extreme rate labels on very small screens */
+  .rate-extreme-short::after,
+  .rate-extreme-long::after,
+  .rate-long-candidate::after,
+  .rate-short-candidate::after {
+    display: none;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+.funding-rate[aria-pressed="true"] {
+  outline: 2px solid var(--color-positive);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .rate-positive {
+    border-width: 2px;
+  }
+  
+  .rate-negative {
+    border-width: 2px;
+  }
+  
+  .rate-neutral {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .funding-rate,
+  .exchange-data {
+    transition: none;
+  }
+  
+  .rate-extreme-short,
+  .rate-extreme-long {
+    animation: none;
+  }
+}

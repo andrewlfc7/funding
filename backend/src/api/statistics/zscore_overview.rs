@@ -1,4 +1,7 @@
-use axum::{extract::{Query, State}, Json};
+use axum::{
+    Json,
+    extract::{Query, State},
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::sync::OnceLock;
@@ -7,15 +10,19 @@ use std::sync::OnceLock;
 use crate::infra::task_pools::{EndpointPool, threads_from_env};
 
 use super::{
-    ewma_span, fetch_multi_hourly_ohlcv, get_ohlcv_resampled, histogram_counts, log_returns,
+    Tf, ewma_span, fetch_multi_hourly_ohlcv, get_ohlcv_resampled, histogram_counts, log_returns,
     parse_period_days, pct_returns, resample_from_hourly, top_markets_by_usd_volume_live,
-    zscore_series, Tf,
+    zscore_series,
 };
 
-fn default_market_type() -> String { "spot".to_string() }
+fn default_market_type() -> String {
+    "spot".to_string()
+}
 
 #[inline]
-fn finite(x: f64) -> f64 { if x.is_finite() { x } else { 0.0 } }
+fn finite(x: f64) -> f64 {
+    if x.is_finite() { x } else { 0.0 }
+}
 
 #[inline]
 fn minmax_norm(slice: &[f64]) -> (f64, f64) {
@@ -23,11 +30,19 @@ fn minmax_norm(slice: &[f64]) -> (f64, f64) {
     let mut mx = f64::NEG_INFINITY;
     for &v in slice {
         if v.is_finite() {
-            if v < mn { mn = v; }
-            if v > mx { mx = v; }
+            if v < mn {
+                mn = v;
+            }
+            if v > mx {
+                mx = v;
+            }
         }
     }
-    if !mn.is_finite() || !mx.is_finite() || mx <= mn { (0.0, 1.0) } else { (mn, mx) }
+    if !mn.is_finite() || !mx.is_finite() || mx <= mn {
+        (0.0, 1.0)
+    } else {
+        (mn, mx)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -68,11 +83,17 @@ pub struct ZRow {
 }
 
 #[derive(Debug, Serialize)]
-pub struct Distribution { pub buckets: Vec<f64>, pub counts: Vec<usize> }
+pub struct Distribution {
+    pub buckets: Vec<f64>,
+    pub counts: Vec<usize>,
+}
 
 // ================= Task-pool wiring =================
 
-struct Job { pool: PgPool, q: ZScoreOverviewRequest }
+struct Job {
+    pool: PgPool,
+    q: ZScoreOverviewRequest,
+}
 
 static ZSCORE_POOL: OnceLock<EndpointPool<Job, ZScoreOverviewResponse>> = OnceLock::new();
 
@@ -91,26 +112,35 @@ pub async fn get_zscore_overview(
     State(db): State<PgPool>,
     Query(q): Query<ZScoreOverviewRequest>,
 ) -> Json<ZScoreOverviewResponse> {
-    let res = zscore_pool().run(Job { pool: db.clone(), q }).await;
+    let res = zscore_pool()
+        .run(Job {
+            pool: db.clone(),
+            q,
+        })
+        .await;
     Json(res)
 }
 
 // ============== Heavy compute ==============
 
-async fn compute_zscore_overview(
-    pool: PgPool,
-    q: ZScoreOverviewRequest,
-) -> ZScoreOverviewResponse {
+async fn compute_zscore_overview(pool: PgPool, q: ZScoreOverviewRequest) -> ZScoreOverviewResponse {
     let tf = Tf::from_str(&q.timeframe).unwrap_or(Tf::H1);
     let days = parse_period_days(&q.period);
 
     // -------- Universe mode (topN present) --------
     if let Some(top_n) = q.topN {
-        let since_unix = (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
+        let since_unix =
+            (time::OffsetDateTime::now_utc() - time::Duration::days(days)).unix_timestamp();
 
         let top = match top_markets_by_usd_volume_live(
-            &pool, &q.exchange, &q.marketType, days as i32, top_n,
-        ).await {
+            &pool,
+            &q.exchange,
+            &q.marketType,
+            days as i32,
+            top_n,
+        )
+        .await
+        {
             Ok(v) => v,
             Err(_) => Vec::new(),
         };
@@ -119,12 +149,17 @@ async fn compute_zscore_overview(
             return ZScoreOverviewResponse {
                 zscoreTimeSeries: vec![],
                 currentZScore: 0.0,
-                zscoreDistribution: Distribution { buckets: vec![-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0], counts: vec![0;7] },
+                zscoreDistribution: Distribution {
+                    buckets: vec![-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0],
+                    counts: vec![0; 7],
+                },
             };
         }
 
         let mids: Vec<i32> = top.iter().map(|(_, mid, _)| *mid).collect();
-        let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix).await.unwrap_or_default();
+        let by_mid = fetch_multi_hourly_ohlcv(&pool, &mids, since_unix)
+            .await
+            .unwrap_or_default();
 
         let mut all_rows: Vec<ZRow> = Vec::new();
         let mut all_z: Vec<f64> = Vec::new();
@@ -132,17 +167,25 @@ async fn compute_zscore_overview(
         let mut last_z_cnt: usize = 0;
 
         for (sym, mid, _) in top {
-            let Some(hourly) = by_mid.get(&mid) else { continue; };
+            let Some(hourly) = by_mid.get(&mid) else {
+                continue;
+            };
             let series = resample_from_hourly(hourly, tf.period_secs());
-            if series.is_empty() { continue; }
+            if series.is_empty() {
+                continue;
+            }
 
             let n = series.len();
-            let ts:     Vec<i64> = series.iter().map(|r| r.ts).collect();
-            let price:  Vec<f64> = series.iter().map(|r| r.close).collect();
+            let ts: Vec<i64> = series.iter().map(|r| r.ts).collect();
+            let price: Vec<f64> = series.iter().map(|r| r.close).collect();
             let base_v: Vec<f64> = series.iter().map(|r| r.volume).collect();
 
             // USD notional per bar
-            let usd_v: Vec<f64> = price.iter().zip(base_v.iter()).map(|(p, &v)| finite(p * v)).collect();
+            let usd_v: Vec<f64> = price
+                .iter()
+                .zip(base_v.iter())
+                .map(|(p, &v)| finite(p * v))
+                .collect();
 
             // Windows
             let win = (n / 6).clamp(24, 240);
@@ -153,11 +196,19 @@ async fn compute_zscore_overview(
             let log_rets = log_returns(&price);
 
             // returns over one "day" in the chosen TF
-            let daily_steps = match tf { Tf::H1 => 24, Tf::H4 => 6, Tf::D1 => 1 };
+            let daily_steps = match tf {
+                Tf::H1 => 24,
+                Tf::H4 => 6,
+                Tf::D1 => 1,
+            };
             let mut returns1d = vec![0.0; n];
             for i in daily_steps..n {
                 let p0 = price[i - daily_steps];
-                returns1d[i] = finite(if p0 != 0.0 { (price[i] / p0) - 1.0 } else { 0.0 });
+                returns1d[i] = finite(if p0 != 0.0 {
+                    (price[i] / p0) - 1.0
+                } else {
+                    0.0
+                });
             }
 
             // EWMA(USD vol) and its z-score
@@ -166,9 +217,11 @@ async fn compute_zscore_overview(
 
             // First mature index
             let start_price_z = z.iter().position(|v| v.is_finite()).unwrap_or(n);
-            let start_vol_z   = vol_ewma_z.iter().position(|v| v.is_finite()).unwrap_or(n);
+            let start_vol_z = vol_ewma_z.iter().position(|v| v.is_finite()).unwrap_or(n);
             let start = start_price_z.max(start_vol_z);
-            if start >= n { continue; }
+            if start >= n {
+                continue;
+            }
 
             // Normalize EWMA(USD vol) on matured slice
             let (mn, mx) = minmax_norm(&vol_ewma[start..]);
@@ -193,17 +246,28 @@ async fn compute_zscore_overview(
             }
 
             if let Some(&lz) = z[start..].last() {
-                if lz.is_finite() { last_z_sum += lz; last_z_cnt += 1; }
+                if lz.is_finite() {
+                    last_z_sum += lz;
+                    last_z_cnt += 1;
+                }
             }
         }
 
         // Distribution & current
-        let buckets = vec![-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0];
-        let counts  = histogram_counts(
-            &all_z.iter().copied().filter(|x| x.is_finite()).collect::<Vec<_>>(),
-            &buckets
+        let buckets = vec![-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0];
+        let counts = histogram_counts(
+            &all_z
+                .iter()
+                .copied()
+                .filter(|x| x.is_finite())
+                .collect::<Vec<_>>(),
+            &buckets,
         );
-        let current_z = if last_z_cnt > 0 { last_z_sum / (last_z_cnt as f64) } else { 0.0 };
+        let current_z = if last_z_cnt > 0 {
+            last_z_sum / (last_z_cnt as f64)
+        } else {
+            0.0
+        };
 
         return ZScoreOverviewResponse {
             zscoreTimeSeries: all_rows,
@@ -240,29 +304,41 @@ async fn compute_zscore_overview(
     }
 
     let n = ohlcv.len();
-    let ts:     Vec<i64> = ohlcv.iter().map(|r| r.ts).collect();
-    let price:  Vec<f64> = ohlcv.iter().map(|r| r.close).collect();
+    let ts: Vec<i64> = ohlcv.iter().map(|r| r.ts).collect();
+    let price: Vec<f64> = ohlcv.iter().map(|r| r.close).collect();
     let base_v: Vec<f64> = ohlcv.iter().map(|r| r.volume).collect();
-    let usd_v:  Vec<f64> = price.iter().zip(base_v.iter()).map(|(p, &v)| finite(p * v)).collect();
+    let usd_v: Vec<f64> = price
+        .iter()
+        .zip(base_v.iter())
+        .map(|(p, &v)| finite(p * v))
+        .collect();
 
     let win = (n / 6).clamp(24, 240);
     let z = zscore_series(&price, win);
     let rets = pct_returns(&price);
     let log_rets = log_returns(&price);
 
-    let daily_steps = match tf { Tf::H1 => 24, Tf::H4 => 6, Tf::D1 => 1 };
+    let daily_steps = match tf {
+        Tf::H1 => 24,
+        Tf::H4 => 6,
+        Tf::D1 => 1,
+    };
     let mut returns1d = vec![0.0; n];
     for i in daily_steps..n {
         let p0 = price[i - daily_steps];
-        returns1d[i] = finite(if p0 != 0.0 { (price[i] / p0) - 1.0 } else { 0.0 });
+        returns1d[i] = finite(if p0 != 0.0 {
+            (price[i] / p0) - 1.0
+        } else {
+            0.0
+        });
     }
 
-    let vol_ewma   = ewma_span(&usd_v, win.max(24));
+    let vol_ewma = ewma_span(&usd_v, win.max(24));
     let vol_ewma_z = zscore_series(&vol_ewma, win);
 
     // drop warm-up rows
     let start_price_z = z.iter().position(|v| v.is_finite()).unwrap_or(n);
-    let start_volz    = vol_ewma_z.iter().position(|v| v.is_finite()).unwrap_or(n);
+    let start_volz = vol_ewma_z.iter().position(|v| v.is_finite()).unwrap_or(n);
     let start = start_price_z.max(start_volz);
     if start >= n {
         return ZScoreOverviewResponse {
@@ -298,7 +374,13 @@ async fn compute_zscore_overview(
     }
 
     // last finite z after warm-up
-    let current_z = z.iter().skip(start).rev().find(|v| v.is_finite()).copied().unwrap_or(0.0);
+    let current_z = z
+        .iter()
+        .skip(start)
+        .rev()
+        .find(|v| v.is_finite())
+        .copied()
+        .unwrap_or(0.0);
 
     ZScoreOverviewResponse {
         zscoreTimeSeries: rows,
@@ -306,8 +388,12 @@ async fn compute_zscore_overview(
         zscoreDistribution: {
             let buckets = vec![-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0];
             let counts = histogram_counts(
-                &z[start..].iter().copied().filter(|x| x.is_finite()).collect::<Vec<_>>(),
-                &buckets
+                &z[start..]
+                    .iter()
+                    .copied()
+                    .filter(|x| x.is_finite())
+                    .collect::<Vec<_>>(),
+                &buckets,
             );
             Distribution { buckets, counts }
         },

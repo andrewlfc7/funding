@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy)]
 pub enum Category {
     Spot,
-    Linear, // USDT & USDC Perps
+    Linear,  // USDT & USDC Perps
     Inverse, // COIN-M Perps
 }
 
@@ -22,4 +22,3 @@ pub const BYBIT_V5_URL: &str = "https://api.bybit.com";
 pub const INSTRUMENTS_INFO_PATH: &str = "/v5/market/instruments-info";
 pub const KLINES_PATH: &str = "/v5/market/kline";
 pub const RECENT_TRADE_PATH: &str = "/v5/market/recent-trade";
-
